@@ -39,6 +39,15 @@ Experimental Investigative Tinkering for Opinionated Approach to EKS
     (That approach creates multiple problems, 2 big one's are poor feedback loop and poor deployment observability.)
 * AWS CDK has the potential to be better than OpenTofu(AKA Terraform) for EKS, problem is onboarding UX.
   This approach offers a streamlined onboarding UX to AWS CDK Blueprints for EKS.
+  * Why CDK > TF? what problems does TF have?
+    * TF has an onboarding UX problem, related to TF statefile.
+    * CDK minimizes that problem by using Cloud Formation to store state.
+    * TF makes it easy to have 1 environment, but managing N environments that can share code is harder.
+    * CDK makes it easier to manage N environments.
+    * Neither TF nore CDK is superior in 100% of scenarios; however, I'd argue that CDK is superior for EKS, because:
+      * AWS has invested more into their EKS blueprints based on CDK, it's more mature. https://aws-quickstart.github.io/cdk-eks-blueprints/addons/ 
+      * AWS's EKS blueprints based on TF are on their 5th breaking change https://aws-ia.github.io/terraform-aws-eks-blueprints/v4-to-v5/motivation/#what-is-changing
+      * CDK is less risky than TF. (AWS may decide to stop backing TF in the future, and TF is being replaced by OpenTofu) (CDK has neither problem.)
 * Problem with docker:
   We could use a container image to pin version of aws cdk cli & dependencies, but it has UX problems.
 * UX improvements from using NixOS based flox.dev over docker. 
