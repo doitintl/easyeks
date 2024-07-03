@@ -1,0 +1,541 @@
+{
+  "lockfile-version": 1,
+  "manifest": {
+    "version": 1,
+    "install": {
+      "aws": {
+        "pkg-path": "awscli2",
+        "pkg-group": null,
+        "priority": null,
+        "version": "2.17.0",
+        "systems": null
+      },
+      "aws_cdk_dependency_nodejs": {
+        "pkg-path": "nodejs_22",
+        "pkg-group": null,
+        "priority": null,
+        "version": "nodejs-22.3.0",
+        "systems": null
+      },
+      "aws_cdk_dependency_ts": {
+        "pkg-path": "typescript",
+        "pkg-group": null,
+        "priority": null,
+        "version": "5.5.2",
+        "systems": null
+      },
+      "cdk": {
+        "pkg-path": "nodePackages.aws-cdk",
+        "pkg-group": "aws-cdk",
+        "priority": null,
+        "version": "2.133.0",
+        "systems": null
+      }
+    },
+    "vars": {},
+    "hook": {
+      "on-activate": null
+    },
+    "profile": {
+      "common": null,
+      "bash": null,
+      "zsh": null,
+      "fish": null,
+      "tcsh": null
+    },
+    "options": {
+      "systems": [
+        "aarch64-darwin",
+        "aarch64-linux",
+        "x86_64-darwin",
+        "x86_64-linux"
+      ],
+      "allow": {
+        "unfree": null,
+        "broken": null,
+        "licenses": []
+      },
+      "semver": {
+        "allow-pre-releases": null
+      }
+    }
+  },
+  "packages": [
+    {
+      "attr_path": "nodePackages.aws-cdk",
+      "broken": false,
+      "derivation": "/nix/store/isrcx781r1mhgj9mv1lpypy09q74xhqn-aws-cdk-2.133.0.drv",
+      "description": "CDK Toolkit, the command line tool for CDK apps",
+      "install_id": "cdk",
+      "license": "Apache-2.0",
+      "locked_url": "https://github.com/flox/nixpkgs?rev=57610d2f8f0937f39dbd72251e9614b1561942d8",
+      "name": "aws-cdk-2.133.0",
+      "pname": "aws-cdk",
+      "rev": "57610d2f8f0937f39dbd72251e9614b1561942d8",
+      "rev_count": 633517,
+      "rev_date": "2024-05-31T23:09:26Z",
+      "scrape_date": "2024-06-04T09:46:16Z",
+      "stabilities": [
+        "staging",
+        "unstable"
+      ],
+      "unfree": false,
+      "version": "2.133.0",
+      "outputs_to_install": [
+        "out"
+      ],
+      "outputs": {
+        "out": "/nix/store/4s6m40s0g87pyh9qrjdapasdmgwq68c0-aws-cdk-2.133.0"
+      },
+      "system": "aarch64-darwin",
+      "group": "aws-cdk",
+      "priority": 5
+    },
+    {
+      "attr_path": "nodePackages.aws-cdk",
+      "broken": false,
+      "derivation": "/nix/store/phah1rd5x6zppdrnn6lrggm81j8ifbfq-aws-cdk-2.133.0.drv",
+      "description": "CDK Toolkit, the command line tool for CDK apps",
+      "install_id": "cdk",
+      "license": "Apache-2.0",
+      "locked_url": "https://github.com/flox/nixpkgs?rev=57610d2f8f0937f39dbd72251e9614b1561942d8",
+      "name": "aws-cdk-2.133.0",
+      "pname": "aws-cdk",
+      "rev": "57610d2f8f0937f39dbd72251e9614b1561942d8",
+      "rev_count": 633517,
+      "rev_date": "2024-05-31T23:09:26Z",
+      "scrape_date": "2024-06-04T09:46:16Z",
+      "stabilities": [
+        "staging",
+        "unstable"
+      ],
+      "unfree": false,
+      "version": "2.133.0",
+      "outputs_to_install": [
+        "out"
+      ],
+      "outputs": {
+        "out": "/nix/store/0yndhk7h6vgq994azp2mx2zc9lqazfwi-aws-cdk-2.133.0"
+      },
+      "system": "aarch64-linux",
+      "group": "aws-cdk",
+      "priority": 5
+    },
+    {
+      "attr_path": "nodePackages.aws-cdk",
+      "broken": false,
+      "derivation": "/nix/store/l4maclwdqv29849mfdrgshamrg95knhr-aws-cdk-2.133.0.drv",
+      "description": "CDK Toolkit, the command line tool for CDK apps",
+      "install_id": "cdk",
+      "license": "Apache-2.0",
+      "locked_url": "https://github.com/flox/nixpkgs?rev=57610d2f8f0937f39dbd72251e9614b1561942d8",
+      "name": "aws-cdk-2.133.0",
+      "pname": "aws-cdk",
+      "rev": "57610d2f8f0937f39dbd72251e9614b1561942d8",
+      "rev_count": 633517,
+      "rev_date": "2024-05-31T23:09:26Z",
+      "scrape_date": "2024-06-04T09:46:16Z",
+      "stabilities": [
+        "staging",
+        "unstable"
+      ],
+      "unfree": false,
+      "version": "2.133.0",
+      "outputs_to_install": [
+        "out"
+      ],
+      "outputs": {
+        "out": "/nix/store/rahacvj8wj79lmj2c1f0dvbjjj2bl9bg-aws-cdk-2.133.0"
+      },
+      "system": "x86_64-darwin",
+      "group": "aws-cdk",
+      "priority": 5
+    },
+    {
+      "attr_path": "nodePackages.aws-cdk",
+      "broken": false,
+      "derivation": "/nix/store/9fd7g8n8p6h8flqhhrz9rvwniqkyxxzv-aws-cdk-2.133.0.drv",
+      "description": "CDK Toolkit, the command line tool for CDK apps",
+      "install_id": "cdk",
+      "license": "Apache-2.0",
+      "locked_url": "https://github.com/flox/nixpkgs?rev=57610d2f8f0937f39dbd72251e9614b1561942d8",
+      "name": "aws-cdk-2.133.0",
+      "pname": "aws-cdk",
+      "rev": "57610d2f8f0937f39dbd72251e9614b1561942d8",
+      "rev_count": 633517,
+      "rev_date": "2024-05-31T23:09:26Z",
+      "scrape_date": "2024-06-04T09:46:16Z",
+      "stabilities": [
+        "staging",
+        "unstable"
+      ],
+      "unfree": false,
+      "version": "2.133.0",
+      "outputs_to_install": [
+        "out"
+      ],
+      "outputs": {
+        "out": "/nix/store/dp479qpknkmwdf3l0spdklllcyj8qc1c-aws-cdk-2.133.0"
+      },
+      "system": "x86_64-linux",
+      "group": "aws-cdk",
+      "priority": 5
+    },
+    {
+      "attr_path": "awscli2",
+      "broken": false,
+      "derivation": "/nix/store/fk2iggyy1c8q7045v8rpfz2x1x8yxm9v-awscli2-2.17.0.drv",
+      "description": "Unified tool to manage your AWS services",
+      "install_id": "aws",
+      "license": "Apache-2.0",
+      "locked_url": "https://github.com/flox/nixpkgs?rev=2741b4b489b55df32afac57bc4bfd220e8bf617e",
+      "name": "awscli2-2.17.0",
+      "pname": "awscli2",
+      "rev": "2741b4b489b55df32afac57bc4bfd220e8bf617e",
+      "rev_count": 645454,
+      "rev_date": "2024-06-29T19:44:37Z",
+      "scrape_date": "2024-07-02T05:57:57Z",
+      "stabilities": [
+        "unstable"
+      ],
+      "unfree": false,
+      "version": "2.17.0",
+      "outputs_to_install": [
+        "out"
+      ],
+      "outputs": {
+        "dist": "/nix/store/a03zc0zxmf8xx02pc7j4dsycbz6vf4yq-awscli2-2.17.0-dist",
+        "out": "/nix/store/v9xss3bwpvw6ld5h2nsr08zsy1lvj3sd-awscli2-2.17.0"
+      },
+      "system": "aarch64-darwin",
+      "group": "toplevel",
+      "priority": 5
+    },
+    {
+      "attr_path": "awscli2",
+      "broken": false,
+      "derivation": "/nix/store/fffsi9a4qpz7f7bcrc88vf0nxs9n5h0n-awscli2-2.17.0.drv",
+      "description": "Unified tool to manage your AWS services",
+      "install_id": "aws",
+      "license": "Apache-2.0",
+      "locked_url": "https://github.com/flox/nixpkgs?rev=2741b4b489b55df32afac57bc4bfd220e8bf617e",
+      "name": "awscli2-2.17.0",
+      "pname": "awscli2",
+      "rev": "2741b4b489b55df32afac57bc4bfd220e8bf617e",
+      "rev_count": 645454,
+      "rev_date": "2024-06-29T19:44:37Z",
+      "scrape_date": "2024-07-02T05:57:57Z",
+      "stabilities": [
+        "unstable"
+      ],
+      "unfree": false,
+      "version": "2.17.0",
+      "outputs_to_install": [
+        "out"
+      ],
+      "outputs": {
+        "dist": "/nix/store/wcbxlldpa9dp6si7864sg0pbnk3dndlw-awscli2-2.17.0-dist",
+        "out": "/nix/store/lbcq024pyardrsxrq909zynk7cpxm404-awscli2-2.17.0"
+      },
+      "system": "aarch64-linux",
+      "group": "toplevel",
+      "priority": 5
+    },
+    {
+      "attr_path": "awscli2",
+      "broken": false,
+      "derivation": "/nix/store/dx31y7r2kf6gbb1qgyqq77pbdlznx3d6-awscli2-2.17.0.drv",
+      "description": "Unified tool to manage your AWS services",
+      "install_id": "aws",
+      "license": "Apache-2.0",
+      "locked_url": "https://github.com/flox/nixpkgs?rev=2741b4b489b55df32afac57bc4bfd220e8bf617e",
+      "name": "awscli2-2.17.0",
+      "pname": "awscli2",
+      "rev": "2741b4b489b55df32afac57bc4bfd220e8bf617e",
+      "rev_count": 645454,
+      "rev_date": "2024-06-29T19:44:37Z",
+      "scrape_date": "2024-07-02T05:57:57Z",
+      "stabilities": [
+        "unstable"
+      ],
+      "unfree": false,
+      "version": "2.17.0",
+      "outputs_to_install": [
+        "out"
+      ],
+      "outputs": {
+        "dist": "/nix/store/a9vzz0z6rbji3fcrnylhv5xv9vqprv19-awscli2-2.17.0-dist",
+        "out": "/nix/store/xjbi0mnsd5gm1nlphidg9x1wkk83rf9l-awscli2-2.17.0"
+      },
+      "system": "x86_64-darwin",
+      "group": "toplevel",
+      "priority": 5
+    },
+    {
+      "attr_path": "awscli2",
+      "broken": false,
+      "derivation": "/nix/store/2rk9gqsy6v3lhsc3ll6vmai71nz0dnyp-awscli2-2.17.0.drv",
+      "description": "Unified tool to manage your AWS services",
+      "install_id": "aws",
+      "license": "Apache-2.0",
+      "locked_url": "https://github.com/flox/nixpkgs?rev=2741b4b489b55df32afac57bc4bfd220e8bf617e",
+      "name": "awscli2-2.17.0",
+      "pname": "awscli2",
+      "rev": "2741b4b489b55df32afac57bc4bfd220e8bf617e",
+      "rev_count": 645454,
+      "rev_date": "2024-06-29T19:44:37Z",
+      "scrape_date": "2024-07-02T05:57:57Z",
+      "stabilities": [
+        "unstable"
+      ],
+      "unfree": false,
+      "version": "2.17.0",
+      "outputs_to_install": [
+        "out"
+      ],
+      "outputs": {
+        "dist": "/nix/store/hscm41qlj2snmpylpm9y90glvp1bqg0k-awscli2-2.17.0-dist",
+        "out": "/nix/store/lphj51m7iy36g0fvdjvrn2zqg77hwg8k-awscli2-2.17.0"
+      },
+      "system": "x86_64-linux",
+      "group": "toplevel",
+      "priority": 5
+    },
+    {
+      "attr_path": "nodejs_22",
+      "broken": false,
+      "derivation": "/nix/store/vzkbskqbz6r35di6ijwarvfxzh84bwhs-nodejs-22.3.0.drv",
+      "description": "Event-driven I/O framework for the V8 JavaScript engine",
+      "install_id": "aws_cdk_dependency_nodejs",
+      "license": "MIT",
+      "locked_url": "https://github.com/flox/nixpkgs?rev=2741b4b489b55df32afac57bc4bfd220e8bf617e",
+      "name": "nodejs-22.3.0",
+      "pname": "nodejs_22",
+      "rev": "2741b4b489b55df32afac57bc4bfd220e8bf617e",
+      "rev_count": 645454,
+      "rev_date": "2024-06-29T19:44:37Z",
+      "scrape_date": "2024-07-02T05:57:57Z",
+      "stabilities": [
+        "unstable"
+      ],
+      "unfree": false,
+      "version": "nodejs-22.3.0",
+      "outputs_to_install": [
+        "out"
+      ],
+      "outputs": {
+        "libv8": "/nix/store/zg4vwp25r1v52vm2mxd6v64c1gr3jbj9-nodejs-22.3.0-libv8",
+        "out": "/nix/store/ig6c5qlywzk9f4zwf4hdpnyyx91vyqyc-nodejs-22.3.0"
+      },
+      "system": "aarch64-darwin",
+      "group": "toplevel",
+      "priority": 5
+    },
+    {
+      "attr_path": "nodejs_22",
+      "broken": false,
+      "derivation": "/nix/store/pi2kzl7mhs8r4v2rika01n04sgkx6f8l-nodejs-22.3.0.drv",
+      "description": "Event-driven I/O framework for the V8 JavaScript engine",
+      "install_id": "aws_cdk_dependency_nodejs",
+      "license": "MIT",
+      "locked_url": "https://github.com/flox/nixpkgs?rev=2741b4b489b55df32afac57bc4bfd220e8bf617e",
+      "name": "nodejs-22.3.0",
+      "pname": "nodejs_22",
+      "rev": "2741b4b489b55df32afac57bc4bfd220e8bf617e",
+      "rev_count": 645454,
+      "rev_date": "2024-06-29T19:44:37Z",
+      "scrape_date": "2024-07-02T05:57:57Z",
+      "stabilities": [
+        "unstable"
+      ],
+      "unfree": false,
+      "version": "nodejs-22.3.0",
+      "outputs_to_install": [
+        "out"
+      ],
+      "outputs": {
+        "libv8": "/nix/store/j2lx401mqs3w7swg713irnnsfn88f8sx-nodejs-22.3.0-libv8",
+        "out": "/nix/store/j2pwm80va47mfz7r5w1640rm6b9sp269-nodejs-22.3.0"
+      },
+      "system": "aarch64-linux",
+      "group": "toplevel",
+      "priority": 5
+    },
+    {
+      "attr_path": "nodejs_22",
+      "broken": false,
+      "derivation": "/nix/store/lq7v2imwn6l9rp9gasmhvj5lcmqnfr24-nodejs-22.3.0.drv",
+      "description": "Event-driven I/O framework for the V8 JavaScript engine",
+      "install_id": "aws_cdk_dependency_nodejs",
+      "license": "MIT",
+      "locked_url": "https://github.com/flox/nixpkgs?rev=2741b4b489b55df32afac57bc4bfd220e8bf617e",
+      "name": "nodejs-22.3.0",
+      "pname": "nodejs_22",
+      "rev": "2741b4b489b55df32afac57bc4bfd220e8bf617e",
+      "rev_count": 645454,
+      "rev_date": "2024-06-29T19:44:37Z",
+      "scrape_date": "2024-07-02T05:57:57Z",
+      "stabilities": [
+        "unstable"
+      ],
+      "unfree": false,
+      "version": "nodejs-22.3.0",
+      "outputs_to_install": [
+        "out"
+      ],
+      "outputs": {
+        "libv8": "/nix/store/zk7izr97gl525arvyi4mfwxnhx5wl7hx-nodejs-22.3.0-libv8",
+        "out": "/nix/store/3cqbw1xcmc0xml8s3ys7jviaxvqyjldy-nodejs-22.3.0"
+      },
+      "system": "x86_64-darwin",
+      "group": "toplevel",
+      "priority": 5
+    },
+    {
+      "attr_path": "nodejs_22",
+      "broken": false,
+      "derivation": "/nix/store/0f4ykf7cqny18fib2z127la30kh5il0r-nodejs-22.3.0.drv",
+      "description": "Event-driven I/O framework for the V8 JavaScript engine",
+      "install_id": "aws_cdk_dependency_nodejs",
+      "license": "MIT",
+      "locked_url": "https://github.com/flox/nixpkgs?rev=2741b4b489b55df32afac57bc4bfd220e8bf617e",
+      "name": "nodejs-22.3.0",
+      "pname": "nodejs_22",
+      "rev": "2741b4b489b55df32afac57bc4bfd220e8bf617e",
+      "rev_count": 645454,
+      "rev_date": "2024-06-29T19:44:37Z",
+      "scrape_date": "2024-07-02T05:57:57Z",
+      "stabilities": [
+        "unstable"
+      ],
+      "unfree": false,
+      "version": "nodejs-22.3.0",
+      "outputs_to_install": [
+        "out"
+      ],
+      "outputs": {
+        "libv8": "/nix/store/5dmd41abvjrw0chbz9m2yk27h61vpva9-nodejs-22.3.0-libv8",
+        "out": "/nix/store/zklzfb51mxs8pqdpwh6h51jkir50hq54-nodejs-22.3.0"
+      },
+      "system": "x86_64-linux",
+      "group": "toplevel",
+      "priority": 5
+    },
+    {
+      "attr_path": "typescript",
+      "broken": false,
+      "derivation": "/nix/store/jsrqdh9c1g3z1wngx4jpap9pxf672bm4-typescript-5.5.2.drv",
+      "description": "Superset of JavaScript that compiles to clean JavaScript output",
+      "install_id": "aws_cdk_dependency_ts",
+      "license": "Apache-2.0",
+      "locked_url": "https://github.com/flox/nixpkgs?rev=2741b4b489b55df32afac57bc4bfd220e8bf617e",
+      "name": "typescript-5.5.2",
+      "pname": "typescript",
+      "rev": "2741b4b489b55df32afac57bc4bfd220e8bf617e",
+      "rev_count": 645454,
+      "rev_date": "2024-06-29T19:44:37Z",
+      "scrape_date": "2024-07-02T05:57:57Z",
+      "stabilities": [
+        "unstable"
+      ],
+      "unfree": false,
+      "version": "5.5.2",
+      "outputs_to_install": [
+        "out"
+      ],
+      "outputs": {
+        "out": "/nix/store/37fymdcm52z649ppnr80akaxszklxnbm-typescript-5.5.2"
+      },
+      "system": "aarch64-darwin",
+      "group": "toplevel",
+      "priority": 5
+    },
+    {
+      "attr_path": "typescript",
+      "broken": false,
+      "derivation": "/nix/store/756jznq35iqnn3gn9md4gb6q38niz7wv-typescript-5.5.2.drv",
+      "description": "Superset of JavaScript that compiles to clean JavaScript output",
+      "install_id": "aws_cdk_dependency_ts",
+      "license": "Apache-2.0",
+      "locked_url": "https://github.com/flox/nixpkgs?rev=2741b4b489b55df32afac57bc4bfd220e8bf617e",
+      "name": "typescript-5.5.2",
+      "pname": "typescript",
+      "rev": "2741b4b489b55df32afac57bc4bfd220e8bf617e",
+      "rev_count": 645454,
+      "rev_date": "2024-06-29T19:44:37Z",
+      "scrape_date": "2024-07-02T05:57:57Z",
+      "stabilities": [
+        "unstable"
+      ],
+      "unfree": false,
+      "version": "5.5.2",
+      "outputs_to_install": [
+        "out"
+      ],
+      "outputs": {
+        "out": "/nix/store/ycjmz78469jiv4h4cap7zrhsc1k92zyf-typescript-5.5.2"
+      },
+      "system": "aarch64-linux",
+      "group": "toplevel",
+      "priority": 5
+    },
+    {
+      "attr_path": "typescript",
+      "broken": false,
+      "derivation": "/nix/store/5vcqxplnmx5y8j2fvnd5xwh0yldac4jc-typescript-5.5.2.drv",
+      "description": "Superset of JavaScript that compiles to clean JavaScript output",
+      "install_id": "aws_cdk_dependency_ts",
+      "license": "Apache-2.0",
+      "locked_url": "https://github.com/flox/nixpkgs?rev=2741b4b489b55df32afac57bc4bfd220e8bf617e",
+      "name": "typescript-5.5.2",
+      "pname": "typescript",
+      "rev": "2741b4b489b55df32afac57bc4bfd220e8bf617e",
+      "rev_count": 645454,
+      "rev_date": "2024-06-29T19:44:37Z",
+      "scrape_date": "2024-07-02T05:57:57Z",
+      "stabilities": [
+        "unstable"
+      ],
+      "unfree": false,
+      "version": "5.5.2",
+      "outputs_to_install": [
+        "out"
+      ],
+      "outputs": {
+        "out": "/nix/store/kbmpmschzzj6vj3b61k2zdla8cz0wcig-typescript-5.5.2"
+      },
+      "system": "x86_64-darwin",
+      "group": "toplevel",
+      "priority": 5
+    },
+    {
+      "attr_path": "typescript",
+      "broken": false,
+      "derivation": "/nix/store/rpwwz3fql280b6wnfh236724j071x6lg-typescript-5.5.2.drv",
+      "description": "Superset of JavaScript that compiles to clean JavaScript output",
+      "install_id": "aws_cdk_dependency_ts",
+      "license": "Apache-2.0",
+      "locked_url": "https://github.com/flox/nixpkgs?rev=2741b4b489b55df32afac57bc4bfd220e8bf617e",
+      "name": "typescript-5.5.2",
+      "pname": "typescript",
+      "rev": "2741b4b489b55df32afac57bc4bfd220e8bf617e",
+      "rev_count": 645454,
+      "rev_date": "2024-06-29T19:44:37Z",
+      "scrape_date": "2024-07-02T05:57:57Z",
+      "stabilities": [
+        "unstable"
+      ],
+      "unfree": false,
+      "version": "5.5.2",
+      "outputs_to_install": [
+        "out"
+      ],
+      "outputs": {
+        "out": "/nix/store/8h5s7xk9pq5i0nqv5qhs6pn4vw8mrj5f-typescript-5.5.2"
+      },
+      "system": "x86_64-linux",
+      "group": "toplevel",
+      "priority": 5
+    }
+  ]
+}
