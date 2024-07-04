@@ -11,10 +11,10 @@
         "systems": null
       },
       "aws_cdk_dependency_nodejs": {
-        "pkg-path": "nodejs_22",
+        "pkg-path": "nodejs",
         "pkg-group": null,
         "priority": null,
-        "version": "nodejs-22.3.0",
+        "version": "20.12.2",
         "systems": null
       },
       "aws_cdk_dependency_ts": {
@@ -302,15 +302,15 @@
       "priority": 5
     },
     {
-      "attr_path": "nodejs_22",
+      "attr_path": "nodejs",
       "broken": false,
-      "derivation": "/nix/store/vzkbskqbz6r35di6ijwarvfxzh84bwhs-nodejs-22.3.0.drv",
+      "derivation": "/nix/store/sa3i5yn209hngdnj8z9v6n8hj9cly6g8-nodejs-20.12.2.drv",
       "description": "Event-driven I/O framework for the V8 JavaScript engine",
       "install_id": "aws_cdk_dependency_nodejs",
       "license": "MIT",
       "locked_url": "https://github.com/flox/nixpkgs?rev=2741b4b489b55df32afac57bc4bfd220e8bf617e",
-      "name": "nodejs-22.3.0",
-      "pname": "nodejs_22",
+      "name": "nodejs-20.12.2",
+      "pname": "nodejs",
       "rev": "2741b4b489b55df32afac57bc4bfd220e8bf617e",
       "rev_count": 645454,
       "rev_date": "2024-06-29T19:44:37Z",
@@ -319,28 +319,28 @@
         "unstable"
       ],
       "unfree": false,
-      "version": "nodejs-22.3.0",
+      "version": "20.12.2",
       "outputs_to_install": [
         "out"
       ],
       "outputs": {
-        "libv8": "/nix/store/zg4vwp25r1v52vm2mxd6v64c1gr3jbj9-nodejs-22.3.0-libv8",
-        "out": "/nix/store/ig6c5qlywzk9f4zwf4hdpnyyx91vyqyc-nodejs-22.3.0"
+        "libv8": "/nix/store/08xq7dq3gmv0cs6b4283xihjvhy9d1vy-nodejs-20.12.2-libv8",
+        "out": "/nix/store/ridvrr7dsnxpvh3f1sr41xiwvwk1nnkg-nodejs-20.12.2"
       },
       "system": "aarch64-darwin",
       "group": "toplevel",
       "priority": 5
     },
     {
-      "attr_path": "nodejs_22",
+      "attr_path": "nodejs",
       "broken": false,
-      "derivation": "/nix/store/pi2kzl7mhs8r4v2rika01n04sgkx6f8l-nodejs-22.3.0.drv",
+      "derivation": "/nix/store/7y271ans4l161047rid91xfqis2wqfzm-nodejs-20.12.2.drv",
       "description": "Event-driven I/O framework for the V8 JavaScript engine",
       "install_id": "aws_cdk_dependency_nodejs",
       "license": "MIT",
       "locked_url": "https://github.com/flox/nixpkgs?rev=2741b4b489b55df32afac57bc4bfd220e8bf617e",
-      "name": "nodejs-22.3.0",
-      "pname": "nodejs_22",
+      "name": "nodejs-20.12.2",
+      "pname": "nodejs",
       "rev": "2741b4b489b55df32afac57bc4bfd220e8bf617e",
       "rev_count": 645454,
       "rev_date": "2024-06-29T19:44:37Z",
@@ -349,28 +349,28 @@
         "unstable"
       ],
       "unfree": false,
-      "version": "nodejs-22.3.0",
+      "version": "20.12.2",
       "outputs_to_install": [
         "out"
       ],
       "outputs": {
-        "libv8": "/nix/store/j2lx401mqs3w7swg713irnnsfn88f8sx-nodejs-22.3.0-libv8",
-        "out": "/nix/store/j2pwm80va47mfz7r5w1640rm6b9sp269-nodejs-22.3.0"
+        "libv8": "/nix/store/5gbmjz6s6bqniqpmzszz1mxis6bsvkk7-nodejs-20.12.2-libv8",
+        "out": "/nix/store/ybhzncvkslqd0b9c3lp91l0wphjzczc8-nodejs-20.12.2"
       },
       "system": "aarch64-linux",
       "group": "toplevel",
       "priority": 5
     },
     {
-      "attr_path": "nodejs_22",
+      "attr_path": "nodejs",
       "broken": false,
-      "derivation": "/nix/store/lq7v2imwn6l9rp9gasmhvj5lcmqnfr24-nodejs-22.3.0.drv",
+      "derivation": "/nix/store/3jpcs3h5l5n81azsx9x1xzs7r4napdih-nodejs-20.12.2.drv",
       "description": "Event-driven I/O framework for the V8 JavaScript engine",
       "install_id": "aws_cdk_dependency_nodejs",
       "license": "MIT",
       "locked_url": "https://github.com/flox/nixpkgs?rev=2741b4b489b55df32afac57bc4bfd220e8bf617e",
-      "name": "nodejs-22.3.0",
-      "pname": "nodejs_22",
+      "name": "nodejs-20.12.2",
+      "pname": "nodejs",
       "rev": "2741b4b489b55df32afac57bc4bfd220e8bf617e",
       "rev_count": 645454,
       "rev_date": "2024-06-29T19:44:37Z",
@@ -379,28 +379,28 @@
         "unstable"
       ],
       "unfree": false,
-      "version": "nodejs-22.3.0",
+      "version": "20.12.2",
       "outputs_to_install": [
         "out"
       ],
       "outputs": {
-        "libv8": "/nix/store/zk7izr97gl525arvyi4mfwxnhx5wl7hx-nodejs-22.3.0-libv8",
-        "out": "/nix/store/3cqbw1xcmc0xml8s3ys7jviaxvqyjldy-nodejs-22.3.0"
+        "libv8": "/nix/store/mmfi1a89j8ph7x0rkqy43fc9h31hxxcr-nodejs-20.12.2-libv8",
+        "out": "/nix/store/gxi71m2y8x1rl83dpr1g0x9yz3klrcb0-nodejs-20.12.2"
       },
       "system": "x86_64-darwin",
       "group": "toplevel",
       "priority": 5
     },
     {
-      "attr_path": "nodejs_22",
+      "attr_path": "nodejs",
       "broken": false,
-      "derivation": "/nix/store/0f4ykf7cqny18fib2z127la30kh5il0r-nodejs-22.3.0.drv",
+      "derivation": "/nix/store/2s2bmvmp499d040ycpmda83ql0vp47yl-nodejs-20.12.2.drv",
       "description": "Event-driven I/O framework for the V8 JavaScript engine",
       "install_id": "aws_cdk_dependency_nodejs",
       "license": "MIT",
       "locked_url": "https://github.com/flox/nixpkgs?rev=2741b4b489b55df32afac57bc4bfd220e8bf617e",
-      "name": "nodejs-22.3.0",
-      "pname": "nodejs_22",
+      "name": "nodejs-20.12.2",
+      "pname": "nodejs",
       "rev": "2741b4b489b55df32afac57bc4bfd220e8bf617e",
       "rev_count": 645454,
       "rev_date": "2024-06-29T19:44:37Z",
@@ -409,13 +409,13 @@
         "unstable"
       ],
       "unfree": false,
-      "version": "nodejs-22.3.0",
+      "version": "20.12.2",
       "outputs_to_install": [
         "out"
       ],
       "outputs": {
-        "libv8": "/nix/store/5dmd41abvjrw0chbz9m2yk27h61vpva9-nodejs-22.3.0-libv8",
-        "out": "/nix/store/zklzfb51mxs8pqdpwh6h51jkir50hq54-nodejs-22.3.0"
+        "libv8": "/nix/store/qgrqys125k7c7ish5l1bkphgi49nbcig-nodejs-20.12.2-libv8",
+        "out": "/nix/store/74a6mmrgxzcg9axl1gmdz3j2y1bjd13f-nodejs-20.12.2"
       },
       "system": "x86_64-linux",
       "group": "toplevel",

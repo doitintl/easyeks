@@ -2,16 +2,20 @@ version = 1  # Visit flox.dev/docs/concepts/manifest/
 
 [install]    # (List of packages installed in environment)
 aws = { pkg-path = "awscli2", version = "2.17.0" }
-aws_cdk_dependency_nodejs = { pkg-path = "nodejs_22", version = "nodejs-22.3.0" }
 aws_cdk_dependency_ts = { pkg-path = "typescript", version = "5.5.2" }
-cdk = { pkg-path = "nodePackages.aws-cdk", version = "2.133.0", pkg-group = "aws-cdk" } #pkg-group isolates dependencies to prevent conflict
-
+aws_cdk_dependency_nodejs = { pkg-path = "nodejs", version = "20.12.2" } #(v20 = LTS, long term support)
+cdk = { pkg-path = "nodePackages.aws-cdk", version = "2.133.0", pkg-group = "aws-cdk" } 
+# Note: pkg-group isolates dependencies to prevent conflict
+# Note: a cdk specific NixOS pgk bug exists https://github.com/NixOS/nixpkgs/issues/236151
+# cdk init app --language typescript
+# ^-- fails, workaround--v 
+# npx aws-cdk@2.133.0 init app --language typescript
 
 # If there's ever a need to update pinned versions of above dependencies in the future
 # cd to the root of this git repo (where /.flox/ exists)
 # Then run the following commands to see available versions
 # flox show awscli2 
-# flox show nodejs_22
+# flox show nodejs
 # flox show typescript
 # flox show nodePackages.aws-cdk
 ##################################################################################
