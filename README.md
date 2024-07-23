@@ -98,6 +98,18 @@ flox activate
 #
 # ^-- This allows you to see you're in flox shell mode
 ```
+
+```shell
+# flox [flox.dev]
+# [admin@laptop:~/eks-cdk-quickstart]
+npm install
+# ^-- will populate a /node_modules/, based on package.json
+
+head -n 2 cdk.json
+# {
+#   "app": "npx ts-node --prefer-ts-exts bin/cdk-main.ts",
+#   ^-- so ./bin/cdk-main.ts is cdk CLI's entry point where the app logic starts
+```
 * Configure AWS CLI
 * Run the following command to make sure you have access to an AWS Identity
 `aws sts get-caller-identity`
@@ -116,6 +128,15 @@ flox activate
     "Account": "905418347382",
     "Arn": "arn:aws:iam::905418347382:user/chrism"
 }
+```
+* Bootstrap cdk
+```shell
+cdk bootstrap --region=us-central-1
+# ^-- Note the region flag isn't required, it'll default to your locally configured region
+#     There's 2 advantages to explicitly specifying
+#     1. When working with a team, they can't see your locally configured region,
+#        so documenting in git improves reproducibility.
+#     2. It makes it intuitively obvious that cdk bootstrap is regionally scoped, not global.
 ```
 
 ## Skaffolding Methodology (Boostrapping methodology used to populate the files in this repo)
