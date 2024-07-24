@@ -109,8 +109,7 @@ export class EKS_Blueprints_Based_EKS_Cluster {
     
     const clusterStack = blueprints.EksBlueprint.builder()
 //    .clusterProvider(baselineClusterProvider)
-    .version("auto")    
-//.version(KubernetesVersion.V1_29)
+    .version(KubernetesVersion.V1_29)
     .account(account)
     .region(region)
     .addOns(...baselineAddOns)//end addOns
