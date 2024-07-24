@@ -3,7 +3,10 @@ import console = require('console'); //can help debug feedback loop, allows `con
 import 'source-map-support/register'; //supposedly this makes stacktrace errors easier to read
 import * as cdk from 'aws-cdk-lib';
 import * as blueprints from '@aws-quickstart/eks-blueprints';
-import { EKS_Blueprints_Based_EKS_Cluster, EKS_Inputs, EKS_Generic_Baseline_Inputs, EKS_Env_Override_Inputs } from '../lib/eks-blueprints-based-eks-cluster';
+import { EKS_Inputs, EKS_Generic_Baseline_Inputs,
+EKS_Blueprints_Based_EKS_Cluster,
+//  EKS_Env_Override_Inputs
+  } from '../lib/eks-blueprints-based-eks-cluster';
 //       ^-- Matches name of exported class in referenced file
 
 ////////////////////////////////////////////////////////////////////////////////////////////
@@ -21,16 +24,15 @@ const app = new cdk.App(); //<-- Root AWS "Construct"
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //Note: ca-central-1 is a Hydro Powered AWS Region (Low CO2 emissions), recommended to use for lower environment clusters
-
-const NTH_DYNAMIC_SANDBOX_CLUSTER:EKS_Inputs = new EKS_Generic_Baseline_Inputs();
+const NTH_DYNAMIC_SANDBOX_CLUSTER:EKS_Inputs = new EKS_Generic_Baseline_Inputs(process.env.CDK_DEFAULT_REGION!); //! tells TS the var won't be undefined
 new EKS_Blueprints_Based_EKS_Cluster().build(app, 'test-cluster', NTH_DYNAMIC_SANDBOX_CLUSTER );
 
+//console.log(BaselineTags);
+
+//const DEV_CLUSTER:EKS_Inputs = new EKS_Env_Override_Inputs("dev", "ca-central-1", "123456789");
+//new EKS_Blueprints_Based_EKS_Cluster().build(app, 'dev2-cluster', DEV_CLUSTER );
 
 
-const DEV_CLUSTER:EKS_Inputs = new EKS_Env_Override_Inputs("dev", "ca-central-1", "123456789");
-new EKS_Blueprints_Based_EKS_Cluster().build(app, 'dev2-cluster', DEV_CLUSTER );
-
-
-console.log(NTH_DYNAMIC_SANDBOX_CLUSTER);
+//console.log(NTH_DYNAMIC_SANDBOX_CLUSTER);
 //console.log(DEV_CLUSTER);
 
