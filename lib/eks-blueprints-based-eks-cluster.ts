@@ -4,7 +4,7 @@ import * as blueprints from '@aws-quickstart/eks-blueprints'; // blueprints as i
 import { Construct } from 'constructs';
 import * as iam from 'aws-cdk-lib/aws-iam';
 import * as kms from 'aws-cdk-lib/aws-kms';
-import { KubernetesVersion } from 'aws-cdk-lib/aws-eks';
+import { KubernetesVersion, AuthenticationMode } from 'aws-cdk-lib/aws-eks';
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 const baselineEKSTags: { [key: string]: string } = {
   "Provisioning and IaC Management Tooling": "aws cdk",
@@ -20,10 +20,16 @@ const baselineWorkerNodeRole = new blueprints.CreateRoleProvider("eks-blueprint-
     iam.ManagedPolicy.fromAwsManagedPolicyName("AmazonSSMManagedInstanceCore")
 ]);
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+
+
 const baselineClusterProvider = new blueprints.GenericClusterProvider({
   tags: baselineEKSTags,
+  outputConfigCommand: true,
+  authenticationMode: AuthenticationMode.API_AND_CONFIG_MAP,
+  //^-- probably part of the puzzle
 
-   
 
 //  authenticationMode: cdk.AuthenticationMode.CONFIG_MAP,
 
@@ -37,6 +43,9 @@ const baselineClusterProvider = new blueprints.GenericClusterProvider({
   //       selectors:  [{ namespace: "serverless1" }] //karpenter ns
   //   }
   // }  
+
+
+
 });
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 const baselineAddOns: Array<blueprints.ClusterAddOn> = [
@@ -53,6 +62,7 @@ const baselineAddOns: Array<blueprints.ClusterAddOn> = [
   //   serviceAccountPolicies: [iam.ManagedPolicy.fromAwsManagedPolicyName("AmazonEKS_CNI_Policy")]
   // }),
   new blueprints.addons.CoreDnsAddOn(),
+//  coreDnsComputeType:  <-- is an option in GenericClusterProvider
   new blueprints.addons.KubeProxyAddOn(),
   // new blueprints.addons.EbsCsiDriverAddOn({
   //   version: "auto",
@@ -128,9 +138,22 @@ export class EKS_Blueprints_Based_EKS_Cluster {
 //Tinkering with Simplier authn.
 //https://github.com/aws/aws-cdk/issues/28588
 //https://github.com/aws/aws-cdk/pull/30016
-console.log( cdk.aws_eks.AwsAuth );
+
 //I'm looking for something called AuthenticationMode which should have 
 //Allowed values: CONFIG_MAP | API_AND_CONFIG_MAP | API
 //@aws-sdk/client-eks to v3.476.0(the minimal version with EKS Cluster Access Management support)
 // npm install aws-cdk@2.133.0
 // npm install @aws-quickstart/eks-blueprints@1.14.1
+
+// npm install aws-cdk@2.147.3
+// npm install @aws-quickstart/eks-blueprints@1.15.1
+// npm install aws-cdk@2.147.3 @aws-quickstart/eks-blueprints@1.15.1
+console.log(cdk.aws_eks.AuthenticationMode );
+// {
+//   CONFIG_MAP: 'CONFIG_MAP',
+//   API_AND_CONFIG_MAP: 'API_AND_CONFIG_MAP',
+//   API: 'API'
+// }
+// cool improved authn feature is available in latest aws-cdk :)
+
+// `flox show nodePackages.aws-cdk` <-- 2.147.3 not yet in nix, but very close (2.146.0 is present) may release in nix pkg's in 1-2 weeks.
