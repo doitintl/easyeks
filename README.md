@@ -81,27 +81,27 @@ Experimental Investigative Tinkering for Opinionated Approach to EKS
   ```
 * Download this repo
 ```shell
-# [admin@laptop:~]
+# [admin@workstation:~]
 cd ~
 git clone https://github.com/doitintl/eks-cdk-quickstart.git
 cd ~/eks-cdk-quickstart
-# [admin@laptop:~/eks-cdk-quickstart]
+# [admin@workstation:~/eks-cdk-quickstart]
 # ^- The above notation is used, b/c the below command requires you to be in correct working dir.
 flox activate
 # Note after running the above, your prompt will change
 # FROM:
-# [admin@laptop:~/eks-cdk-quickstart]
+# [admin@workstation:~/eks-cdk-quickstart]
 #
 # TO: 
 # flox [flox.dev]
-# [admin@laptop:~/eks-cdk-quickstart]
+# [admin@workstation:~/eks-cdk-quickstart]
 #
 # ^-- This allows you to see you're in flox shell mode
 ```
 
 ```shell
 # flox [flox.dev]
-# [admin@laptop:~/eks-cdk-quickstart]
+# [admin@workstation:~/eks-cdk-quickstart]
 npm install
 # ^-- will populate a /node_modules/, based on package.json
 
@@ -109,6 +109,8 @@ head -n 2 cdk.json
 # {
 #   "app": "npx ts-node --prefer-ts-exts bin/cdk-main.ts",
 #   ^-- so ./bin/cdk-main.ts is cdk CLI's entry point where the app logic starts
+export AWS_REGION=ca-central-1
+cdk list
 ```
 * Configure AWS CLI
 * Run the following command to make sure you have access to an AWS Identity
@@ -131,7 +133,8 @@ head -n 2 cdk.json
 ```
 * Bootstrap cdk
 ```shell
-cdk bootstrap --region=us-central-1
+export AWS_REGION=ca-central-1
+cdk bootstrap --region=ca-central-1
 # ^-- Note the region flag isn't required, it'll default to your locally configured region
 #     There's 2 advantages to explicitly specifying
 #     1. When working with a team, they can't see your locally configured region,

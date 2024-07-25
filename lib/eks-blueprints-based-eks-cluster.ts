@@ -1,36 +1,43 @@
 import console = require('console'); //can help debug feedback loop, allows `console.log("hi");` to work, when `cdk list` is run.
 import * as cdk from 'aws-cdk-lib';
-import * as blueprints from '@aws-quickstart/eks-blueprints';
+import * as blueprints from '@aws-quickstart/eks-blueprints'; // blueprints as in blueprint_of_eks_declarative_cf_stack
 import { Construct } from 'constructs';
 import * as iam from 'aws-cdk-lib/aws-iam';
 import * as kms from 'aws-cdk-lib/aws-kms';
 import { KubernetesVersion } from 'aws-cdk-lib/aws-eks';
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-const baselineEKSTags:  { [key: string]: string } = { //<-- TODO, didn't work not working per synth, debug later & fix any
+const baselineEKSTags: { [key: string]: string } = {
   "Provisioning and IaC Management Tooling": "aws cdk",
   "Maintained By": "Platform Team",
-  "Environment": "Nth Sandbox Cluster",
+//  "Environment": "Nth Sandbox Cluster",
   "Primary Point of Contact": "ops@example.com",
 }
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// const baselineWorkerNodeRole = new blueprints.CreateRoleProvider("eks-blueprint-worker-node-role", new iam.ServicePrincipal("ec2.amazonaws.com"),
-// [
-//     iam.ManagedPolicy.fromAwsManagedPolicyName("AmazonEKSWorkerNodePolicy"),
-//     iam.ManagedPolicy.fromAwsManagedPolicyName("AmazonEC2ContainerRegistryReadOnly"),
-//     iam.ManagedPolicy.fromAwsManagedPolicyName("AmazonSSMManagedInstanceCore")
-// ]);
+const baselineWorkerNodeRole = new blueprints.CreateRoleProvider("eks-blueprint-worker-node-role", new iam.ServicePrincipal("ec2.amazonaws.com"),
+[
+    iam.ManagedPolicy.fromAwsManagedPolicyName("AmazonEKSWorkerNodePolicy"),
+    iam.ManagedPolicy.fromAwsManagedPolicyName("AmazonEC2ContainerRegistryReadOnly"),
+    iam.ManagedPolicy.fromAwsManagedPolicyName("AmazonSSMManagedInstanceCore")
+]);
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//Reference: https://aws-quickstart.github.io/cdk-eks-blueprints/cluster-providers/generic-cluster-provider/
-//Reference: https://github.com/aws-quickstart/cdk-eks-blueprints/blob/main/examples/examples.ts
-// const baselineClusterProvider = new blueprints.GenericClusterProvider({
-//   tags: {
-//       "Name": "blueprints-example-cluster",
-//       "Type": "generic-cluster",
-//       "lala": "testtest",
-//   },
-//   managedNodeGroups: [
-//   ]
-// });
+const baselineClusterProvider = new blueprints.GenericClusterProvider({
+  tags: baselineEKSTags,
+
+   
+
+//  authenticationMode: cdk.AuthenticationMode.CONFIG_MAP,
+
+  //  authenticationMode: AuthenticationMode.CONFIG_MAP,
+
+// managedNodeGroups: [
+  // ],
+  // fargateProfiles: {
+  //   "fp1": {
+  //       fargateProfileName: "fp1",
+  //       selectors:  [{ namespace: "serverless1" }] //karpenter ns
+  //   }
+  // }  
+});
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 const baselineAddOns: Array<blueprints.ClusterAddOn> = [
   // new blueprints.addons.VpcCniAddOn({
@@ -95,11 +102,11 @@ export class EKS_Generic_Baseline_Inputs extends EKS_Inputs { //Props as in Prop
   }
 }
 
-// export class EKS_Env_Override_Inputs extends EKS_Generic_Baseline_Inputs {
-//   constructor(envName: string, region: string, vpcID: string) {
-//     super(region);
-//   }
-// }
+export class EKS_Env_Override_Inputs extends EKS_Generic_Baseline_Inputs {
+  constructor(envName: string, region: string, vpcID: string) {
+    super(region);
+  }
+}
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 export class EKS_Blueprints_Based_EKS_Cluster {
   build(scope: Construct, id: string, props?: EKS_Inputs) {
@@ -108,7 +115,7 @@ export class EKS_Blueprints_Based_EKS_Cluster {
     const region = props?.env?.region!; //<-- ! means TS can trust this variable won't be null
     
     const clusterStack = blueprints.EksBlueprint.builder()
-//    .clusterProvider(baselineClusterProvider)
+    .clusterProvider(baselineClusterProvider)
     .version(KubernetesVersion.V1_29)
     .account(account)
     .region(region)
@@ -117,3 +124,13 @@ export class EKS_Blueprints_Based_EKS_Cluster {
   }
 }
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+//Tinkering with Simplier authn.
+//https://github.com/aws/aws-cdk/issues/28588
+//https://github.com/aws/aws-cdk/pull/30016
+console.log( cdk.aws_eks.AwsAuth );
+//I'm looking for something called AuthenticationMode which should have 
+//Allowed values: CONFIG_MAP | API_AND_CONFIG_MAP | API
+//@aws-sdk/client-eks to v3.476.0(the minimal version with EKS Cluster Access Management support)
+// npm install aws-cdk@2.133.0
+// npm install @aws-quickstart/eks-blueprints@1.14.1
