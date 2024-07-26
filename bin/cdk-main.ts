@@ -30,7 +30,7 @@ const app = new cdk.App(); //<-- Root AWS "Construct"
 //console.log(BaselineTags);
 
 const DEV_CLUSTER:EKS_Inputs = new EKS_Env_Override_Inputs("dev", "ca-central-1", "123456789");
-//new EKS_Blueprints_Based_EKS_Cluster().build(app, 'dev-cluster', DEV_CLUSTER );
+new EKS_Blueprints_Based_EKS_Cluster().build(app, 'dev-cluster', DEV_CLUSTER );
 
 
 //console.log(NTH_DYNAMIC_SANDBOX_CLUSTER);

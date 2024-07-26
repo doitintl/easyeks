@@ -1,16 +1,19 @@
 import console = require('console'); //can help debug feedback loop, allows `console.log("hi");` to work, when `cdk list` is run.
-import * as cdk from 'aws-cdk-lib';
-import * as blueprints from '@aws-quickstart/eks-blueprints'; // blueprints as in blueprint_of_eks_declarative_cf_stack
 import { Construct } from 'constructs';
+import * as cdk from 'aws-cdk-lib';
 import * as iam from 'aws-cdk-lib/aws-iam';
-import * as kms from 'aws-cdk-lib/aws-kms';
-import { KubernetesVersion, AuthenticationMode } from 'aws-cdk-lib/aws-eks';
+import * as blueprints from '@aws-quickstart/eks-blueprints'; // blueprints as in blueprint_of_eks_declarative_cf_stack
+//import * as kms from 'aws-cdk-lib/aws-kms';
+import { KubernetesVersion, AuthenticationMode, AccessPolicy, AccessEntry, AccessEntryType } from 'aws-cdk-lib/aws-eks';
+
+
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 const baselineEKSTags: { [key: string]: string } = {
-  "Provisioning and IaC Management Tooling": "aws cdk",
-  "Maintained By": "Platform Team",
-//  "Environment": "Nth Sandbox Cluster",
-  "Primary Point of Contact": "ops@example.com",
+  "IaC Tooling used for Provisioning and Management": "aws cdk",
+  "Upstream Methodology Docs": "https://github.com/doitintl/eks-cdk-quickstart",
+  "Maintained By": "Cloud Platform Team",
+  "Points of Contact": "ops@example.com",
+  //  "Environment Type": "Dynamic Sandbox Cluster",
 }
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 const baselineWorkerNodeRole = new blueprints.CreateRoleProvider("eks-blueprint-worker-node-role", new iam.ServicePrincipal("ec2.amazonaws.com"),
@@ -24,31 +27,60 @@ const baselineWorkerNodeRole = new blueprints.CreateRoleProvider("eks-blueprint-
 
 
 
-const baselineClusterProvider = new blueprints.GenericClusterProvider({
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//2023--: EKS required AWS IAM identity rights to be managed via aws-auth configmap
+//2024++: EKS allows AWS IAM identity rights to be managed via IAM & EKS APIs,
+//This is the configuration half of API part of AuthenticationMode.API_AND_CONFIG_MAP
+//
+//https://docs.aws.amazon.com/cdk/api/v2/docs/aws-cdk-lib.aws_eks.AccessPolicy.html
+const clusterAdmin: AccessPolicy = AccessPolicy.fromAccessPolicyName('AmazonEKSClusterAdminPolicy', {
+  accessScopeType: cdk.aws_eks.AccessScopeType.CLUSTER,
+});
+
+class CustomClusterProvider extends blueprints.GenericClusterProvider {
+  constructor(props:blueprints.GenericClusterProviderProps){
+    super(props);
+  }
+  protected internalCreateCluster(scope: Construct, id: string, clusterOptions: any): cdk.aws_eks.Cluster {
+    const cluster = new cdk.aws_eks.Cluster(scope, id, clusterOptions);
+
+    //https://docs.aws.amazon.com/cdk/api/v2/docs/aws-cdk-lib.aws_eks.AccessEntry.html
+    const accessEntry1 = new AccessEntry( scope, 'AccessEntry for IAM user chrism', {
+      accessPolicies: [clusterAdmin],
+      cluster: cluster,
+      principal: 'arn:aws:iam::905418347382:user/chrism',
+      accessEntryName: 'IAM user chrism',
+    });
+
+    return cluster;
+    //Dry Run:
+    //cdk synth | grep "Type: AWS::EKS::AccessEntry" -A 12
+  }
+}
+
+
+//const baselineClusterProvider = new blueprints.GenericClusterProvider({
+const baselineClusterProvider = new CustomClusterProvider({
   tags: baselineEKSTags,
   outputConfigCommand: true,
   authenticationMode: AuthenticationMode.API_AND_CONFIG_MAP,
-  //^-- probably part of the puzzle
-
-
-//  authenticationMode: cdk.AuthenticationMode.CONFIG_MAP,
-
-  //  authenticationMode: AuthenticationMode.CONFIG_MAP,
-
-// managedNodeGroups: [
-  // ],
-  // fargateProfiles: {
-  //   "fp1": {
-  //       fargateProfileName: "fp1",
-  //       selectors:  [{ namespace: "serverless1" }] //karpenter ns
-  //   }
-  // }  
+managedNodeGroups: [
+  ],
+  fargateProfiles: {
+    "fp1": {
+        fargateProfileName: "fp1",
+        selectors:  [{ namespace: "serverless1" }] //karpenter ns
+    }
+  }  
 
 
 
 });
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 const baselineAddOns: Array<blueprints.ClusterAddOn> = [
+  new blueprints.addons.KubeProxyAddOn(),
+  new blueprints.addons.CoreDnsAddOn(),
+//  coreDnsComputeType:  <-- is an option in GenericClusterProvider
   // new blueprints.addons.VpcCniAddOn({
   //   customNetworkingConfig: {
   //       subnets: [
@@ -61,9 +93,7 @@ const baselineAddOns: Array<blueprints.ClusterAddOn> = [
   //   eniConfigLabelDef: 'topology.kubernetes.io/zone',
   //   serviceAccountPolicies: [iam.ManagedPolicy.fromAwsManagedPolicyName("AmazonEKS_CNI_Policy")]
   // }),
-  new blueprints.addons.CoreDnsAddOn(),
-//  coreDnsComputeType:  <-- is an option in GenericClusterProvider
-  new blueprints.addons.KubeProxyAddOn(),
+
   // new blueprints.addons.EbsCsiDriverAddOn({
   //   version: "auto",
   //   kmsKeys: [
@@ -119,41 +149,20 @@ export class EKS_Env_Override_Inputs extends EKS_Generic_Baseline_Inputs {
 }
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 export class EKS_Blueprints_Based_EKS_Cluster {
+
   build(scope: Construct, id: string, props?: EKS_Inputs) {
     
     const account = props?.env?.account!; //<-- ? means if this optional variable exists, then check it's sub variable 
     const region = props?.env?.region!; //<-- ! means TS can trust this variable won't be null
-    
+
     const clusterStack = blueprints.EksBlueprint.builder()
     .clusterProvider(baselineClusterProvider)
-    .version(KubernetesVersion.V1_29)
+    .version(KubernetesVersion.V1_30)
     .account(account)
     .region(region)
-    .addOns(...baselineAddOns)//end addOns
+    .addOns(...baselineAddOns)//end addOns, btw ... is JS array deconsturing assignment, array --> csv list
     .build(scope, id, props);
   }
 }
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-//Tinkering with Simplier authn.
-//https://github.com/aws/aws-cdk/issues/28588
-//https://github.com/aws/aws-cdk/pull/30016
-
-//I'm looking for something called AuthenticationMode which should have 
-//Allowed values: CONFIG_MAP | API_AND_CONFIG_MAP | API
-//@aws-sdk/client-eks to v3.476.0(the minimal version with EKS Cluster Access Management support)
-// npm install aws-cdk@2.133.0
-// npm install @aws-quickstart/eks-blueprints@1.14.1
-
-// npm install aws-cdk@2.147.3
-// npm install @aws-quickstart/eks-blueprints@1.15.1
-// npm install aws-cdk@2.147.3 @aws-quickstart/eks-blueprints@1.15.1
-console.log(cdk.aws_eks.AuthenticationMode );
-// {
-//   CONFIG_MAP: 'CONFIG_MAP',
-//   API_AND_CONFIG_MAP: 'API_AND_CONFIG_MAP',
-//   API: 'API'
-// }
-// cool improved authn feature is available in latest aws-cdk :)
-
-// `flox show nodePackages.aws-cdk` <-- 2.147.3 not yet in nix, but very close (2.146.0 is present) may release in nix pkg's in 1-2 weeks.
