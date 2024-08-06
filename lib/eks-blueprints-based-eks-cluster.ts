@@ -7,8 +7,6 @@ import * as iam from 'aws-cdk-lib/aws-iam';
 import * as kms from 'aws-cdk-lib/aws-kms';
 import * as blueprints from '@aws-quickstart/eks-blueprints'; // blueprints as in blueprint_of_eks_declarative_cf_stack
 
-
-
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 const baselineEKSTags: { [key: string]: string } = {
   "IaC Tooling used for Provisioning and Management": "aws cdk",
@@ -75,7 +73,7 @@ const baselineClusterProvider = new CustomClusterProvider({
     {
       id: "AMD64-mng",
       amiType: eks.NodegroupAmiType.AL2_X86_64,
-      instanceTypes: [new ec2.InstanceType('t3a.large')], //t3a.large = 2cpu, 8gb ram
+      instanceTypes: [new ec2.InstanceType('t3a.small')], //t3a.small = 2cpu, 2gb ram
       nodeGroupCapacityType: eks.CapacityType.SPOT,
 //      diskSize: 20, //20GB is the default
       desiredSize: 0,
@@ -90,7 +88,7 @@ const baselineClusterProvider = new CustomClusterProvider({
     {
       id: "ARM64-mng",
       amiType: eks.NodegroupAmiType.AL2_ARM_64,
-      instanceTypes: [new ec2.InstanceType('t4g.large')], //t4g.large = 2cpu, 8gb ram 
+      instanceTypes: [new ec2.InstanceType('t4g.small')], //t4g.small = 2cpu, 2gb ram 
       nodeGroupCapacityType: eks.CapacityType.SPOT,
 //      diskSize: 20, //20GB is the default
       desiredSize: 1,
@@ -142,7 +140,7 @@ const baselineAddOns: Array<blueprints.ClusterAddOn> = [
   // }),
 ];//end BaselineAddOns
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-export abstract class EKS_Inputs implements cdk.StackProps { //mainly exists for type readability, might get rid of. (TBD)
+export class EKS_Inputs implements cdk.StackProps { //mainly exists for type readability, might get rid of. (TBD)
   env: cdk.Environment;
   stackTags?: { [key: string]: string; }; //? means optional variable
   envName?: string;

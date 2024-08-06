@@ -3,11 +3,12 @@ import console = require('console'); //can help debug feedback loop, allows `con
 import 'source-map-support/register'; //supposedly this makes stacktrace errors easier to read
 import * as cdk from 'aws-cdk-lib';
 import * as blueprints from '@aws-quickstart/eks-blueprints';
-import { EKS_Inputs, EKS_Generic_Baseline_Inputs,
-EKS_Blueprints_Based_EKS_Cluster,
-EKS_Env_Override_Inputs
-  } from '../lib/eks-blueprints-based-eks-cluster';
+// import { EKS_Inputs, EKS_Generic_Baseline_Inputs,
+// EKS_Blueprints_Based_EKS_Cluster,
+// EKS_Env_Override_Inputs
+//   } from '../lib/eks-blueprints-based-eks-cluster';
 //       ^-- Matches name of exported class in referenced file
+import { EKS_Inputs } from '../lib/EKS_Inputs';
 
 ////////////////////////////////////////////////////////////////////////////////////////////
 //BOILERPLATE for how cdk works + notes for understanding
@@ -29,10 +30,14 @@ const app = new cdk.App(); //<-- Root AWS "Construct"
 
 //console.log(BaselineTags);
 
-const DEV_CLUSTER:EKS_Inputs = new EKS_Env_Override_Inputs("dev", "ca-central-1", "123456789");
-new EKS_Blueprints_Based_EKS_Cluster().build(app, 'dev-cluster', DEV_CLUSTER );
+//const DEV_CLUSTER:EKS_Inputs = new EKS_Env_Override_Inputs("dev", "ca-central-1", "123456789");
+//new EKS_Blueprints_Based_EKS_Cluster().build(app, 'dev-cluster', DEV_CLUSTER );
 
 
-//console.log(NTH_DYNAMIC_SANDBOX_CLUSTER);
-//console.log(DEV_CLUSTER);
+console.log("===============================");
+console.log("class:");
+const test: EKS_Inputs = new EKS_Inputs();
+//test.addTag("abc","xyz");
+console.log(test);
+console.log("===============================");
 

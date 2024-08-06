@@ -1,0 +1,11 @@
+tags: #KV pair implemented as arbitrary map values
+  IaC Tooling used for Provisioning and Management: "aws cdk"
+  Upstream Methodology Docs: "https://github.com/doitintl/eks-cdk-quickstart"
+  Maintained By: "Cloud Platform Team"
+  Points of Contact: "ops@example.com"
+
+# tags:
+# - "IaC Tooling used for Provisioning and Management": "aws cdk"
+# - "Upstream Methodology Docs": "https://github.com/doitintl/eks-cdk-quickstart"
+# - "Maintained By": "Cloud Platform Team"
+# - "Points of Contact": "ops@example.com"
