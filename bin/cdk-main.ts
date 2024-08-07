@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import console = require('console'); //can help debug feedback loop, allows `console.log("hi");` to work, when `cdk list` is run.
 import 'source-map-support/register'; //supposedly this makes stacktrace errors easier to read
+
 import * as cdk from 'aws-cdk-lib';
 import * as blueprints from '@aws-quickstart/eks-blueprints';
 // import { EKS_Inputs, EKS_Generic_Baseline_Inputs,
@@ -8,7 +9,10 @@ import * as blueprints from '@aws-quickstart/eks-blueprints';
 // EKS_Env_Override_Inputs
 //   } from '../lib/eks-blueprints-based-eks-cluster';
 //       ^-- Matches name of exported class in referenced file
-import { EKS_Inputs } from '../lib/EKS_Inputs';
+import { Easy_EKS_Config_Data } from '../lib/Easy_EKS_Config_Data';
+import * as global_baseline_config from '../config/apply_global_baseline_config';
+import * as orgs_baseline_config from '../config/apply_orgs_baseline_config';
+import * as dev_config from '../config/apply_dev_config';
 
 ////////////////////////////////////////////////////////////////////////////////////////////
 //BOILERPLATE for how cdk works + notes for understanding
@@ -22,6 +26,11 @@ const app = new cdk.App(); //<-- Root AWS "Construct"
 // Stacks are a collection of 1 or more CDK constructs (including nested stacks) 
 ////////////////////////////////////////////////////////////////////////////////////////////
 
+const dev1cfg: Easy_EKS_Config_Data = new Easy_EKS_Config_Data();
+  global_baseline_config.apply_config(dev1cfg);
+  orgs_baseline_config.apply_config(dev1cfg);
+  dev_config.apply_config(dev1cfg);
+console.log (dev1cfg)
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //Note: ca-central-1 is a Hydro Powered AWS Region (Low CO2 emissions), recommended to use for lower environment clusters
@@ -32,12 +41,4 @@ const app = new cdk.App(); //<-- Root AWS "Construct"
 
 //const DEV_CLUSTER:EKS_Inputs = new EKS_Env_Override_Inputs("dev", "ca-central-1", "123456789");
 //new EKS_Blueprints_Based_EKS_Cluster().build(app, 'dev-cluster', DEV_CLUSTER );
-
-
-console.log("===============================");
-console.log("class:");
-const test: EKS_Inputs = new EKS_Inputs();
-//test.addTag("abc","xyz");
-console.log(test);
-console.log("===============================");
 
