@@ -6,7 +6,14 @@ import * as ec2 from 'aws-cdk-lib/aws-ec2';
 import * as iam from 'aws-cdk-lib/aws-iam';
 import * as kms from 'aws-cdk-lib/aws-kms';
 import * as blueprints from '@aws-quickstart/eks-blueprints'; // blueprints as in blueprint_of_eks_declarative_cf_stack
-
+import { Easy_EKS_Config_Data } from '../lib/Easy_EKS_Config_Data';
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+/* This code does 2 things:
+1. Acts as a bridge (duck tape logic) to convert 
+   from: Easy_EKS_Config_Data (a UX optimized / simplified config format)
+   to: EKS_Blueprints_Config_Objects (In the way that project expects it)
+2. Exposes a method to deploy EKS_Blueprints_Based_Cluster
+*/
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 const baselineEKSTags: { [key: string]: string } = {
   "a": "b",
@@ -137,6 +144,9 @@ const baselineAddOns: Array<blueprints.ClusterAddOn> = [
   // }),
 ];//end BaselineAddOns
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+//
+
 export class EKS_Inputs implements cdk.StackProps { //mainly exists for type readability, might get rid of. (TBD)
   env: cdk.Environment;
   stackTags?: { [key: string]: string; }; //? means optional variable
@@ -161,8 +171,6 @@ export class EKS_Inputs implements cdk.StackProps { //mainly exists for type rea
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 export class EKS_Blueprints_Based_EKS_Cluster {
 
-  cdk.StackProps
-
   build(scope: Construct, stackID: string, props?: EKS_Inputs) {
     
     const account = props?.env?.account!; //<-- ? means if this optional variable exists, then check it's sub variable 
@@ -179,3 +187,8 @@ export class EKS_Blueprints_Based_EKS_Cluster {
 }
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+export function add_to_list_of_deployable_stacks(stateStorage: Construct, stackID: string, config: Easy_EKS_Config_Data){
+//to do, convert easy config to blueprint config.
+
+  //deploy
+}

@@ -11,4 +11,5 @@ export function apply_config(config: Easy_EKS_Config_Data){ //config: is of type
 
 
 //Note: ca-central-1 is a Hydro Powered AWS Region (Low CO2 emissions), recommended to use for lower environment clusters
+// region: process.env.CDK_DEFAULT_REGION!
 

@@ -7,3 +7,7 @@ export function apply_config(config: Easy_EKS_Config_Data){ //config: is of type
   config.addTag("IaC Tooling used for Provisioning and Management", "aws cdk");
   config.addTag("Upstream Methodology Docs", "https://github.com/doitintl/eks-cdk-quickstart");
 }
+
+
+// account: process.env.CDK_DEFAULT_ACCOUNT, //pulls account from CLI env
+

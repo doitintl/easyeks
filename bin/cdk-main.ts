@@ -3,7 +3,7 @@
 ////////////////////////////////////////////////////////////////////////////////////////////
 //Library Imports:
 import console = require('console'); //Helps feedback loop, when manually debugging
-                                     //allows `console.log(dev1cfg);` to work, when `cdk list` is run.
+//     ^-- allows `console.log(dev1cfg);` to work, when `cdk list` is run.
 
 import * as cdk from 'aws-cdk-lib';
 import * as global_baseline_config from '../config/apply_global_baseline_config';
@@ -23,35 +23,48 @@ TS import syntax means:
   item in the referenced file.
 * Items imported this way, can be referenced directly by name.
 */
-
+import * as EKS_Blueprints_Based_Cluster from '../lib/EKS_Blueprints_Based_EKS_Cluster';
 
 ////////////////////////////////////////////////////////////////////////////////////////////
-//BOILERPLATE for how cdk works + notes for understanding
+// IMPORTANT NOTE: For Conceptual Understanding and Comprehension:
 const cdk_construct_storage = new cdk.App(); //<-- Root AWS "Construct"
-// https://docs.aws.amazon.com/cdk/v2/guide/constructs.html
-// cdk.App & cdk.Stack classes from the AWS Construct Library are unique constructs.
-// Unlike mosts constructs they don't configure AWS resources on their own.
-// Their purpose is to act as an interface that provides context for your other constructs. 
-// App is a root construct, and stack constructs can be stored in it.
-// So app is a collection of 1 or more CDK stacks. 
-// Stacks are a collection of 1 or more CDK constructs (including nested stacks) 
-////////////////////////////////////////////////////////////////////////////////////////////
+/* https://docs.aws.amazon.com/cdk/v2/guide/constructs.html
+cdk.App & cdk.Stack classes from the AWS Construct Library are unique constructs.
+Unlike mosts constructs they don't configure AWS resources on their own.
+Their purpose is to act as an interface that provides context for your other constructs. 
+App is a root construct, and stack constructs can be stored in it.
+So app is a collection of 1 or more CDK stacks. 
+Stacks are a collection of 1 or more CDK constructs (including nested stacks) 
 
+^-- That's mostly from the docs, what follows is paraphrased elaboration:
+* cdk_construct_storage of type cdk.App:
+  * Is able to discover a Cloud Formation stack, in a region cdk bootstrap was run against.
+  * Cloud Formation is where the state of CDK managed IaC gets stored/persisted.
+  * So you can think of this as a reference point that allows cdk.Stack objects to learn
+    where to persist their state data and re-discover their persisted state data between
+    runs of the cdk CLI command.
+* Objects of type Easy_EKS_Config_Data (like dev1cfg)
+  * These objects only exists in memory between runs, and exist as a conveinent abstraction
+    layer for preparing a config, and viewing key/simplified config details.
+* EKS_Blueprints_Based_Cluster.add_to_list_of_deployable_stacks(cdk_construct_storage, stackID, config);
+  * About the 3 input parameter:
+    * cdk_construct_storage: is of type cdk.App
+    * stackID: is of type string
+    * stackID get's stored in the cdk_construct_storage to enable persistence of IaC state.
+    * config: is of type Easy_EKS_Config_Data
+  * What the function does:
+    1. Converts Easy EKS Config into a format EKS Blueprints can use.
+    2. Plugs the data into EKS Blueprints builder logic, which stages a deployment.
+       Specifically when you run `cdk list` (in the correct working directory and context)
+       It'll show up as an option of a deployable cluster.
+       `cdk deploy dev1-cluster`
+       (where dev1-cluster is a stackID, can then be used to dry-run a deployment, 
+       and prompt's y to confirm deployment. (A deployment will take about 17 minutes.)
+*///////////////////////////////////////////////////////////////////////////////////////////
 
 const dev1cfg: Easy_EKS_Config_Data = new Easy_EKS_Config_Data();
   global_baseline_config.apply_config(dev1cfg);
   orgs_baseline_config.apply_config(dev1cfg);
   dev_config.apply_config(dev1cfg);
 console.log(dev1cfg);
-
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-const NTH_DYNAMIC_SANDBOX_CLUSTER:EKS_Inputs = new EKS_Generic_Baseline_Inputs(process.env.CDK_DEFAULT_REGION!); //! tells TS the var won't be undefined
-new EKS_Blueprints_Based_EKS_Cluster().build(app, 'test-cluster', NTH_DYNAMIC_SANDBOX_CLUSTER );
-
-const DEV_CLUSTER:EKS_Inputs = new EKS_Env_Override_Inputs("dev", "ca-central-1", "123456789");
-new EKS_Blueprints_Based_EKS_Cluster().build(app, 'dev-cluster', DEV_CLUSTER );
-
-
-//^-- refactor this next
-
+EKS_Blueprints_Based_Cluster.add_to_list_of_deployable_stacks(cdk_construct_storage, 'dev1-cluster', dev1cfg);
