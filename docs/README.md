@@ -119,6 +119,12 @@
     * Like how helm users can use it w/o understanding that complexity  
       user's shouldn't need to know or understand specialised JS/TS knowledge to use this.
 * Be beginner friendly:
+  * Detailed Code Comments:
+    * Excessive Code Comments are bad when code is intended to be used by experienced developers.
+    * This is a different scenario of end users who may have little to no prior experience with
+      JS/TS, and already have a ton of work to do a things to learn.
+    * Solutions that only create more work or trade N problem(s) in exchange for P solution(s) should
+      be questioned. This decision minimizes problems created (in the form of training/skill level).
   * Avoid Fancy programming in favor of KIS(keep it simple), intuitive, readable, and code that
     someone with little to no prior knowledge would find easy to read and understand, by the curious.
   * Abstract away complexity

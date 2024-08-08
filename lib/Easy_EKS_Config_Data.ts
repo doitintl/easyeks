@@ -9,6 +9,7 @@ export class Easy_EKS_Config_Data { //This object just holds config data.
   //Config_Vars: Data_Types
   //(var?: is TS syntax to ignore initial null value)
   tags?: { [key: string]: string };
+  region?: {};
 
   //Config Snippet Population Methods
   addTag( key: string, value: string ){

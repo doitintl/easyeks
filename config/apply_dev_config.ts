@@ -5,3 +5,6 @@ import { Easy_EKS_Config_Data } from '../lib/Easy_EKS_Config_Data';
 export function apply_config(config: Easy_EKS_Config_Data){ //config: is of type Easy_EKS_Config_Data
   config.addTag("Environment", "Dev");
 }
+
+//Note: ca-central-1 is a Hydro Powered AWS Region (Low CO2 emissions), recommended to use for lower environment clusters
+

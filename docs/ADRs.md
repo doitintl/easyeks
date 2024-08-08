@@ -126,4 +126,8 @@ baseline.ts    <-- for both config types
 ### 4. Docker's UX pros
 
 ### 5. EKS BluePrints based on CDK's UX pros
-
+* Their examples make it so you build an object all in 1 go, but I saw it was possible to use a
+  pattern of splitting the logic into 2 phases.
+  1. construct config
+  2. use config to create object
+* I went with the above approach as it allowed me to do phased config construction / layered config.

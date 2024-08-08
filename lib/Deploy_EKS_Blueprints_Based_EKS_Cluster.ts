@@ -9,11 +9,8 @@ import * as blueprints from '@aws-quickstart/eks-blueprints'; // blueprints as i
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 const baselineEKSTags: { [key: string]: string } = {
-  "IaC Tooling used for Provisioning and Management": "aws cdk",
-  "Upstream Methodology Docs": "https://github.com/doitintl/eks-cdk-quickstart",
-  "Maintained By": "Cloud Platform Team",
-  "Points of Contact": "ops@example.com",
-  //  "Environment Type": "Dynamic Sandbox Cluster",
+  "a": "b",
+  "abc": "xyz",
 }
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 const baselineWorkerNodeRole = new blueprints.CreateRoleProvider("eks-blueprint-worker-node-role", new iam.ServicePrincipal("ec2.amazonaws.com"),
@@ -160,22 +157,13 @@ export class EKS_Inputs implements cdk.StackProps { //mainly exists for type rea
     this.eksAddOns = baselineAddOns;
   }
 } 
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-export class EKS_Generic_Baseline_Inputs extends EKS_Inputs { //Props as in Properties, so Input Properties
-  constructor(region: string){
-    super("Nth-sandbox-cluster", region, "this will be dynamiclly generated");
-  }
-}
 
-export class EKS_Env_Override_Inputs extends EKS_Generic_Baseline_Inputs {
-  constructor(envName: string, region: string, vpcID: string) {
-    super(region);
-  }
-}
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 export class EKS_Blueprints_Based_EKS_Cluster {
 
-  build(scope: Construct, id: string, props?: EKS_Inputs) {
+  cdk.StackProps
+
+  build(scope: Construct, stackID: string, props?: EKS_Inputs) {
     
     const account = props?.env?.account!; //<-- ? means if this optional variable exists, then check it's sub variable 
     const region = props?.env?.region!; //<-- ! means TS can trust this variable won't be null
@@ -185,8 +173,8 @@ export class EKS_Blueprints_Based_EKS_Cluster {
     .version(eks.KubernetesVersion.V1_30)
     .account(account)
     .region(region)
-    .addOns(...baselineAddOns)//end addOns, btw ... is JS array deconsturing assignment, array --> csv list
-    .build(scope, id, props);
+    .addOns(...baselineAddOns)//Note: ... is JS array deconsturing assignment, array --> csv list
+    .build(scope, stackID, props);
   }
 }
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
