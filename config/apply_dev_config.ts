@@ -7,4 +7,5 @@ export function apply_config(config: Easy_EKS_Config_Data){ //config: is of type
 }
 
 //Note: ca-central-1 is a Hydro Powered AWS Region (Low CO2 emissions), recommended to use for lower environment clusters
-
+//Note: I should give a pre-existing subnet/VPC scenario some left shifted test automation, / automated validation
+//      in the form of verifying subnet tag pre-req requirements exist as expected.

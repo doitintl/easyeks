@@ -57,8 +57,8 @@ Stacks are a collection of 1 or more CDK constructs (including nested stacks)
     2. Plugs the data into EKS Blueprints builder logic, which stages a deployment.
        Specifically when you run `cdk list` (in the correct working directory and context)
        It'll show up as an option of a deployable cluster.
-       `cdk deploy dev1-cluster`
-       (where dev1-cluster is a stackID, can then be used to dry-run a deployment, 
+       `cdk deploy dev1-eks`
+       (where dev1-eks is a stackID, can then be used to dry-run a deployment, 
        and prompt's y to confirm deployment. (A deployment will take about 17 minutes.)
 *///////////////////////////////////////////////////////////////////////////////////////////
 
@@ -66,5 +66,5 @@ const dev1cfg: Easy_EKS_Config_Data = new Easy_EKS_Config_Data();
   global_baseline_config.apply_config(dev1cfg);
   orgs_baseline_config.apply_config(dev1cfg);
   dev_config.apply_config(dev1cfg);
-console.log(dev1cfg);
-EKS_Blueprints_Based_Cluster.add_to_list_of_deployable_stacks(cdk_construct_storage, 'dev1-cluster', dev1cfg);
+//console.log(dev1cfg);
+EKS_Blueprints_Based_Cluster.add_to_list_of_deployable_stacks(cdk_construct_storage, 'dev1-eks', dev1cfg);
