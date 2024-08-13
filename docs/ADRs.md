@@ -1,10 +1,11 @@
 # ADRs: Architectural Decision Records
 * Design Decisions made and rational behind why design decisions were made.  
-* Similar to RFCs: Request for Comments
+  So somewhat similar to RFCs (Request for Comments) or design docs.
+* These ADRs will be presented in a FAQ (Frequently Asked Questions) style format.
 
 ---------------------------------------------------------------------------------------------------------
 
-## Why CDK over TF?
+## Q1: Why CDK over TF?
 **EKS BluePrints based on AWS CDK, is nice, but has simultaneous pros and cons:**
 * **Pros: AKA Why CDK is better than TF**  
   (aws-quickstart/cdk-eks-blueprints > "aws-ia/terraform-aws-eks-blueprints")  
@@ -93,8 +94,30 @@ baseline.ts    <-- for both config types
   (that's basically the blueprints programming design pattern for constructing these objects / populating config)
   (I'll just wrap it to simplify it / abstract away complexity.)
 
+---------------------------------------------------------------------------------------------------------
 
-
+## Qn: What testing strategies are used?
+(not yet implemented, just intended)
+1. Only a minimium degree of typescript input validation will be used in places where it make sense.  
+   * Why: TS validation working 100% of the time, can lead to some annoying edge cases in terms of UX.
+2. The majority of left shifted configuration testing/input validation will be a manually invoked
+   function call to trigger custom testing logic.  
+   There's a few benefits to this approach:  
+   * Users can define 2 clusters that exist in 2 different AWS accounts in the IaC, and not get constant
+     false positive test failures about lack of existance or access.
+   * IaC also involves CaC (config as code), and config isn't something you always want to test
+     immediately. Sometime you want to stage config for something that will exist soon. Or there's an
+     order of operations and external dependencies. It's nice to be able to stage config error free
+     in the scenario where you know it wont work today, but should work tomorrow, and this can avoid
+     some annoying constant error message scenarios.
+   * From a practical standpoint you'd only be interested in testing what you're about to deploy.
+     so there's no major downsides to the approach, and it has the upside of slightly faster feedback,
+     by ensuring tests only run on demand on an as needed basis, and can be temporarily turned off.
+   * Cleanly decoupled, opt-in test valdiation means, temporarily breaking the test logic won't block
+     deployments. I can imagine an end user forking this project, and maybe adding some custom test
+     logic, they can tinker with it without fear that temporarily breaking the test logic will break
+     their ability to deploy. (worst case it'll just break leftshifted feedback.)
+3. Post deployment test logic could be added, and with an option to select a subset of relevant tests.
 
 ---------------------------------------------------------------------------------------------------------
 

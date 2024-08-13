@@ -127,6 +127,8 @@
       be questioned. This decision minimizes problems created (in the form of training/skill level).
   * Avoid Fancy programming in favor of KIS(keep it simple), intuitive, readable, and code that
     someone with little to no prior knowledge would find easy to read and understand, by the curious.
+    There are times I know a fancy TypeScript way of shorterning the code, and purposefully don't do
+    it, as I think a longer or alternative way would be easier for a beginner to read.
   * Abstract away complexity
 
 ## Stretch Goals (potential future considerations)

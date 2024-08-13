@@ -66,5 +66,7 @@ const dev1cfg: Easy_EKS_Config_Data = new Easy_EKS_Config_Data();
   global_baseline_config.apply_config(dev1cfg);
   orgs_baseline_config.apply_config(dev1cfg);
   dev_config.apply_config(dev1cfg);
-//console.log(dev1cfg);
+  //^-- Note some of the apply_config, uses methods to set a value, which is overrideable
+  //    so the order of application can matter. (best to follow a pattern of general to specific)
+  console.log(dev1cfg);
 EKS_Blueprints_Based_Cluster.add_to_list_of_deployable_stacks(cdk_construct_storage, 'dev1-eks', dev1cfg);
