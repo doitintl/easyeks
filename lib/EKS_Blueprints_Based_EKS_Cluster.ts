@@ -19,8 +19,7 @@ export function add_to_list_of_deployable_stacks(stateStorage: Construct, stackI
   .account(config.account)
   .region(config.region)
   .version(config.kubernetesVersion)
-//  .addOns(...x!)
-//  .addOns(baselineAddOns)
+  .addOns(...baselineAddOns)
 //  .addOns(...(config.clusterAddOns))//Note: ... is JS array deconsturing assignment, that converts an array to a CSV list
   .build(stateStorage, stackID)
 }
@@ -86,41 +85,42 @@ function generate_cluster_blueprint(config: Easy_EKS_Config_Data){
 
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//TO DO refactor from here down into config file.
 const baselineAddOns: Array<blueprints.ClusterAddOn> = [
   new blueprints.addons.KubeProxyAddOn(),
-  new blueprints.addons.CoreDnsAddOn(),
-  new blueprints.addons.EbsCsiDriverAddOn({
-    version: "auto",
-    kmsKeys: [
-      blueprints.getResource(
-        (context) =>
-          new kms.Key(context.scope, "ebs-csi-driver-key", {
-            alias: "ebs-csi-driver-key",
-          })
-      ),
-    ],
-    storageClass: "gp3",
-  }),
-//   coreDnsComputeType:  <-- is an option in GenericClusterProvider
-  new blueprints.addons.VpcCniAddOn({
-    customNetworkingConfig: {
-        subnets: [
-            blueprints.getNamedResource("secondary-cidr-subnet-0"),
-            blueprints.getNamedResource("secondary-cidr-subnet-1"),
-            blueprints.getNamedResource("secondary-cidr-subnet-2"),
-        ]
-    },
-    awsVpcK8sCniCustomNetworkCfg: true,
-    eniConfigLabelDef: 'topology.kubernetes.io/zone',
-    serviceAccountPolicies: [iam.ManagedPolicy.fromAwsManagedPolicyName("AmazonEKS_CNI_Policy")]
-  }),
-  new blueprints.addons.AwsLoadBalancerControllerAddOn(),
-  new blueprints.addons.KarpenterAddOn({
-    version: "v0.37.0",
-    // nodePoolSpec: nodePoolSpec,
-    // ec2NodeClassSpec: nodeClassSpec,
-    interruptionHandling: true,
-  }),
+   new blueprints.addons.CoreDnsAddOn(),
+//   new blueprints.addons.EbsCsiDriverAddOn({
+//     version: "auto",
+//     kmsKeys: [
+//       blueprints.getResource(
+//         (context) =>
+//           new kms.Key(context.scope, "ebs-csi-driver-key", {
+//             alias: "ebs-csi-driver-key",
+//           })
+//       ),
+//     ],
+//     storageClass: "gp3",
+//   }),
+// //   coreDnsComputeType:  <-- is an option in GenericClusterProvider
+//   new blueprints.addons.VpcCniAddOn({
+//     customNetworkingConfig: {
+//         subnets: [
+//             blueprints.getNamedResource("secondary-cidr-subnet-0"),
+//             blueprints.getNamedResource("secondary-cidr-subnet-1"),
+//             blueprints.getNamedResource("secondary-cidr-subnet-2"),
+//         ]
+//     },
+//     awsVpcK8sCniCustomNetworkCfg: true,
+//     eniConfigLabelDef: 'topology.kubernetes.io/zone',
+//     serviceAccountPolicies: [iam.ManagedPolicy.fromAwsManagedPolicyName("AmazonEKS_CNI_Policy")]
+//   }),
+//   new blueprints.addons.AwsLoadBalancerControllerAddOn(),
+//   new blueprints.addons.KarpenterAddOn({
+//     version: "v0.37.0",
+//     // nodePoolSpec: nodePoolSpec,
+//     // ec2NodeClassSpec: nodeClassSpec,
+//     interruptionHandling: true,
+//   }),
 ];//end BaselineAddOns
 
 
