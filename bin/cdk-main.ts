@@ -5,7 +5,7 @@
 import console = require('console'); //Helps feedback loop, when manually debugging
 //     ^-- allows `console.log(dev1cfg);` to work, when `cdk list` is run.
 import { userLog } from '@aws-quickstart/eks-blueprints/dist/utils';
-userLog.settings.minLevel = 3; //Hide's eks blueprint's debug logs, 3 = info, 2 = debug
+userLog.settings.minLevel = 3; //<-- Hide's eks blueprint's debug logs, 3 = info, 2 = debug
 
 
 import * as cdk from 'aws-cdk-lib';
