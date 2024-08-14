@@ -11,17 +11,15 @@ import { Easy_EKS_Config_Data } from './Easy_EKS_Config_Data';
 import { partialEKSAccessEntry, GenericClusterProviderWithAccessEntrySupport } from './Modified_Cluster_Provider';
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 export function add_to_list_of_deployable_stacks(stateStorage: Construct, stackID: string, config: Easy_EKS_Config_Data){
-
-  let x = config.clusterAddOns;
-
-  const clusterStack = blueprints.EksBlueprint.builder()
-  .clusterProvider(generate_cluster_blueprint(config))
-  .account(config.account)
-  .region(config.region)
-  .version(config.kubernetesVersion)
-  .addOns(...baselineAddOns)
-//  .addOns(...(config.clusterAddOns))//Note: ... is JS array deconsturing assignment, that converts an array to a CSV list
-  .build(stateStorage, stackID)
+  const clusterStack = blueprints.EksBlueprint.builder();
+  clusterStack.clusterProvider(generate_cluster_blueprint(config));
+  clusterStack.account(config.account);
+  clusterStack.region(config.region);
+  clusterStack.version(config.kubernetesVersion);
+  if(config.clusterAddOns){ //<--JS truthy statement saying if not null
+    clusterStack.addOns(...config.clusterAddOns);//... is JS array deconsturing operator which converts an array to a CSV list
+  }
+  clusterStack.build(stateStorage, stackID);
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -75,54 +73,4 @@ function generate_cluster_blueprint(config: Easy_EKS_Config_Data){
 
   return cluster_blueprint;
 }
-
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-
-
-
-
-
-
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//TO DO refactor from here down into config file.
-const baselineAddOns: Array<blueprints.ClusterAddOn> = [
-  new blueprints.addons.KubeProxyAddOn(),
-   new blueprints.addons.CoreDnsAddOn(),
-//   new blueprints.addons.EbsCsiDriverAddOn({
-//     version: "auto",
-//     kmsKeys: [
-//       blueprints.getResource(
-//         (context) =>
-//           new kms.Key(context.scope, "ebs-csi-driver-key", {
-//             alias: "ebs-csi-driver-key",
-//           })
-//       ),
-//     ],
-//     storageClass: "gp3",
-//   }),
-// //   coreDnsComputeType:  <-- is an option in GenericClusterProvider
-//   new blueprints.addons.VpcCniAddOn({
-//     customNetworkingConfig: {
-//         subnets: [
-//             blueprints.getNamedResource("secondary-cidr-subnet-0"),
-//             blueprints.getNamedResource("secondary-cidr-subnet-1"),
-//             blueprints.getNamedResource("secondary-cidr-subnet-2"),
-//         ]
-//     },
-//     awsVpcK8sCniCustomNetworkCfg: true,
-//     eniConfigLabelDef: 'topology.kubernetes.io/zone',
-//     serviceAccountPolicies: [iam.ManagedPolicy.fromAwsManagedPolicyName("AmazonEKS_CNI_Policy")]
-//   }),
-//   new blueprints.addons.AwsLoadBalancerControllerAddOn(),
-//   new blueprints.addons.KarpenterAddOn({
-//     version: "v0.37.0",
-//     // nodePoolSpec: nodePoolSpec,
-//     // ec2NodeClassSpec: nodeClassSpec,
-//     interruptionHandling: true,
-//   }),
-];//end BaselineAddOns
-
-
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
