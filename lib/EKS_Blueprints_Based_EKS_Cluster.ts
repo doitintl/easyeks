@@ -10,7 +10,7 @@ import * as blueprints from '@aws-quickstart/eks-blueprints';
 import { Easy_EKS_Config_Data } from './Easy_EKS_Config_Data';
 import { partialEKSAccessEntry, GenericClusterProviderWithAccessEntrySupport } from './Modified_Cluster_Provider';
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-export function add_to_list_of_deployable_stacks(stateStorage: Construct, stackID: string, config: Easy_EKS_Config_Data){
+export function add_to_list_of_deployable_stacks(stateStorage: Construct, config: Easy_EKS_Config_Data){
   const clusterStack = blueprints.EksBlueprint.builder();
   clusterStack.clusterProvider(generate_cluster_blueprint(config));
   clusterStack.account(config.account);
@@ -19,7 +19,7 @@ export function add_to_list_of_deployable_stacks(stateStorage: Construct, stackI
   if(config.clusterAddOns){ //<--JS truthy statement saying if not null
     clusterStack.addOns(...config.clusterAddOns);//... is JS array deconsturing operator which converts an array to a CSV list
   }
-  clusterStack.build(stateStorage, stackID);
+  clusterStack.build(stateStorage, config.stackId);
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -49,11 +49,11 @@ function generate_cluster_blueprint(config: Easy_EKS_Config_Data){
       {
         id: "ARM64-mng",
         amiType: eks.NodegroupAmiType.AL2_ARM_64,
-        instanceTypes: [new ec2.InstanceType('t4g.small')], //t4g.small = 2cpu, 2gb ram 
+        instanceTypes: [new ec2.InstanceType('t4g.small')], //t4g.small = 2cpu, 2gb ram, 11pod max
         nodeGroupCapacityType: eks.CapacityType.SPOT,
-        desiredSize: 1,
-        minSize: 1,
-        maxSize: 10,
+        desiredSize: 2,
+        minSize: 2,
+        maxSize: 50,
   //      diskSize: 20, //20GB is the default
   //      nodeRole: baselineWorkerNodeRole,
   //    remoteAccess: https://aws-quickstart.github.io/cdk-eks-blueprints/api/interfaces/clusters.ManagedNodeGroup.html#remoteAccess

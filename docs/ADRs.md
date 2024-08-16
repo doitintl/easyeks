@@ -44,7 +44,9 @@
       * Likely on specific pinned versions (plural) that are known to work with EKS Blueprints.
       * Need to figure out how to keep team members using consistent versions
     * CDK offers a GitOps Deployment solution as an answer to the problems introduced by adoption cdk
-      * cdk makes it (relatively easy) to bootstrap an AWS Code Commit and Code Pipeline based GitOps solution.
+      * cdk makes it (relatively easy) to bootstrap an AWS Code Commit and Code Pipeline based GitOps
+        solution.
+      * cdk can be finicky about changes, so it's useful to have optimial feedback loop
       * Their solution only trades problems. Solves 1 in exchange for others.  
         A non-starter for me is GitOps hurts observability and feedback loop.
 
@@ -118,6 +120,33 @@ baseline.ts    <-- for both config types
      logic, they can tinker with it without fear that temporarily breaking the test logic will break
      their ability to deploy. (worst case it'll just break leftshifted feedback.)
 3. Post deployment test logic could be added, and with an option to select a subset of relevant tests.
+
+---------------------------------------------------------------------------------------------------------
+
+## Qn: Why is the universal baseline 3x ARM based t4g.micro spot nodes?
+* TO DO: Thought not yet finished, add karpenter.sh, & aws lb controller 1st
+* Short answer is Pragmatic FinOps.
+  * User facing workloads would be scheduled on karpenter.sh managed nodes  
+    which could be configured as spot or on-demand, per the business's preferences.
+  * Things in kube-system are made resilient to not mind running on spot-nodes.
+  * coredns has sufficient HA/FT, even when backed by spot, if it's 3 replicas are spread across 3 AZs.
+  * spot capacity is different per AZ, so it's statistically unlikely that all 3 AZ's would go down
+    at the same time.
+* All prices listed are based on ca-central-1 pricing. (North America's Hydro powered region.)
+* ARM64(ARM) is cheaper than Intel/AMD's_x86_64(AMD)
+  * t3a(AMD).micro-on-demand = $0.0104/hr
+  * t4g(ARM).micro-on-demand = $0.0094/hr
+* 3 spot nodes cost less than 1 on-demand node
+  * t4g.micro-on-demand = $0.0094/hr
+  * t4g.micro-spot      ~ $0.0028/hr
+* EKS fargate is relatively expensive:
+  * EKS has partial support for fargate nodes:
+    * EKS currently only supports x86_64 Fargate (while ECS also supports cheaper ARM based Fargate)
+    * EKS currently only supports on-demand Fargate (while ECS also supports cheaper Fargate spot)
+  * Using ca-central-1 pricing:  
+    * 2 coredns pods requesting 100m cpu & 70Mi memory, would land on the smallest possible fargate size
+      (0.25 vCPU & 0.5GB ram)
+    * 
 
 ---------------------------------------------------------------------------------------------------------
 

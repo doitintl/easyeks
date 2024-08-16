@@ -20,26 +20,42 @@ export function apply_config(config: Easy_EKS_Config_Data){ //config: is of type
           ],
           storageClass: "gp3"
         })
+  ); 
+  config.addAddOn( //https://github.com/aws-quickstart/cdk-eks-blueprints/blob/blueprints-1.15.1/lib/addons/karpenter/index.ts
+        new blueprints.addons.KarpenterAddOn({
+          version: "0.37.0", //replace with 1.0.0 in future
+          ec2NodeClassSpec: {
+            amiFamily: "Bottlerocket",
+            subnetSelectorTerms: [{ tags: { "Name": `${config.stackId}/${config.stackId}-vpc/PrivateSubnet*` } }],
+            securityGroupSelectorTerms: [{ tags: { "aws:eks:cluster-name": `${config.stackId}` } }],
+            detailedMonitoring: false,
+            tags: config.tags,
+          },
+          nodePoolSpec: {
+            requirements: [
+                { key: 'node.kubernetes.io/instance-type', operator: 'In', values: ['t3a.medium'] },
+                { key: 'topology.kubernetes.io/zone', operator: 'In', values: [`${config.region}a`, `${config.region}b`, `${config.region}c`] },
+                { key: 'kubernetes.io/arch', operator: 'In', values: ['amd64','arm64']},
+                { key: 'karpenter.sh/capacity-type', operator: 'In', values: ['on-demand']}, // spot is also supported for cost savings, please see #2 above
+            ],
+            disruption: {
+                consolidationPolicy: "WhenEmpty",
+                consolidateAfter: "30s",
+                expireAfter: "20m",
+                budgets: [{nodes: "10%"}] // budgets are supported in versions 0.34+
+            }
+          },
+          interruptionHandling: true,
+          podIdentity: true,
+        })
   );
 
-//   new blueprints.addons.EbsCsiDriverAddOn({
-//     version: "auto",
-//     kmsKeys: [
-//       blueprints.getResource(
-//         (context) =>
-//           new kms.Key(context.scope, "ebs-csi-driver-key", {
-//             alias: "ebs-csi-driver-key",
-//           })
-//       ),
-//     ],
-//     storageClass: "gp3",
-//   }),
-//   new blueprints.addons.AwsLoadBalancerControllerAddOn(),
-//   new blueprints.addons.KarpenterAddOn({
-//     version: "v0.37.0",
-//     // nodePoolSpec: nodePoolSpec,
-//     // ec2NodeClassSpec: nodeClassSpec,
-//     interruptionHandling: true,
-//   }),
 
+
+
+
+//   new blueprints.addons.AwsLoadBalancerControllerAddOn(),
+//   new blueprints.addons.FluxCDAddOn()
+// new blueprints.addons.ExternalsSecretsAddOn(),
+// new blueprints.addons.SecretsStoreAddOn(),
 }

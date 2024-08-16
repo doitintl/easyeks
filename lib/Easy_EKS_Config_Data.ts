@@ -5,15 +5,17 @@ export class Easy_EKS_Config_Data { //This object just holds config data.
   //Typescript(TS) readability notes
   //Config_Var: Data_Type
   //(var?: is TS syntax to ignore initial null value)
-  account?: string;
-  region?: string;
+  stackId: string;
+  account: string;
+  region: string;
   kubernetesVersion: KubernetesVersion;
   tags?: { [key: string]: string };
   clusterAdminARNs?: string[];
   clusterAddOns?: Array<blueprints.ClusterAddOn>;
 
-  constructor(){ /*
-  Constructor with no args is on purpose for desired UX
+  constructor(stackId: string){
+  this.stackId = stackId; /*
+  Constructor with minimal args is on purpose for desired UX
   The idea is to add partial configuration snippets over time/as multiple operations
   rather than populate a complete config all at once in one go.*/
   //this.clusterAddOns = [ new blueprints.addons.KubeProxyAddOn() ];

@@ -27,6 +27,9 @@ TS import syntax means:
 * Items imported this way, can be referenced directly by name.
 */
 import * as EKS_Blueprints_Based_Cluster from '../lib/EKS_Blueprints_Based_EKS_Cluster';
+////////////////////////////////////////////////////////////////////////////////////////////
+
+
 
 ////////////////////////////////////////////////////////////////////////////////////////////
 // IMPORTANT NOTE: For Conceptual Understanding and Comprehension:
@@ -49,12 +52,13 @@ Stacks are a collection of 1 or more CDK constructs (including nested stacks)
 * Objects of type Easy_EKS_Config_Data (like dev1cfg)
   * These objects only exists in memory between runs, and exist as a conveinent abstraction
     layer for preparing a config, and viewing key/simplified config details.
-* EKS_Blueprints_Based_Cluster.add_to_list_of_deployable_stacks(cdk_construct_storage, stackID, config);
-  * About the 3 input parameter:
-    * cdk_construct_storage: is of type cdk.App
-    * stackID: is of type string
+  * About the 1 input parameter:
+    * stackID: dev1-eks, is of type string
     * stackID get's stored in the cdk_construct_storage to enable persistence of IaC state.
-    * config: is of type Easy_EKS_Config_Data
+* EKS_Blueprints_Based_Cluster.add_to_list_of_deployable_stacks(cdk_construct_storage, config);
+  * About the 2 input parameters:
+    * cdk_construct_storage: is of type cdk.App
+    * dev1cfg: is of type Easy_EKS_Config_Data
   * What the function does:
     1. Converts Easy EKS Config into a format EKS Blueprints can use.
     2. Plugs the data into EKS Blueprints builder logic, which stages a deployment.
@@ -65,7 +69,8 @@ Stacks are a collection of 1 or more CDK constructs (including nested stacks)
        and prompt's y to confirm deployment. (A deployment will take about 17 minutes.)
 *///////////////////////////////////////////////////////////////////////////////////////////
 
-const dev1cfg: Easy_EKS_Config_Data = new Easy_EKS_Config_Data();
+
+const dev1cfg: Easy_EKS_Config_Data = new Easy_EKS_Config_Data('dev1-eks');
   global_baseline_config.apply_config(dev1cfg);
   orgs_baseline_config.apply_config(dev1cfg);
   dev_config.apply_config(dev1cfg);
@@ -73,4 +78,5 @@ const dev1cfg: Easy_EKS_Config_Data = new Easy_EKS_Config_Data();
   //    so the order of application can matter. 
   //    So it's best to follow a pattern of global --> org --> env when applying config.
   console.log('dev1cfg:\n', dev1cfg); //<-- \n is newline
-EKS_Blueprints_Based_Cluster.add_to_list_of_deployable_stacks(cdk_construct_storage, 'dev1-eks', dev1cfg);
+EKS_Blueprints_Based_Cluster.add_to_list_of_deployable_stacks(cdk_construct_storage, dev1cfg);
+
