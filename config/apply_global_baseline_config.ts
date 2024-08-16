@@ -12,10 +12,61 @@ export function apply_config(config: Easy_EKS_Config_Data){ //config: is of type
   config.setRegion( process.env.CDK_DEFAULT_REGION! ); //<-- ! after var, tells TS it won't be null.
   //^--If you follow suggested order of application, org and environment config applies can override this default.
   config.addAddOn( new blueprints.addons.KubeProxyAddOn() );
-  config.addAddOn( new blueprints.addons.CoreDnsAddOn() );
   config.addAddOn( new blueprints.addons.VpcCniAddOn({
     serviceAccountPolicies: [iam.ManagedPolicy.fromAwsManagedPolicyName("AmazonEKS_CNI_Policy")]
-  }) );
+  }));
   config.addAddOn( new blueprints.addons.EksPodIdentityAgentAddOn() );
   config.addAddOn( new blueprints.addons.AwsLoadBalancerControllerAddOn() );
-}
+  //v-- optimized coredns based on
+  //    https://aws.amazon.com/blogs/containers/amazon-eks-add-ons-advanced-configuration/
+  //    aws eks describe-addon-configuration --addon-name coredns --addon-version v1.11.1-eksbuild.8 --query configurationSchema --output text | jq .
+  config.addAddOn( new blueprints.addons.CoreDnsAddOn( "auto", { //<-- auto is verison
+    configurationValues: {
+            "affinity": {
+              "nodeAffinity": {
+                "requiredDuringSchedulingIgnoredDuringExecution": {
+                  "nodeSelectorTerms": [
+                    {
+                      "matchExpressions": [
+                        {
+                          "key": "kubernetes.io/os",
+                          "operator": "In",
+                          "values": [
+                            "linux"
+                          ]
+                        },
+                        {
+                          "key": "kubernetes.io/arch",
+                          "operator": "In",
+                          "values": [
+                            "amd64",
+                            "arm64"
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              },
+              "podAntiAffinity": {
+                "requiredDuringSchedulingIgnoredDuringExecution": [
+                  {
+                    "labelSelector": {
+                      "matchExpressions": [
+                        {
+                          "key": "k8s-app",
+                          "operator": "In",
+                          "values": [
+                            "kube-dns"
+                          ]
+                        }
+                      ]
+                    },
+                    "topologyKey": "kubernetes.io/hostname"
+                  }
+                ]
+              }
+            }
+    }//end CoreDNS configurationValues override
+  }));//end CoreDNS AddOn
+}//end function
