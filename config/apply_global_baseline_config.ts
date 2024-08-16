@@ -3,7 +3,7 @@ import * as blueprints from '@aws-quickstart/eks-blueprints'
 import * as iam from 'aws-cdk-lib/aws-iam';
 //Intended Use: 
 //A baseline config file (to be applied to all EasyEKS Clusters)
-//That 98% of global users will feel comfortable using with 0 changes, but can change.
+//That 95% of global users will feel comfortable using with 0 changes, but can change.
 
 export function apply_config(config: Easy_EKS_Config_Data){ //config: is of type Easy_EKS_Config_Data
   config.addTag("IaC Tooling used for Provisioning and Management", "aws cdk");
@@ -17,4 +17,5 @@ export function apply_config(config: Easy_EKS_Config_Data){ //config: is of type
     serviceAccountPolicies: [iam.ManagedPolicy.fromAwsManagedPolicyName("AmazonEKS_CNI_Policy")]
   }) );
   config.addAddOn( new blueprints.addons.EksPodIdentityAgentAddOn() );
+  config.addAddOn( new blueprints.addons.AwsLoadBalancerControllerAddOn() );
 }

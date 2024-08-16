@@ -12,6 +12,7 @@ export function apply_config(config: Easy_EKS_Config_Data){ //config: is of type
   //^-- NOTE: hashtag(#)  comma(,)   singlequote(')  and more are not valid tag values
   //    https://docs.aws.amazon.com/directoryservice/latest/devguide/API_Tag.html
   config.setKubernetesVersion(KubernetesVersion.V1_30); //<--This library might not support latest
+  config.addAddOn( new blueprints.addons.MetricsServerAddOn() ); //allows kubectl top to work
   config.addAddOn(
         new blueprints.addons.EbsCsiDriverAddOn({
           version: "auto",
@@ -33,16 +34,15 @@ export function apply_config(config: Easy_EKS_Config_Data){ //config: is of type
           },
           nodePoolSpec: {
             requirements: [
-                { key: 'node.kubernetes.io/instance-type', operator: 'In', values: ['t3a.medium'] },
                 { key: 'topology.kubernetes.io/zone', operator: 'In', values: [`${config.region}a`, `${config.region}b`, `${config.region}c`] },
                 { key: 'kubernetes.io/arch', operator: 'In', values: ['amd64','arm64']},
-                { key: 'karpenter.sh/capacity-type', operator: 'In', values: ['on-demand']}, // spot is also supported for cost savings, please see #2 above
+                { key: 'karpenter.sh/capacity-type', operator: 'In', values: ['on-demand']},
             ],
             disruption: {
-                consolidationPolicy: "WhenEmpty",
+                consolidationPolicy: "WhenEmpty", //WhenUnderutilized is more agressive cost savings
                 consolidateAfter: "30s",
                 expireAfter: "20m",
-                budgets: [{nodes: "10%"}] // budgets are supported in versions 0.34+
+                budgets: [{nodes: "10%"}] 
             }
           },
           interruptionHandling: true,
