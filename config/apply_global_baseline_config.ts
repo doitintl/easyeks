@@ -17,7 +17,11 @@ export function apply_config(config: Easy_EKS_Config_Data){ //config: is of type
     serviceAccountPolicies: [iam.ManagedPolicy.fromAwsManagedPolicyName("AmazonEKS_CNI_Policy")]
   }));
   config.addAddOn( new blueprints.addons.EksPodIdentityAgentAddOn() );
-  config.addAddOn( new blueprints.addons.AwsLoadBalancerControllerAddOn() );
+  config.addAddOn( new blueprints.addons.AwsLoadBalancerControllerAddOn( {
+    values: { //https://github.com/aws/eks-charts/blob/master/stable/aws-load-balancer-controller/values.yaml
+      replicaCount: 1 //makes logs easier to read `kubectl logs deploy/aws-load-balancer-controller -n=kube-system`
+    }
+  } ) );
   //v-- Below represents an optimized CoreDNS deployment, based on
   //    https://aws.amazon.com/blogs/containers/amazon-eks-add-ons-advanced-configuration/
   //    aws eks describe-addon-configuration --addon-name coredns --addon-version v1.11.1-eksbuild.11 --query configurationSchema --output text | jq .
