@@ -22,6 +22,7 @@ export function apply_config(config: Easy_EKS_Config_Data){ //config: is of type
       replicaCount: 1 //makes logs easier to read `kubectl logs deploy/aws-load-balancer-controller -n=kube-system`
     }
   } ) );
+
   //v-- Below represents an optimized CoreDNS deployment, based on
   //    https://aws.amazon.com/blogs/containers/amazon-eks-add-ons-advanced-configuration/
   //    aws eks describe-addon-configuration --addon-name coredns --addon-version v1.11.1-eksbuild.11 --query configurationSchema --output text | jq .
@@ -30,7 +31,7 @@ export function apply_config(config: Easy_EKS_Config_Data){ //config: is of type
             "autoScaling": {
               "enabled": true,
               "minReplicas": 2,
-              "maxReplicas": 100
+              "maxReplicas": 1000
             },
             "affinity": {
               "nodeAffinity": {

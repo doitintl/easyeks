@@ -17,7 +17,8 @@ export function add_to_list_of_deployable_stacks(stateStorage: Construct, config
   clusterStack.region(config.region);
   clusterStack.version(config.kubernetesVersion);
   if(config.clusterAddOns){ //<--JS truthy statement saying if not null
-    clusterStack.addOns(...config.clusterAddOns);//... is JS array deconsturing operator which converts an array to a CSV list
+    //... is JS array deconsturing operator which converts an array to a CSV list of parameters
+    clusterStack.addOns(...config.getClusterAddons());
   }
   clusterStack.build(stateStorage, config.stackId);
 }

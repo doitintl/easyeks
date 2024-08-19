@@ -50,12 +50,4 @@ export function apply_config(config: Easy_EKS_Config_Data){ //config: is of type
         })
   );
 
-
-
-
-
-//   new blueprints.addons.AwsLoadBalancerControllerAddOn(),
-//   new blueprints.addons.FluxCDAddOn()
-// new blueprints.addons.ExternalsSecretsAddOn(),
-// new blueprints.addons.SecretsStoreAddOn(),
 }

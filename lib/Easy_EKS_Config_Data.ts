@@ -1,5 +1,7 @@
 import { KubernetesVersion } from 'aws-cdk-lib/aws-eks';
 import * as blueprints from '@aws-quickstart/eks-blueprints'; 
+import { json } from 'stream/consumers';
+
 
 export class Easy_EKS_Config_Data { //This object just holds config data.
   //Typescript(TS) readability notes
@@ -11,7 +13,7 @@ export class Easy_EKS_Config_Data { //This object just holds config data.
   kubernetesVersion: KubernetesVersion;
   tags?: { [key: string]: string };
   clusterAdminARNs?: string[];
-  clusterAddOns?: Array<blueprints.ClusterAddOn>;
+  clusterAddOns?: Map<string, blueprints.ClusterAddOn>;
 
   constructor(stackId: string){
   this.stackId = stackId; /*
@@ -30,12 +32,36 @@ export class Easy_EKS_Config_Data { //This object just holds config data.
     // else{ this.tags = { ...this.tags, [key] : value }
     this.tags = { ...this.tags, [key] : value }; 
   }
-  addClusterAdminARN(arn:string){ //initialize if undfined
-    if(this.clusterAdminARNs === undefined){ this.clusterAdminARNs = [arn] }
+  addClusterAdminARN(arn:string){ 
+    if(this.clusterAdminARNs === undefined){ this.clusterAdminARNs = [arn] } //<--initialize if undfined
     else{ this.clusterAdminARNs.push(arn); } //push means add to end of array
   } 
-  addAddOn(addon: blueprints.ClusterAddOn){ //initialize if undfined
-    if(this.clusterAddOns === undefined){ this.clusterAddOns = [addon] }
-    else{ this.clusterAddOns.push(addon); } //push means add to end of array
+  addAddOn(addon: blueprints.ClusterAddOn){
+    type AddOnObject = { props: { [key: string]: string } };
+    const addOnName: string = (JSON.parse(JSON.stringify(addon)) as AddOnObject).props?.name;
+ 
+    if(this.clusterAddOns === undefined){ 
+      this.clusterAddOns = new Map<string, blueprints.ClusterAddOn>(); //<-- initialize if undfined
+      this.clusterAddOns.set(addOnName, addon); //<-- add Key Value Entry to HashMap
+    }
+    else{
+      this.clusterAddOns.set(addOnName, addon); //<-- add Key Value Entry to HashMap
+      //If you're woundering why a HashMap is used instead of an Array
+      //This is done to achieve a UX feature, where
+      //If you define an AddOn in the global config and environment specific config
+      //If it were an array, you'd get an error saying it already exists.
+      //Since it's a Map, the newest entry overrides the older entry
+      //Which is a desired functionality for the sake of UX.
+    } 
   }
-}
+
+  //The following converts an internally used data type to a conventionally expected data type
+  getClusterAddons():Array<blueprints.ClusterAddOn> {//<--declaring return type
+      let eks_blueprints_expected_format: Array<blueprints.ClusterAddOn> = [];
+      if(this.clusterAddOns){//<-- JS falsy statement meaning if not empty
+        eks_blueprints_expected_format = Array.from(this.clusterAddOns.values());
+      }
+      return eks_blueprints_expected_format;
+  }
+
+}//end of Class
