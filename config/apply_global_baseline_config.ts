@@ -1,6 +1,7 @@
 import { Easy_EKS_Config_Data } from '../lib/Easy_EKS_Config_Data';
 import * as blueprints from '@aws-quickstart/eks-blueprints'
 import * as iam from 'aws-cdk-lib/aws-iam';
+import { NodeLocalDNSCacheAddOn } from '../lib/Node_Local_DNS_Cache_AddOn';
 //Intended Use: 
 //A baseline config file (to be applied to all EasyEKS Clusters)
 //That 95% of global users will feel comfortable using with 0 changes, but can change.
@@ -17,14 +18,14 @@ export function apply_config(config: Easy_EKS_Config_Data){ //config: is of type
   }));
   config.addAddOn( new blueprints.addons.EksPodIdentityAgentAddOn() );
   config.addAddOn( new blueprints.addons.AwsLoadBalancerControllerAddOn() );
-  //v-- optimized coredns based on
+  //v-- Below represents an optimized CoreDNS deployment, based on
   //    https://aws.amazon.com/blogs/containers/amazon-eks-add-ons-advanced-configuration/
-  //    aws eks describe-addon-configuration --addon-name coredns --addon-version v1.11.1-eksbuild.8 --query configurationSchema --output text | jq .
+  //    aws eks describe-addon-configuration --addon-name coredns --addon-version v1.11.1-eksbuild.11 --query configurationSchema --output text | jq .
   config.addAddOn( new blueprints.addons.CoreDnsAddOn( "v1.11.1-eksbuild.11", { //<-- As of Aug 2024, "auto" (version) maps to older v1.11.1-eksbuild.8 that doesn't support autoscaling
     configurationValues: {
             "autoScaling": {
               "enabled": true,
-              "minReplicas": 3,
+              "minReplicas": 2,
               "maxReplicas": 100
             },
             "affinity": {
@@ -74,4 +75,5 @@ export function apply_config(config: Easy_EKS_Config_Data){ //config: is of type
             }
     }//end CoreDNS configurationValues override
   }));//end CoreDNS AddOn
+  config.addAddOn( new NodeLocalDNSCacheAddOn( {} ) );
 }//end function
