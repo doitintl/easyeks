@@ -54,10 +54,10 @@ function generate_cluster_blueprint(config: Easy_EKS_Config_Data){
         desiredSize: 2,
         minSize: 2,
         maxSize: 50,
-  //      diskSize: 20, //20GB is the default
-  //      nodeRole: baselineWorkerNodeRole,
-  //    remoteAccess: https://aws-quickstart.github.io/cdk-eks-blueprints/api/interfaces/clusters.ManagedNodeGroup.html#remoteAccess
-        enableSsmPermissions: true, //<-- allows aws managed ssh to private nodes, useful for debug
+        //Note disk size defaults to 20GB, no need to edit for baseline nodes hosting kube-system
+        //Use karpenter.sh to add bigger disks to user facing workloads if needed.
+        enableSsmPermissions: true, //<-- allows aws managed ssh to private nodes, can be useful for debuging
+        //^-- AWS Systems Manager --> Session Manager --> Start Session
         nodeGroupSubnets: { subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS },
         launchTemplate: { tags: config.tags } //<-- attaches tags to Launch Template, which gets propagated to these worker node
       }
