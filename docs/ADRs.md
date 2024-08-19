@@ -123,30 +123,33 @@ baseline.ts    <-- for both config types
 
 ---------------------------------------------------------------------------------------------------------
 
-## Qn: Why is the universal baseline 3x ARM based t4g.micro spot nodes?
-* TO DO: Thought not yet finished, add karpenter.sh, & aws lb controller 1st
+## Qn: Why is the universal baseline 2x ARM based t4g.small spot nodes?
 * Short answer is Pragmatic FinOps.
   * User facing workloads would be scheduled on karpenter.sh managed nodes  
     which could be configured as spot or on-demand, per the business's preferences.
   * Things in kube-system are made resilient to not mind running on spot-nodes.
-  * coredns has sufficient HA/FT, even when backed by spot, if it's 3 replicas are spread across 3 AZs.
-  * spot capacity is different per AZ, so it's statistically unlikely that all 3 AZ's would go down
+  * CoreDNS has sufficient HA/FT, even when backed by spot, if it's 2-3 replicas are spread across
+    2-3 AZs.
+  * Spot capacity is different per AZ, so it's statistically unlikely that all 2-3 AZ's would go down
     at the same time.
-* All prices listed are based on ca-central-1 pricing. (North America's Hydro powered region.)
-* ARM64(ARM) is cheaper than Intel/AMD's_x86_64(AMD)
-  * t3a(AMD).micro-on-demand = $0.0104/hr
-  * t4g(ARM).micro-on-demand = $0.0094/hr
-* 3 spot nodes cost less than 1 on-demand node
-  * t4g.micro-on-demand = $0.0094/hr
-  * t4g.micro-spot      ~ $0.0028/hr
-* EKS fargate is relatively expensive:
-  * EKS has partial support for fargate nodes:
-    * EKS currently only supports x86_64 Fargate (while ECS also supports cheaper ARM based Fargate)
-    * EKS currently only supports on-demand Fargate (while ECS also supports cheaper Fargate spot)
-  * Using ca-central-1 pricing:  
-    * 2 coredns pods requesting 100m cpu & 70Mi memory, would land on the smallest possible fargate size
-      (0.25 vCPU & 0.5GB ram)
-    * 
+* Why t4g.small > t4g.micro:
+  * t4g.micro allows 4 pods per nodes (you'll hit this limit before hitting cpu/ram limit)
+  * t4g.small allows 11 pods per node, we need more than 4 due to daemonsets
+* Note the following prices listed are based on ca-central-1 pricing. (North America's Hydro powered region.)
+  * ARM64(ARM) is cheaper than Intel/AMD's_x86_64(AMD)
+    * t3a(AMD).small-on-demand = $0.0188/hr
+    * t4g(ARM).small-on-demand = $0.0168/hr
+  * 2 spot nodes cost less than 1 on-demand node
+    * t4g.small-on-demand = $0.0168/hr
+    * t4g.small-spot      ~ $0.0072/hr
+  * EKS fargate is relatively expensive:
+    * EKS has partial support for fargate nodes:
+      * EKS currently only supports x86_64 Fargate (while ECS also supports cheaper ARM based Fargate)
+      * EKS currently only supports on-demand Fargate (while ECS also supports cheaper Fargate spot)
+    * Using ca-central-1 pricing:  
+      * Smallest possible fargate pod size is 0.25 vCPU and 0.5GB ram  
+        math (0.25*$0.04456+0.5*$0.004865) says each fargate pod costs $0.0135725/hr
+      * You can almost buy 2 spot nodes for the price of 1 fargate pod
 
 ---------------------------------------------------------------------------------------------------------
 

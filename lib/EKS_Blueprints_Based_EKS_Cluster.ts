@@ -62,12 +62,6 @@ function generate_cluster_blueprint(config: Easy_EKS_Config_Data){
         launchTemplate: { tags: config.tags } //<-- attaches tags to Launch Template, which gets propagated to these worker node
       }
     ],
-    // fargateProfiles: { //https://aws-quickstart.github.io/cdk-eks-blueprints/cluster-providers/fargate-cluster-provider/
-    //   "fargate-backed-pods": { //only the ondemand ARM64 backed flavor of fargate is supported.
-    //       fargateProfileName: "fargate-backed-pods",
-    //       selectors:  [{ namespace: "karpenter" }]
-    //   } //karpenter.sh operator runs in karpenter ns, this says back that by fargate.
-    // }, 
     outputConfigCommand: true,
   });
 
