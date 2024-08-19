@@ -21,12 +21,12 @@ export function apply_config(config: Easy_EKS_Config_Data){ //config: is of type
   //    https://aws.amazon.com/blogs/containers/amazon-eks-add-ons-advanced-configuration/
   //    aws eks describe-addon-configuration --addon-name coredns --addon-version v1.11.1-eksbuild.8 --query configurationSchema --output text | jq .
   config.addAddOn( new blueprints.addons.CoreDnsAddOn( "v1.11.1-eksbuild.11", { //<-- As of Aug 2024, "auto" (version) maps to older v1.11.1-eksbuild.8 that doesn't support autoscaling
-    configurationValues: { //autoscaling doesn't yet work due to upstream bug  https://github.com/aws-quickstart/cdk-eks-blueprints/issues/1066
-            // "autoscaling": {
-            //   "enabled": true,
-            //   "minReplicas": 3,
-            //   "maxReplicas": 100
-            // },
+    configurationValues: {
+            "autoScaling": {
+              "enabled": true,
+              "minReplicas": 3,
+              "maxReplicas": 100
+            },
             "affinity": {
               "nodeAffinity": {
                 "requiredDuringSchedulingIgnoredDuringExecution": {
