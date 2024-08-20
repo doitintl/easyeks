@@ -35,13 +35,6 @@ function generate_cluster_blueprint(config: Easy_EKS_Config_Data){
     }
   }
 
-  // const baselineWorkerNodeRole = new blueprints.CreateRoleProvider("eks-blueprint-worker-node-role", new iam.ServicePrincipal("ec2.amazonaws.com"),
-  // [
-  //     iam.ManagedPolicy.fromAwsManagedPolicyName("AmazonEKSWorkerNodePolicy"),
-  //     iam.ManagedPolicy.fromAwsManagedPolicyName("AmazonEC2ContainerRegistryReadOnly"),
-  //     iam.ManagedPolicy.fromAwsManagedPolicyName("AmazonSSMManagedInstanceCore")
-  // ]);
-
   const cluster_blueprint = new GenericClusterProviderWithAccessEntrySupport({
     tags: config.tags, //<-- attaches tags to EKS cluster in AWS Web Console
     authenticationMode: eks.AuthenticationMode.API_AND_CONFIG_MAP,
