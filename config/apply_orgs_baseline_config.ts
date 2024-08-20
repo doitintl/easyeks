@@ -47,7 +47,10 @@ export function apply_config(config: Easy_EKS_Config_Data){ //config: is of type
           },
           interruptionHandling: true,
           podIdentity: true,
+          values: { //https://github.com/aws/karpenter-provider-aws/tree/main/charts/karpenter#values
+            replicas: 1,
+          }
         })
   );
 
-}
+}//end apply_config()

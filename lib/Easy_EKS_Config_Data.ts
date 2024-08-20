@@ -37,9 +37,13 @@ export class Easy_EKS_Config_Data { //This object just holds config data.
     else{ this.clusterAdminARNs.push(arn); } //push means add to end of array
   } 
   addAddOn(addon: blueprints.ClusterAddOn){
-    type AddOnObject = { props: { [key: string]: string } };
-    const addOnName: string = (JSON.parse(JSON.stringify(addon)) as AddOnObject).props?.name;
- 
+    type AddOnObject = { props: { name: string }, coreAddOnProps: { addOnName: string} };
+    let addOnName: string;
+    const case1=(JSON.parse(JSON.stringify(addon)) as AddOnObject).props?.name;
+    const case2=addOnName=(JSON.parse(JSON.stringify(addon)) as AddOnObject).coreAddOnProps?.addOnName;
+    if(case1){addOnName=case1};
+    if(case2){addOnName=case2};
+
     if(this.clusterAddOns === undefined){ 
       this.clusterAddOns = new Map<string, blueprints.ClusterAddOn>(); //<-- initialize if undfined
       this.clusterAddOns.set(addOnName, addon); //<-- add Key Value Entry to HashMap
