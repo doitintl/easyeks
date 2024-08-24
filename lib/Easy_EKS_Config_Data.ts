@@ -15,13 +15,16 @@ export class Easy_EKS_Config_Data { //This object just holds config data.
   clusterAdminARNs?: string[];
   clusterAddOns?: Map<string, blueprints.ClusterAddOn>;
 
+
+
   constructor(stackId: string){
   this.stackId = stackId; /*
   Constructor with minimal args is on purpose for desired UX
   The idea is to add partial configuration snippets over time/as multiple operations
   rather than populate a complete config all at once in one go.*/
-  //this.clusterAddOns = [ new blueprints.addons.KubeProxyAddOn() ];
   } 
+
+
 
   //Config Snippet Population Methods
   setAccount(account: string){ this.account = account; }
@@ -53,12 +56,14 @@ export class Easy_EKS_Config_Data { //This object just holds config data.
       //If you're woundering why a HashMap is used instead of an Array
       //This is done to achieve a UX feature, where
       //If you define an AddOn in the global config and environment specific config
-      //If it were an array, you'd get an error saying it already exists.
-      //Since it's a Map, the newest entry overrides the older entry
+      //If it were an array, CDK would declare an error saying it already exists.
+      //Since it's a Map, the newest entry can override the older entry
       //Which is a desired functionality for the sake of UX.
     } 
   }
 
+
+  
   //The following converts an internally used data type to a conventionally expected data type
   getClusterAddons():Array<blueprints.ClusterAddOn> {//<--declaring return type
       let eks_blueprints_expected_format: Array<blueprints.ClusterAddOn> = [];

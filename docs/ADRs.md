@@ -123,7 +123,7 @@ baseline.ts    <-- for both config types
 
 ---------------------------------------------------------------------------------------------------------
 
-## Qn: Why is the universal baseline 2x ARM based t4g.small spot nodes?
+## Qn: Why not use fargate? / Why is the universal baseline 2x ARM based t4g.small spot nodes?
 * Short answer is Pragmatic FinOps.
   * User facing workloads would be scheduled on karpenter.sh managed nodes  
     which could be configured as spot or on-demand, per the business's preferences.
@@ -150,6 +150,35 @@ baseline.ts    <-- for both config types
       * Smallest possible fargate pod size is 0.25 vCPU and 0.5GB ram  
         math (0.25*$0.04456+0.5*$0.004865) says each fargate pod costs $0.0135725/hr
       * You can almost buy 2 spot nodes for the price of 1 fargate pod
+    * Equally important: Fargate goes against best practice of embracing standardization, it's usage
+      would create edge cases, and edge cases would result in complexity.
+
+---------------------------------------------------------------------------------------------------------
+
+## Qn: Why default to GPL Monitoring stack? Why not ADOT? (Amazon's fork of ElasticSearch?) Why not CloudWatch?
+* Why not CloudWatch:
+  * It's relatively expensive
+  * It's very hard to calculate and predict costs
+  * It's got a relatively poor UX (User Experience)
+* Why not ADOT fork of ElasticSearch:
+  * Is relatively fragile. (It's stable, just speaking relatively.)
+  * Is relatively Resource Inefficient. (So self hosting on kube becomes expensive in terms of infra)
+  * Was never designed for log ingestion, it was designed for full text search of a static dataset.
+    * Log Ingestion and the ability to handle kubernetes logs was bolted on as an after thought, so none
+      of the above 2 points should be surprizing.
+* Better/Newer Alternatives that were designed post-Kubernetes are:
+  * [QuickWit](https://github.com/quickwit-oss/quickwit) Which is based on a tantivy, a rust clone of
+    ElasticSearch.
+  * [Loki by Grafana Labs](https://github.com/grafana/loki)  
+  * The above 2 are best in class FOSS/generic kubernetes solutions that exist today as far as I'm aware.
+  * GPL (Grafana, Prometheus, Loki) Stack wins out against QuickWit for this use case in my opinion, because:
+    * GPL Stack is currently more mature.
+    * Loki doesn't do indexing so ingestion is cheap in terms of cpu,ram,disk space then when querying
+      queries take extra cpu/ram resources and can be slow at massive scale.
+    * QuickWit does indexing so ingestion is takes extra cpu,ram, and disk space, in exchange for faster
+      queries and working smoothly at massive scale. 
+    * Also as a matter of personal preference Loki's query style reminds me of datadog's, which I
+      slightly prefer over Lucene in terms of UX. (In practice both are great.)
 
 ---------------------------------------------------------------------------------------------------------
 

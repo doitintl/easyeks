@@ -9,6 +9,7 @@ import * as blueprints from '@aws-quickstart/eks-blueprints';
 //          ^-- blueprints as in blueprint of a eks cluster defined as a declarative cloud formation stack
 import { Easy_EKS_Config_Data } from './Easy_EKS_Config_Data';
 import { partialEKSAccessEntry, GenericClusterProviderWithAccessEntrySupport } from './Modified_Cluster_Provider';
+import * as monitoring from './Frugal_GPL_Monitoring_Stack';
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 export function add_to_list_of_deployable_stacks(stateStorage: Construct, config: Easy_EKS_Config_Data){
   const clusterStack = blueprints.EksBlueprint.builder();
@@ -20,6 +21,7 @@ export function add_to_list_of_deployable_stacks(stateStorage: Construct, config
     //... is JS array deconsturing operator which converts an array to a CSV list of parameters
     clusterStack.addOns(...config.getClusterAddons());
   }
+  monitoring.deploy(stateStorage, config); //<-- TEMPORARY SPOT TO TRIGGER LOGIC, as a temporary hack, FOR TESTING PURPOSES,
   clusterStack.build(stateStorage, config.stackId);
 }
 
