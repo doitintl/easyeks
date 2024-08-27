@@ -19,6 +19,8 @@ Cons:
 * A customer will likely have a preferred Authoritative DNS Server (CloudFlare for Example)
 * They can delegate a subdomain or buy a DNS for this purpose.
 * Eventually make doc
+  * In that doc I should advise against subdomain route in favor of dedicated domain / add details
+  * https://doitintl.slack.com/archives/C03NQB4900K/p1724770111798199?thread_ts=1724434702.650379&cid=C03NQB4900K
 * For now going the subdomain route
   Generated a Route53 Hosted Zone named eks.easyeks.dev
   generated a type NS with 4 value's

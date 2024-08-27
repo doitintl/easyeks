@@ -9,10 +9,13 @@ userLog.settings.minLevel = 3; //<-- Hide's eks blueprint's debug logs, 3 = info
 
 
 import * as cdk from 'aws-cdk-lib';
-import * as global_baseline_config from '../config/apply_global_baseline_config';
-import * as orgs_baseline_config from '../config/apply_orgs_baseline_config';
-import * as dev_config from '../config/apply_dev_config';
-/*     ^----This ----^
+import * as global_baseline_vpc_config from '../config/vpc/apply_global_baseline_vpc_config';
+import * as orgs_baseline_vpc_config from '../config/vpc/apply_orgs_baseline_vpc_config';
+import * as lower_envs_vpc_config from '../config/vpc/apply_lower_envs_vpc_config';
+import * as global_baseline_eks_config from '../config/eks/apply_global_baseline_eks_config';
+import * as orgs_baseline_eks_config from '../config/eks/apply_orgs_baseline_eks_config';
+import * as dev_eks_config from '../config/eks/apply_dev_eks_config';
+/*     ^------This-------^
 TS import syntax means:
 * Import *("all") exported items from the specified source, into a "named import".
 * The "named import" can be arbtirarily named.
@@ -28,6 +31,7 @@ TS import syntax means:
 */
 import * as EKS_Blueprints_Based_Cluster from '../lib/EKS_Blueprints_Based_EKS_Cluster';
 import * as Opinionated_VPC from '../lib/Opinionated_VPC';
+import { Opinionated_VPC_Config_Data } from '../lib/Opinionated_VPC_Config_Data';
 ////////////////////////////////////////////////////////////////////////////////////////////
 
 
@@ -70,17 +74,26 @@ Stacks are a collection of 1 or more CDK constructs (including nested stacks)
        and prompt's y to confirm deployment. (A deployment will take about 17 minutes.)
 *///////////////////////////////////////////////////////////////////////////////////////////
 
+//Note: 'lower-envs-vpc' is both the VPC name and the CloudFormation Stack Name
+const lower_envs_vpc_cfg: Opinionated_VPC_Config_Data = new Opinionated_VPC_Config_Data('lower-envs-vpc');
+      global_baseline_vpc_config.apply_config(lower_envs_vpc_cfg);
+      orgs_baseline_vpc_config.apply_config(lower_envs_vpc_cfg);
+      lower_envs_vpc_config.apply_config(lower_envs_vpc_cfg);
+Opinionated_VPC.add_to_list_of_deployable_stacks(cdk_construct_storage, lower_envs_vpc_cfg);
+
+///////////////////////////////////////////////////////////////////////////////////////////
+
+
 
 // const dev1cfg: Easy_EKS_Config_Data = new Easy_EKS_Config_Data('dev1-eks');
-//   global_baseline_config.apply_config(dev1cfg);
-//   orgs_baseline_config.apply_config(dev1cfg);
-//   dev_config.apply_config(dev1cfg);
+//   global_baseline_eks_config.apply_config(dev1cfg);
+//   orgs_baseline_eks_config.apply_config(dev1cfg);
+//   dev_eks_config.apply_config(dev1cfg);
   //^-- Note some of the apply_config, uses methods to set a value, which is overrideable
   //    so the order of application can matter. 
   //    So it's best to follow a pattern of global --> org --> env when applying config.
   //console.log('dev1cfg:\n', dev1cfg); //<-- \n is newline
 // EKS_Blueprints_Based_Cluster.add_to_list_of_deployable_stacks(cdk_construct_storage, dev1cfg);
 
-Opinionated_VPC.add_to_list_of_deployable_stacks(cdk_construct_storage);
 
 

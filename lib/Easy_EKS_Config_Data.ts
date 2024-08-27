@@ -1,6 +1,5 @@
 import { KubernetesVersion } from 'aws-cdk-lib/aws-eks';
 import * as blueprints from '@aws-quickstart/eks-blueprints'; 
-import { json } from 'stream/consumers';
 
 
 export class Easy_EKS_Config_Data { //This object just holds config data.
@@ -31,9 +30,8 @@ export class Easy_EKS_Config_Data { //This object just holds config data.
   setRegion(region: string){ this.region = region; }
   setKubernetesVersion(version: KubernetesVersion){ this.kubernetesVersion = version; }
   addTag(key: string, value: string){ 
-    // if(this.tags === undefined){ this.tags = { [key] : value } }
-    // else{ this.tags = { ...this.tags, [key] : value }
-    this.tags = { ...this.tags, [key] : value }; 
+    if(this.tags === undefined){ this.tags = { [key] : value } }
+    else{ this.tags = { ...this.tags, [key] : value }}
   }
   addClusterAdminARN(arn:string){ 
     if(this.clusterAdminARNs === undefined){ this.clusterAdminARNs = [arn] } //<--initialize if undfined

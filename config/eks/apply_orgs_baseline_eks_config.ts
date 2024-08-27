@@ -1,8 +1,8 @@
-import { Easy_EKS_Config_Data } from '../lib/Easy_EKS_Config_Data';
+import { Easy_EKS_Config_Data } from '../../lib/Easy_EKS_Config_Data';
 import { KubernetesVersion } from 'aws-cdk-lib/aws-eks';
 import * as blueprints from '@aws-quickstart/eks-blueprints'
 import * as kms from 'aws-cdk-lib/aws-kms';
-//Intended Use: 
+//Intended Use:
 //A baseline config file (to be applied to all EasyEKS Clusters in your organization)
 //EasyEKS Admins would be expected to edit this file with defaults specific to their org.
 

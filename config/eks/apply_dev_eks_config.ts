@@ -1,4 +1,4 @@
-import { Easy_EKS_Config_Data } from '../lib/Easy_EKS_Config_Data';
+import { Easy_EKS_Config_Data } from '../../lib/Easy_EKS_Config_Data';
 import * as blueprints from '@aws-quickstart/eks-blueprints'
 //Intended Use: 
 //EasyEKS Admins: edit this file with config to apply to all dev cluster's in your org.
