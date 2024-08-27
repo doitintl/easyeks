@@ -182,6 +182,71 @@ baseline.ts    <-- for both config types
 
 ---------------------------------------------------------------------------------------------------------
 
+## Qn: Why is grafana secured the way it is?
+* It boils down to practicality, there's this concept of threat analysis based security hardening,
+  where before implementing any controls you ask the question. What do I want to protect against?
+  * In my experience most companies:
+    * Care about protecting their logging and monitoring stack against external internet based threats.
+    * Don't mind giving all their employees access to metrics and logs. 
+  * A shared user-name and password based login isn't usually a significant concern in this scenario.
+    * If both are randomly generated and stored in AWS Secrets Manager, it sufficiently protects against
+      most external threats when paired with HTTPS.
+    * Then a shared NACL (Network Access Control List), basically a Security Group to Implement Firewall
+       * Whitelisting adds sufficient defense in depth against any zero day exploits or negligance in
+         terms of keeping a self-managed service on the lastest version.
+       * In most cases it's trivially easy to add extra security by whitelisting an office, admin's home
+         network, if the edge case where a static IP is lacking, kubectl port-forward can be used in a
+         pinch, and a SSO enabled VPN to a network white a NAT GW that has a static IP that can be white
+         listed, is a solution that could be implemented for the edge case, but that nice thing is it
+         can be implemented incrementally, rather than blocking immediate value with a problem
+         transformation. 
+  * These 3 measures together solve problems that matter in a way that minimizes newly added problems.
+    * These 3 can be E2E automated
+    * Avoid the inifite DevOps Yak Shaving Trap where the solution to 1 problem involves the
+      introduction of new problems. So I see it as a legitimate solution to problems rather than a fake
+      solution that just transforms your original problem into a new problem.
+
+---------------------------------------------------------------------------------------------------------
+
+## Qn: Why is the networking the way it is? (Dual Stack VPC, IPv6 EKS, Reusing VPCs?, NAT?)
+* TL;DR Summary: To solve problems with the default implementation details.
+* What Problems exist in the default implementations:
+  * If you let EKS Blueprints make a VPC for an EKS cluster
+    * You'll get a IPv4 based VPC of 10.0.0.0./16
+      * Each subnet will be a /19 (8190 usable IPs)
+    * 3 public AZs
+    * 3 private AZs
+    * 3 managed NAT GWs (1 per AZ)
+    * Each LB will be provisioned in 3 AZs, with 3 public IPs
+  * Why is that (mildly) problematic?
+    * 3 managed NAT GW = 3 * $0.05/hr * 730hr/month = $110/month
+    * For a test cluster in a sandbox environment that was over half my bill.
+    * It's not uncommon to have 3-4 EKS clusters for risk management and general best practices
+      (dev, stage, prod, etc.) (It's also not uncommon to have temporary sandbox clusters.)
+    * Also public IPv4's cost money now $0.005/hr * 730hr/month = $3.65/month each.
+      NAT GWs, and 2 LBs across 3 AZs could easily turn into 9 IPs or $33/month.
+    * These small inefficiencies aren't bad on their own, but 1 VPC per cluster results in them
+      getting multiplied. (A little waste tends to increase net-efficiency, but wasteful spending can
+      add up quickly at scale.)
+    * https://fck-nat.dev/stable/ allows the cost of NAT GW to be cut by 10%  
+      Side Note they have a donation link https://ko-fi.com/codebrewed
+  * Light reuse of VPCs has several benefits:
+    1. It saves on NAT GW costs / costs can scale better if you create multiple environments.
+    2. It can help avoid complex networking and VPN sprawl.
+    3. Most customers have pre-existing infrastructure and will deploy to a pre-existing VPC anyways.
+       so it makes sense to support that common deployment option.
+    4. There's usually no problem security wise with a 2 VPC setup to isolate
+       lower and higher environments.  
+       Example: dev, qa, test, and sandbox environments in a lower VPC.  
+                staging, prod, or a blue green cutover prod-v2 in a higher VPC.
+  * Light reuse and deploying into-pre-existing VPCs can surface an EKS edge case problem.
+    * By default pods can quickly use up IPv4 IPs.
+    * Going with a dual stack cluster and prefering EKS in IPv6 mode eliminates that problem.
+      because EKS worker nodes are given IPv4 IPs, but pods are given IPv6 IPs, that allows the
+      IPv4 part of the dual stack to last.
+
+---------------------------------------------------------------------------------------------------------
+
 ## Design Inspirations
 ### 1. Personsal Philosophy of what good DevOps Solutions look like
 * Lessons learned from kubing since 2018 + designing multiple platforms from scratch.
