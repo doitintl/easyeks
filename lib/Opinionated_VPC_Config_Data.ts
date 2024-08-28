@@ -1,3 +1,6 @@
+import { FckNatInstanceProvider, FckNatInstanceProps } from 'cdk-fck-nat' //source: npm install cdk-fck-nat@latest
+import * as ec2 from 'aws-cdk-lib/aws-ec2';
+
 export class Opinionated_VPC_Config_Data { //This object just holds config data.
   //Typescript(TS) readability notes
   //Config_Var: Data_Type
@@ -5,8 +8,10 @@ export class Opinionated_VPC_Config_Data { //This object just holds config data.
   stackId: string;
   account: string;
   region: string;
-  ipv4CIDR: object;
   tags?: { [key: string]: string };
+  natGatewayProvider: ec2.NatProvider;
+  //  ipv4CIDR: object;
+  
 
 
 
@@ -26,5 +31,13 @@ export class Opinionated_VPC_Config_Data { //This object just holds config data.
     if(this.tags === undefined){ this.tags = { [key] : value } }
     else{ this.tags = { ...this.tags, [key] : value }}
   }
-  
-}
+  setNatGatewayProviderAsFckNat(props: FckNatInstanceProps){
+    this.natGatewayProvider = new FckNatInstanceProvider( props );
+  }
+  setNatGatewayProviderAsAwsManagedNat(){
+    this.natGatewayProvider = ec2.NatProvider.gateway();
+  }
+
+
+
+}//end Opinionated_VPC_Config_Data

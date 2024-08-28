@@ -54,6 +54,8 @@
 
 ## Why EasyEKS over CDK?
 
+We follow the "batteries included, but swappable" philosophy. (Quote stolen from Fck NAT)
+
 ---------------------------------------------------------------------------------------------------------
 
 ## Why flox.dev over devbox.com over Nix?
