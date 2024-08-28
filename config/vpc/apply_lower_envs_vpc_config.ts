@@ -32,8 +32,4 @@ export function apply_config(config: Opinionated_VPC_Config_Data){ //config: is 
    config.setNatGatewayProviderAsFckNat(good_and_affordable_NAT_props);
    
 
-'10.100.0.0/16'
-''
-
-
 }//end apply_config

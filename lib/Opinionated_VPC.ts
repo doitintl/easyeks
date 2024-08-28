@@ -16,7 +16,7 @@ export function add_to_list_of_deployable_stacks(constructWhereStacksStateIsStor
 
   const vpcStack: cdk.Stack = new cdk.Stack(
     constructWhereStacksStateIsStored, 
-    config.stackId,
+    config.stackID,
     {
         env: {
             region: config.region,
@@ -25,9 +25,10 @@ export function add_to_list_of_deployable_stacks(constructWhereStacksStateIsStor
     }
   );//end vpcStack
 
-//https://docs.aws.amazon.com/cdk/api/v2/docs/aws-cdk-lib.aws_ec2.VpcProps.html
-  const vpc = new dualStackVPC(vpcStack, config.stackId, {
-    vpcName: config.stackId,
+
+  //https://docs.aws.amazon.com/cdk/api/v2/docs/aws-cdk-lib.aws_ec2.VpcProps.html
+  const vpc = new ec2.Vpc(vpcStack, config.stackID, {
+    vpcName: config.stackID,
     ipProtocol: ec2.IpProtocol.DUAL_STACK,
     natGatewayProvider: config.natGatewayProvider,
     natGateways: 1,
@@ -56,26 +57,16 @@ export function add_to_list_of_deployable_stacks(constructWhereStacksStateIsStor
     },
   });//end vpc
 
+  //UX Improvement: Improved Subnet Naming
+  const publicSubnets = vpc.selectSubnets({subnetType: ec2.SubnetType.PUBLIC}).subnets;
+  const privateSubnets = vpc.selectSubnets({subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS}).subnets;
+  publicSubnets.forEach((subnet, i) => {
+    cdk.Tags.of(subnet).add("Name", `${config.stackID}/PublicSubnet/${subnet.availabilityZone}`);
+  });
+  privateSubnets.forEach((subnet, i) => {
+    cdk.Tags.of(subnet).add("Name", `${config.stackID}/PrivateSubnet/${subnet.availabilityZone}`);
+  });
+
+
 }//end add_to_list_of_deployable_stacks
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////
-class dualStackVPC extends ec2.Vpc {
-    constructor(constructWhereStacksStateIsStored: Construct, stackID: string, properties?: ec2.VpcProps){
-        super(constructWhereStacksStateIsStored, stackID, properties);
-
-        // v--improve subnet naming for UX purposes
-        [...this.publicSubnets].forEach((subnet, i) => {
-          const cfnSubnet = subnet.node.defaultChild as ec2.CfnSubnet;
-          cfnSubnet.tags.setTag("Name", `${stackID}-Public123Subnet${i}`, 1);
-        });
-        [...this.privateSubnets].forEach((subnet, i) => {
-            const cfnSubnet = subnet.node.defaultChild as ec2.CfnSubnet;
-            cfnSubnet.tags.setTag("Name", `${stackID}-PrivateSubnet${i}`, 1);
-        });
-
-    }//end dualStackVPC constructor
-
-}//end dualStackVPC class
-
-
 

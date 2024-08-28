@@ -5,7 +5,7 @@ export class Opinionated_VPC_Config_Data { //This object just holds config data.
   //Typescript(TS) readability notes
   //Config_Var: Data_Type
   //(var?: is TS syntax to ignore initial null value)
-  stackId: string;
+  stackID: string;
   account: string;
   region: string;
   tags?: { [key: string]: string };
@@ -15,8 +15,8 @@ export class Opinionated_VPC_Config_Data { //This object just holds config data.
 
 
 
-  constructor(stackId: string){
-      this.stackId = stackId; /*
+  constructor(stackID: string){
+      this.stackID = stackID; /*
       Constructor with minimal args is on purpose for desired UX
       The idea is to add partial configuration snippets over time/as multiple operations
       rather than populate a complete config all at once in one go.*/
