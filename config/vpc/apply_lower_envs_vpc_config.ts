@@ -25,12 +25,23 @@ export function apply_config(config: Opinionated_VPC_Config_Data){ //config: is 
         * Supported via Tips https://ko-fi.com/codebrewed
     */
     instanceType: ec2.InstanceType.of(ec2.InstanceClass.T4G, ec2.InstanceSize.MICRO),
-    enableCloudWatch: false, //costs $17/month, could turn it on and off as needed, but honestly if problem
+    enableCloudWatch: false, //costs ~$17/month, could turn it on and off as needed, but honestly if problem
                              //just bump up to bigger size or switched to AWS Managed NAT
     enableSsm: true, //allows ssh via systems manager.
     //POTENTIAL TO DO?: SG is created by default, but I may need to add one that supports dual stack
-   }
-   config.setNatGatewayProviderAsFckNat(good_and_affordable_NAT_props);
-   
+  }
+  config.setNatGatewayProviderAsFckNat(good_and_affordable_NAT_props);
+  config.setNumNatGateways(1);
+      /*                   ^-- Use 1, 2, or 3
+      1 is recommended when, you have low traffic (under 1000 GB/month), and want lowest price.
+      2 is recommended when, you have low traffic (under 1000 GB/month), and want HA/FT.
+      3 is recommended when, you have high traffic (over 1000 GB/month), and want lowest price with HA/FT
+      (1000 GB of cross AZ traffic * $0.01/GB = $10/month, so 1000GB is a good rule of thumb for determining
+      when cross AZ bandwidth costs will outpace instance costs, at which point 3 can give lower net-cost.)
+      */
+  config.setVpcIPv4CIDR('10.99.0.0/16'); // WARNING: Don't change the VPC CIDR after creation
+  config.setPublicSubnetCIDRSlash(23);  // Note: /23 = 510 usable IPs (mostly by LBs)
+  config.setPrivateSubnetCIDRSlash(19); // Note: /19 = 8190 usable IPs
+  config.setProvisionVPN(false);
 
 }//end apply_config

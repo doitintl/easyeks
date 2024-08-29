@@ -14,6 +14,7 @@ import { Opinionated_VPC_Config_Data } from './Opinionated_VPC_Config_Data';
 export function add_to_list_of_deployable_stacks(constructWhereStacksStateIsStored: Construct, config: Opinionated_VPC_Config_Data){
 
 
+
   const vpcStack: cdk.Stack = new cdk.Stack(
     constructWhereStacksStateIsStored, 
     config.stackID,
@@ -26,24 +27,25 @@ export function add_to_list_of_deployable_stacks(constructWhereStacksStateIsStor
   );//end vpcStack
 
 
+
   //https://docs.aws.amazon.com/cdk/api/v2/docs/aws-cdk-lib.aws_ec2.VpcProps.html
   const vpc = new ec2.Vpc(vpcStack, config.stackID, {
     vpcName: config.stackID,
     natGatewayProvider: config.natGatewayProvider,
-    natGateways: 2,
+    natGateways: config.numNatGateways,
     ipProtocol: ec2.IpProtocol.DUAL_STACK,
-    ipAddresses: ec2.IpAddresses.cidr('10.100.0.0/16'),
+    ipAddresses: ec2.IpAddresses.cidr(config.vpcNetworkWithCIDRSlash),
     ipv6Addresses: ec2.Ipv6Addresses.amazonProvided(),
-    vpnGateway: false,
+    vpnGateway: config.provisionVPN,
     subnetConfiguration: [
         { name: "Public", 
           subnetType: ec2.SubnetType.PUBLIC,
-          cidrMask: 24,
+          cidrMask: config.publicSubNetCIDRSlash,
           ipv6AssignAddressOnCreation: true,
         },
         { name: "Private",
           subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS,
-          cidrMask: 19, //Note: /19 = (8190 usable IPs)
+          cidrMask: config.privateSubNetCIDRSlash,
           ipv6AssignAddressOnCreation: true,
         }
     ],
@@ -57,6 +59,8 @@ export function add_to_list_of_deployable_stacks(constructWhereStacksStateIsStor
         },
     },
   });//end vpc
+
+
 
   //UX Improvement: Improved Naming for Subnets and NAT-GWs/NAT-Instances
   const publicSubnets = vpc.selectSubnets({subnetType: ec2.SubnetType.PUBLIC}).subnets;
@@ -81,4 +85,3 @@ export function add_to_list_of_deployable_stacks(constructWhereStacksStateIsStor
   //The reddit lore is that ca-central-1's c AZ exists for AWS internal use. 
 
 }//end add_to_list_of_deployable_stacks
-

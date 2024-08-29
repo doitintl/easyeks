@@ -10,8 +10,15 @@ export class Opinionated_VPC_Config_Data { //This object just holds config data.
   region: string;
   tags?: { [key: string]: string };
   natGatewayProvider: ec2.NatProvider;
-  //  ipv4CIDR: object;
-  
+  numNatGateways: number;
+  provisionVPN: boolean;
+  vpcNetworkWithCIDRSlash: string;
+  publicSubNetCIDRSlash: number;
+  privateSubNetCIDRSlash: number;
+  //Future UX Improvement: Allow explicit control over subnet CIDRs 
+  //Blocked by: Upstream CDK Improvements (subscribed to updates)
+  //https://github.com/aws/aws-cdk/issues/5927#issuecomment-2127888388
+  //https://github.com/aws/aws-cdk/issues/3931
 
 
 
@@ -37,7 +44,10 @@ export class Opinionated_VPC_Config_Data { //This object just holds config data.
   setNatGatewayProviderAsAwsManagedNat(){
     this.natGatewayProvider = ec2.NatProvider.gateway();
   }
-
-
+  setNumNatGateways(number: number){ this.numNatGateways = number; }
+  setVpcIPv4CIDR(vpcNetworkWithCIDRSlash: string){ this.vpcNetworkWithCIDRSlash = vpcNetworkWithCIDRSlash; }
+  setPublicSubnetCIDRSlash(cidrSlash: number){ this.publicSubNetCIDRSlash = cidrSlash; }
+  setPrivateSubnetCIDRSlash(cidrSlash: number){ this.privateSubNetCIDRSlash = cidrSlash; }
+  setProvisionVPN(vpn: boolean){ this.provisionVPN = vpn; }
 
 }//end Opinionated_VPC_Config_Data

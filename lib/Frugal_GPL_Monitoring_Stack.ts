@@ -59,7 +59,7 @@ const cert = new acm.Certificate(stack, 'Certificate', {
   //Generates a CNAME in hosted zone & cert in ACM
 });
 
-console.log("cert arn: " + cert.certificateArn);
+//console.log("cert arn: " + cert.certificateArn);
 
 }
 

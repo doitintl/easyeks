@@ -4,23 +4,16 @@
 //Library Imports:
 import console = require('console'); //Helps feedback loop, when manually debugging
 //     ^-- allows `console.log(dev1cfg);` to work, when `cdk list` is run.
-import { userLog } from '@aws-quickstart/eks-blueprints/dist/utils';
-userLog.settings.minLevel = 3; //<-- Hide's eks blueprint's debug logs, 3 = info, 2 = debug
-
-
 import * as cdk from 'aws-cdk-lib';
-import * as global_baseline_vpc_config from '../config/vpc/apply_global_baseline_vpc_config';
-import * as orgs_baseline_vpc_config from '../config/vpc/apply_orgs_baseline_vpc_config';
-import * as lower_envs_vpc_config from '../config/vpc/apply_lower_envs_vpc_config';
-import * as global_baseline_eks_config from '../config/eks/apply_global_baseline_eks_config';
-import * as orgs_baseline_eks_config from '../config/eks/apply_orgs_baseline_eks_config';
-import * as dev_eks_config from '../config/eks/apply_dev_eks_config';
-/*     ^------This-------^
+import * as Opinionated_VPC from '../lib/Opinionated_VPC';
+import * as EKS_Blueprints_Based_Cluster from '../lib/EKS_Blueprints_Based_EKS_Cluster';
+/*     ^-------------This--------------^
 TS import syntax means:
 * Import *("all") exported items from the specified source, into a "named import".
 * The "named import" can be arbtirarily named.
 * Items in the named import can be referenced with the dot operator.
 */
+import { Opinionated_VPC_Config_Data } from '../lib/Opinionated_VPC_Config_Data';
 import { Easy_EKS_Config_Data } from '../lib/Easy_EKS_Config_Data';
 /*     ^---------This---------^ 
 TS import syntax means:
@@ -29,9 +22,19 @@ TS import syntax means:
   item in the referenced file.
 * Items imported this way, can be referenced directly by name.
 */
-import * as EKS_Blueprints_Based_Cluster from '../lib/EKS_Blueprints_Based_EKS_Cluster';
-import * as Opinionated_VPC from '../lib/Opinionated_VPC';
-import { Opinionated_VPC_Config_Data } from '../lib/Opinionated_VPC_Config_Data';
+////////////////////////////////////////////////////////////////////////////////////////////
+//Config Library Imports:
+import * as global_baseline_vpc_config from '../config/vpc/apply_global_baseline_vpc_config';
+import * as orgs_baseline_vpc_config from '../config/vpc/apply_orgs_baseline_vpc_config';
+import * as lower_envs_vpc_config from '../config/vpc/apply_lower_envs_vpc_config';
+import * as higher_envs_vpc_config from '../config/vpc/apply_higher_envs_vpc_config';
+import * as global_baseline_eks_config from '../config/eks/apply_global_baseline_eks_config';
+import * as orgs_baseline_eks_config from '../config/eks/apply_orgs_baseline_eks_config';
+import * as dev_eks_config from '../config/eks/apply_dev_eks_config';
+////////////////////////////////////////////////////////////////////////////////////////////
+//Log Verbosity Config:
+import { userLog } from '@aws-quickstart/eks-blueprints/dist/utils';
+userLog.settings.minLevel = 3; //<-- Hide's eks blueprint's debug logs, 3 = info, 2 = debug
 ////////////////////////////////////////////////////////////////////////////////////////////
 
 
@@ -74,26 +77,39 @@ Stacks are a collection of 1 or more CDK constructs (including nested stacks)
        and prompt's y to confirm deployment. (A deployment will take about 17 minutes.)
 *///////////////////////////////////////////////////////////////////////////////////////////
 
+
+
+///////////////////////////////////////////////////////////////////////////////////////////
+//VPC Infrastructure as Code (Recommended, yet optional)
 //Note: 'lower-envs-vpc' is both the VPC name and the CloudFormation Stack Name
 const lower_envs_vpc_cfg: Opinionated_VPC_Config_Data = new Opinionated_VPC_Config_Data('lower-envs-vpc');
       global_baseline_vpc_config.apply_config(lower_envs_vpc_cfg);
       orgs_baseline_vpc_config.apply_config(lower_envs_vpc_cfg);
       lower_envs_vpc_config.apply_config(lower_envs_vpc_cfg);
-Opinionated_VPC.add_to_list_of_deployable_stacks(cdk_construct_storage, lower_envs_vpc_cfg);
+const higher_envs_vpc_cfg: Opinionated_VPC_Config_Data = new Opinionated_VPC_Config_Data('higher-envs-vpc');
+      global_baseline_vpc_config.apply_config(higher_envs_vpc_cfg);
+      orgs_baseline_vpc_config.apply_config(higher_envs_vpc_cfg);
+      higher_envs_vpc_config.apply_config(higher_envs_vpc_cfg);
+      //^-- Note some of the apply_config, uses methods to set a value, which is overrideable
+      //    so the order of application can matter. 
+      //    So it's best to follow a pattern of global --> org --> env when applying config.
 
+Opinionated_VPC.add_to_list_of_deployable_stacks(cdk_construct_storage, lower_envs_vpc_cfg);
+Opinionated_VPC.add_to_list_of_deployable_stacks(cdk_construct_storage, higher_envs_vpc_cfg);
 ///////////////////////////////////////////////////////////////////////////////////////////
 
 
 
-// const dev1cfg: Easy_EKS_Config_Data = new Easy_EKS_Config_Data('dev1-eks');
-//   global_baseline_eks_config.apply_config(dev1cfg);
-//   orgs_baseline_eks_config.apply_config(dev1cfg);
-//   dev_eks_config.apply_config(dev1cfg);
-  //^-- Note some of the apply_config, uses methods to set a value, which is overrideable
-  //    so the order of application can matter. 
-  //    So it's best to follow a pattern of global --> org --> env when applying config.
+///////////////////////////////////////////////////////////////////////////////////////////
+//EKS Infrastructure as Code:
+const dev1cfg: Easy_EKS_Config_Data = new Easy_EKS_Config_Data('dev1-eks');
+  global_baseline_eks_config.apply_config(dev1cfg);
+  orgs_baseline_eks_config.apply_config(dev1cfg);
+  dev_eks_config.apply_config(dev1cfg);
   //console.log('dev1cfg:\n', dev1cfg); //<-- \n is newline
-// EKS_Blueprints_Based_Cluster.add_to_list_of_deployable_stacks(cdk_construct_storage, dev1cfg);
+  //^--this and `cdk synth $StackID | grep -C 5 "parameter"` can help config validation feedback loop)
 
+EKS_Blueprints_Based_Cluster.add_to_list_of_deployable_stacks(cdk_construct_storage, dev1cfg);
+///////////////////////////////////////////////////////////////////////////////////////////
 
 
