@@ -16,18 +16,19 @@ export function apply_config(config: Opinionated_VPC_Config_Data){ //config: is 
         * Hands free as long as you're under bandwidth limit (decent possibility)
       * Affordable:
         * Idle Costs:
-          * 4tg.micro times 3 AZs = $9.18/month (1 per public AZ * 3 AZ * $3.06/month)
+          * 4tg.micro times 2 AZs (2 is configurable) = $6.12/month (2 AZ * $3.06/month)
           * Default of 3 AWS Managed NAT GW's = $98.55/month (1 per public AZ * 3 AZ * $0.045/hr * 730 hr/month)
         * Per GB Costs:
-          * Fck NAT = $0/GB
-          * AWS Managed NAT = $0.045/GB
+          * Fck NAT = $0/GB additional upcharge (normal networking costs still apply)
+          * AWS Managed NAT = $0.045/GB additional upcharge
       * FOSS (Free Open Source Software):
         * Supported via Tips https://ko-fi.com/codebrewed
     */
     instanceType: ec2.InstanceType.of(ec2.InstanceClass.T4G, ec2.InstanceSize.MICRO),
-    enableCloudWatch: false, //costs $17/month, can turn it on and off as needed
+    enableCloudWatch: false, //costs $17/month, could turn it on and off as needed, but honestly if problem
+                             //just bump up to bigger size or switched to AWS Managed NAT
     enableSsm: true, //allows ssh via systems manager.
-    //POTENTIAL TO DO: SG is created by default, but I may need to add one that supports dual stack
+    //POTENTIAL TO DO?: SG is created by default, but I may need to add one that supports dual stack
    }
    config.setNatGatewayProviderAsFckNat(good_and_affordable_NAT_props);
    

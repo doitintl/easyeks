@@ -29,10 +29,11 @@ export function add_to_list_of_deployable_stacks(constructWhereStacksStateIsStor
   //https://docs.aws.amazon.com/cdk/api/v2/docs/aws-cdk-lib.aws_ec2.VpcProps.html
   const vpc = new ec2.Vpc(vpcStack, config.stackID, {
     vpcName: config.stackID,
-    ipProtocol: ec2.IpProtocol.DUAL_STACK,
     natGatewayProvider: config.natGatewayProvider,
-    natGateways: 1,
+    natGateways: 2,
+    ipProtocol: ec2.IpProtocol.DUAL_STACK,
     ipAddresses: ec2.IpAddresses.cidr('10.100.0.0/16'),
+    ipv6Addresses: ec2.Ipv6Addresses.amazonProvided(),
     vpnGateway: false,
     subnetConfiguration: [
         { name: "Public", 
@@ -57,16 +58,27 @@ export function add_to_list_of_deployable_stacks(constructWhereStacksStateIsStor
     },
   });//end vpc
 
-  //UX Improvement: Improved Subnet Naming
+  //UX Improvement: Improved Naming for Subnets and NAT-GWs/NAT-Instances
   const publicSubnets = vpc.selectSubnets({subnetType: ec2.SubnetType.PUBLIC}).subnets;
   const privateSubnets = vpc.selectSubnets({subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS}).subnets;
   publicSubnets.forEach((subnet, i) => {
-    cdk.Tags.of(subnet).add("Name", `${config.stackID}/PublicSubnet/${subnet.availabilityZone}`);
+      const subnetName: string = `${config.stackID}/PublicSubnet${i+1}/${subnet.availabilityZone}`;
+      const NAT_GW_Name: string = `${subnetName}/NAT-GW`;
+      cdk.Tags.of(subnet).add("Name", subnetName);
+      //Note tryFindChild values correspond to CF Stack's Resources Tab
+      let potential_NAT_ASG = vpc.node.tryFindChild(`PublicSubnet${i+1}`)?.node.tryFindChild('FckNatAsg');
+      let potential_NAT_GW = vpc.node.tryFindChild(`PublicSubnet${i+1}`)?.node.tryFindChild('NATGateway');
+      if(potential_NAT_ASG){ cdk.Tags.of(potential_NAT_ASG).add("Name", NAT_GW_Name) };
+      if(potential_NAT_GW){ cdk.Tags.of(potential_NAT_GW).add("Name", NAT_GW_Name) };
   });
   privateSubnets.forEach((subnet, i) => {
-    cdk.Tags.of(subnet).add("Name", `${config.stackID}/PrivateSubnet/${subnet.availabilityZone}`);
+      cdk.Tags.of(subnet).add("Name", `${config.stackID}/PrivateSubnet${i+1}/${subnet.availabilityZone}`);
   });
 
+  //UX Oddity: Turned out to be an AWS oddity that can't be fixed with code change
+  //Canada has 3 customer facing regions: a, b, d, which can be verified with
+  //`aws ec2 describe-availability-zones --region ca-central-1`
+  //The reddit lore is that ca-central-1's c AZ exists for AWS internal use. 
 
 }//end add_to_list_of_deployable_stacks
 
