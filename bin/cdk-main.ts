@@ -109,7 +109,29 @@ const dev1cfg: Easy_EKS_Config_Data = new Easy_EKS_Config_Data('dev1-eks');
   //console.log('dev1cfg:\n', dev1cfg); //<-- \n is newline
   //^--this and `cdk synth $StackID | grep -C 5 "parameter"` can help config validation feedback loop)
 
-EKS_Blueprints_Based_Cluster.add_to_list_of_deployable_stacks(cdk_construct_storage, dev1cfg);
+const dev1_eks_stack = EKS_Blueprints_Based_Cluster.add_to_list_of_deployable_stacks(cdk_construct_storage, dev1cfg);
 ///////////////////////////////////////////////////////////////////////////////////////////
 
+
+//BELOW is temp experiment that's deletable.
+// import * as ec2 from 'aws-cdk-lib/aws-ec2';
+// import * as blueprints from '@aws-quickstart/eks-blueprints'; 
+// import { KubernetesVersion } from 'aws-cdk-lib/aws-eks';
+
+// const vpcID = "vpc-0d419b717d34dba79" //lower-envs-vpc  <--- 
+
+// const pre_existing_vpc_stack = new cdk.Stack(cdk_construct_storage, 'pre-existing-vpc2', {
+//   env: {
+//     account: process.env.CDK_DEFAULT_ACCOUNT!,
+//     region: process.env.CDK_DEFAULT_REGION!
+//   }
+// });
+// const pre_existing_vpc = ec2.Vpc.fromLookup(pre_existing_vpc_stack,'pre-existing-vpc2', { vpcId: vpcID });
+
+//const pre_existing_vpc = ec2.Vpc.fromLookup(dev1_eks_stack,'pre-existing-vpc', { vpcId: vpcID });
+
+// const eksBlueprint = blueprints.EksBlueprint.builder();
+// eksBlueprint.resourceProvider(blueprints.GlobalResources.Vpc, new blueprints.VpcProvider(vpcID));
+// eksBlueprint.version(KubernetesVersion.V1_30);
+// eksBlueprint.build(cdk_construct_storage, "test-eks");
 

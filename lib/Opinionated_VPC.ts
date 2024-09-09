@@ -33,20 +33,22 @@ export function add_to_list_of_deployable_stacks(constructWhereStacksStateIsStor
     vpcName: config.stackID,
     natGatewayProvider: config.natGatewayProvider,
     natGateways: config.numNatGateways,
-    ipProtocol: ec2.IpProtocol.DUAL_STACK,
-    ipAddresses: ec2.IpAddresses.cidr(config.vpcNetworkWithCIDRSlash),
-    ipv6Addresses: ec2.Ipv6Addresses.amazonProvided(),
+    ipProtocol: ec2.IpProtocol.IPV4_ONLY,
+    // ipProtocol: ec2.IpProtocol.DUAL_STACK,
+     ipAddresses: ec2.IpAddresses.cidr(config.vpcNetworkWithCIDRSlash),
+    // ipv6Addresses: ec2.Ipv6Addresses.amazonProvided(),
     vpnGateway: config.provisionVPN,
     subnetConfiguration: [
         { name: "Public", 
           subnetType: ec2.SubnetType.PUBLIC,
           cidrMask: config.publicSubNetCIDRSlash,
-          ipv6AssignAddressOnCreation: true,
+//          mapPublicIpOnLaunch: true, //(this is needed for fck-NAT to work)
+//          ipv6AssignAddressOnCreation: true,
         },
         { name: "Private",
           subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS,
           cidrMask: config.privateSubNetCIDRSlash,
-          ipv6AssignAddressOnCreation: true,
+//          ipv6AssignAddressOnCreation: true,
         }
     ],
     //v--S3 and DynamoDB GW Endpoints cost nothing extra, can only safe money. should be default
@@ -60,8 +62,6 @@ export function add_to_list_of_deployable_stacks(constructWhereStacksStateIsStor
     },
   });//end vpc
 
-
-
   //UX Improvement: Improved Naming for Subnets and NAT-GWs/NAT-Instances
   const publicSubnets = vpc.selectSubnets({subnetType: ec2.SubnetType.PUBLIC}).subnets;
   const privateSubnets = vpc.selectSubnets({subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS}).subnets;
@@ -69,6 +69,7 @@ export function add_to_list_of_deployable_stacks(constructWhereStacksStateIsStor
       const subnetName: string = `${config.stackID}/PublicSubnet${i+1}/${subnet.availabilityZone}`;
       const NAT_GW_Name: string = `${subnetName}/NAT-GW`;
       cdk.Tags.of(subnet).add("Name", subnetName);
+      cdk.Tags.of(subnet).add("kubernetes.io/role/elb", "1");
       //Note tryFindChild values correspond to CF Stack's Resources Tab
       let potential_NAT_ASG = vpc.node.tryFindChild(`PublicSubnet${i+1}`)?.node.tryFindChild('FckNatAsg');
       let potential_NAT_GW = vpc.node.tryFindChild(`PublicSubnet${i+1}`)?.node.tryFindChild('NATGateway');
@@ -77,6 +78,7 @@ export function add_to_list_of_deployable_stacks(constructWhereStacksStateIsStor
   });
   privateSubnets.forEach((subnet, i) => {
       cdk.Tags.of(subnet).add("Name", `${config.stackID}/PrivateSubnet${i+1}/${subnet.availabilityZone}`);
+      cdk.Tags.of(subnet).add("kubernetes.io/role/internal-elb", "1");
   });
 
   //UX Oddity: Turned out to be an AWS oddity that can't be fixed with code change

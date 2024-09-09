@@ -32,7 +32,7 @@ export class partialEKSAccessEntry {
       this.accessEntryName = principleARN;
     }
 }
-  
+
 interface GenericClusterProviderPropsWithAccessEntrySupport extends blueprints.GenericClusterProviderProps {
     partialEKSAccessEntries?: Array<partialEKSAccessEntry>;
 }

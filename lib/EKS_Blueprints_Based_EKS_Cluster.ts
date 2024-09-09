@@ -12,21 +12,57 @@ import { partialEKSAccessEntry, GenericClusterProviderWithAccessEntrySupport } f
 import * as monitoring from './Frugal_GPL_Monitoring_Stack';
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 export function add_to_list_of_deployable_stacks(stateStorage: Construct, config: Easy_EKS_Config_Data){
-  const clusterStack = blueprints.EksBlueprint.builder();
-  clusterStack.clusterProvider(generate_cluster_blueprint(config));
-  clusterStack.account(config.account);
-  clusterStack.region(config.region);
-  clusterStack.version(config.kubernetesVersion);
+
+  
+  //These next few lines are a temporary hack for learning purposes.
+  const stack_test = new cdk.Stack(stateStorage, "test1-eks", {
+    env: {
+      account: config.account,
+      region: config.region,
+    }
+  });
+  const pre_existing_vpc = ec2.Vpc.fromLookup(stack_test,'pre-existing-vpc', {
+    vpcName: 'lower-envs-vpc', //This assumes vpcName is unique, looks up by name
+    vpcId: "vpc-0d419b717d34dba79",
+  });//end pre_existing_vpc
+
+
+
+
+  const eksBlueprint = blueprints.EksBlueprint.builder();
+  eksBlueprint.resourceProvider(blueprints.GlobalResources.Vpc, new blueprints.VpcProvider('vpc-0d419b717d34dba79'));
+  eksBlueprint.clusterProvider(generate_cluster_blueprint(stateStorage, config));
+  
+  eksBlueprint.account(config.account);
+  eksBlueprint.region(config.region);
+  eksBlueprint.version(config.kubernetesVersion);
   if(config.clusterAddOns){ //<--JS truthy statement saying if not null
     //... is JS array deconsturing operator which converts an array to a CSV list of parameters
-    clusterStack.addOns(...config.getClusterAddons());
+    eksBlueprint.addOns(...config.getClusterAddons());
   }
-  monitoring.deploy(stateStorage, config); //<-- TEMPORARY SPOT TO TRIGGER LOGIC, as a temporary hack, FOR TESTING PURPOSES,
-  clusterStack.build(stateStorage, config.stackId);
+
+  const eks_blueprint_properties = convert_blueprintBuilder_to_blueprintProperties(config.stackId, eksBlueprint);
+  const eksBPC1 = new blueprints.EksBlueprintConstruct(stack_test, eks_blueprint_properties);
+  // CLEAN this up after refactor
+  // monitoring.deploy(stateStorage, config); //<-- TEMPORARY SPOT TO TRIGGER LOGIC, as a temporary hack, FOR TESTING PURPOSES,
+  // const clusterStack = eksBlueprint.build(stateStorage, config.stackId) as cdk.Stack;
+  // ^-- old method from b4 refactor
 }
 
+
+function convert_blueprintBuilder_to_blueprintProperties(id: string, blueprint_builder: blueprints.BlueprintBuilder){
+  let partial_blueprint_properties:Partial<blueprints.EksBlueprintProps> = blueprint_builder.props; 
+  //partial means some values may be null
+  //so we need to verify the partial object can safely be converted to the complete object.
+  //id is the only value of EksBlueprintProps that must exist in a valid complete object.
+  const blueprint_properties = { ...partial_blueprint_properties, id } as blueprints.EksBlueprintProps;
+  return blueprint_properties;  
+}
+
+
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-function generate_cluster_blueprint(config: Easy_EKS_Config_Data){
+
+function generate_cluster_blueprint(stateStorage: Construct, config: Easy_EKS_Config_Data){
   const clusterAdmin: eks.AccessPolicy = eks.AccessPolicy.fromAccessPolicyName('AmazonEKSClusterAdminPolicy', {
     accessScopeType: cdk.aws_eks.AccessScopeType.CLUSTER
   });
@@ -36,6 +72,18 @@ function generate_cluster_blueprint(config: Easy_EKS_Config_Data){
       partialEKSAccessEntriesFromConfig.push(new partialEKSAccessEntry(config.clusterAdminARNs[index], [clusterAdmin]));      
     }
   }
+
+  // const pre_existing_vpc_stack = new cdk.Stack(stateStorage, 'pre-existing-vpc', {
+  //   env: {
+  //     account: config.account,
+  //     region: config.region
+  //   }
+  // });
+
+  // const pre_existing_vpc = ec2.Vpc.fromLookup(pre_existing_vpc_stack,'pre-existing-vpc', {
+  //   vpcName: 'lower-envs-vpc', //This assumes vpcName is unique, looks up by name
+  //   vpcId: "vpc-0544ea1fe5dc27131",
+  // });//end pre_existing_vpc
 
   const cluster_blueprint = new GenericClusterProviderWithAccessEntrySupport({
     tags: config.tags, //<-- attaches tags to EKS cluster in AWS Web Console
@@ -59,8 +107,10 @@ function generate_cluster_blueprint(config: Easy_EKS_Config_Data){
       }
     ],
     outputConfigCommand: true,
+    privateCluster: false,
+    ipFamily: eks.IpFamily.IP_V4, 
+//    vpc: pre_existing_vpc,
   });
 
   return cluster_blueprint;
 }
-

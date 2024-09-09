@@ -7,7 +7,7 @@ export function apply_config(config: Opinionated_VPC_Config_Data){ //config: is 
   //^-- good choice for lower env clusters, as follows sustainability pillar of AWS's well architected framework
 
 
-  const good_and_affordable_NAT_props: FckNatInstanceProps = {
+  const good_and_affordable_NAT_properties: FckNatInstanceProps = {
     /*Pros of Fck NAT (Summary of https://fck-nat.dev/stable/)
       * Good:
         * t4g.micro supports sustained 3.2 Mbps egress and 5 Gbps traffic spikes (per instance/AZ)
@@ -28,9 +28,9 @@ export function apply_config(config: Opinionated_VPC_Config_Data){ //config: is 
     enableCloudWatch: false, //costs ~$17/month, could turn it on and off as needed, but honestly if problem
                              //just bump up to bigger size or switched to AWS Managed NAT
     enableSsm: true, //allows ssh via systems manager.
-    //POTENTIAL TO DO?: SG is created by default, but I may need to add one that supports dual stack
   }
-  config.setNatGatewayProviderAsFckNat(good_and_affordable_NAT_props);
+  config.setNatGatewayProviderAsAwsManagedNat(); //Semi-Expensive Alternative
+  //config.setNatGatewayProviderAsFckNat( TODO, good_and_affordable_NAT_properties);
   config.setNumNatGateways(1);
       /*                   ^-- Use 1, 2, or 3
       1 is recommended when, you have low traffic (under 1000 GB/month), and want lowest price.
