@@ -1,8 +1,9 @@
 import { Opinionated_VPC_Config_Data } from '../../lib/Opinionated_VPC_Config_Data';
+import * as cdk from 'aws-cdk-lib';
 import { FckNatInstanceProps } from 'cdk-fck-nat' //source: npm install cdk-fck-nat@latest
 import * as ec2 from 'aws-cdk-lib/aws-ec2';
 
-export function apply_config(config: Opinionated_VPC_Config_Data){ //config: is of Opinionated_VPC_Config_Data
+export function apply_config(config: Opinionated_VPC_Config_Data, stack?: cdk.Stack){ //config: is of type Opinionated_VPC_Config_Data
 
     const good_and_affordable_NAT_props: FckNatInstanceProps = {
         instanceType: ec2.InstanceType.of(ec2.InstanceClass.C6GN, ec2.InstanceSize.MEDIUM), 

@@ -1,12 +1,9 @@
 import { Opinionated_VPC_Config_Data } from '../../lib/Opinionated_VPC_Config_Data';
+import * as cdk from 'aws-cdk-lib';
 import { FckNatInstanceProps } from 'cdk-fck-nat' //source: npm install cdk-fck-nat@latest
 import * as ec2 from 'aws-cdk-lib/aws-ec2';
 
-export function apply_config(config: Opinionated_VPC_Config_Data){ //config: is of Opinionated_VPC_Config_Data
-  config.setRegion("ca-central-1"); //<-- ca-central-1 is a Hydro Powered AWS Region (Low CO2 emissions)
-  //^-- good choice for lower env clusters, as follows sustainability pillar of AWS's well architected framework
-
-
+export function apply_config(config: Opinionated_VPC_Config_Data, stack?: cdk.Stack){ //config: is of type Opinionated_VPC_Config_Data
   const good_and_affordable_NAT_properties: FckNatInstanceProps = {
     /*Pros of Fck NAT (Summary of https://fck-nat.dev/stable/)
       * Good:

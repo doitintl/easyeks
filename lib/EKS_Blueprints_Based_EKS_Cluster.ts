@@ -14,17 +14,17 @@ import * as monitoring from './Frugal_GPL_Monitoring_Stack';
 export function add_to_list_of_deployable_stacks(stateStorage: Construct, config: Easy_EKS_Config_Data){
 
   
-  //These next few lines are a temporary hack for learning purposes.
-  const stack_test = new cdk.Stack(stateStorage, "test1-eks", {
-    env: {
-      account: config.account,
-      region: config.region,
-    }
-  });
-  const pre_existing_vpc = ec2.Vpc.fromLookup(stack_test,'pre-existing-vpc', {
-    vpcName: 'lower-envs-vpc', //This assumes vpcName is unique, looks up by name
-    vpcId: "vpc-0d419b717d34dba79",
-  });//end pre_existing_vpc
+  // //These next few lines are a temporary hack for learning purposes.
+  // const stack_test = new cdk.Stack(stateStorage, "test1-eks", {
+  //   env: {
+  //     account: config.account,
+  //     region: config.region,
+  //   }
+  // });
+  // const pre_existing_vpc = ec2.Vpc.fromLookup(stack_test,'pre-existing-vpc', {
+  //   vpcName: 'lower-envs-vpc', //This assumes vpcName is unique, looks up by name
+  //   vpcId: "vpc-0d419b717d34dba79",
+  // });//end pre_existing_vpc
 
 
 
@@ -42,7 +42,7 @@ export function add_to_list_of_deployable_stacks(stateStorage: Construct, config
   }
 
   const eks_blueprint_properties = convert_blueprintBuilder_to_blueprintProperties(config.stackId, eksBlueprint);
-  const eksBPC1 = new blueprints.EksBlueprintConstruct(stack_test, eks_blueprint_properties);
+//  const eksBPC1 = new blueprints.EksBlueprintConstruct(stack_test, eks_blueprint_properties);
   // CLEAN this up after refactor
   // monitoring.deploy(stateStorage, config); //<-- TEMPORARY SPOT TO TRIGGER LOGIC, as a temporary hack, FOR TESTING PURPOSES,
   // const clusterStack = eksBlueprint.build(stateStorage, config.stackId) as cdk.Stack;

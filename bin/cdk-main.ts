@@ -5,7 +5,7 @@
 import console = require('console'); //Helps feedback loop, when manually debugging
 //     ^-- allows `console.log(dev1cfg);` to work, when `cdk list` is run.
 import * as cdk from 'aws-cdk-lib';
-import * as Opinionated_VPC from '../lib/Opinionated_VPC';
+import { Opinionated_VPC } from '../lib/Opinionated_VPC';
 import * as EKS_Blueprints_Based_Cluster from '../lib/EKS_Blueprints_Based_EKS_Cluster';
 /*     ^-------------This--------------^
 TS import syntax means:
@@ -24,10 +24,6 @@ TS import syntax means:
 */
 ////////////////////////////////////////////////////////////////////////////////////////////
 //Config Library Imports:
-import * as global_baseline_vpc_config from '../config/vpc/apply_global_baseline_vpc_config';
-import * as orgs_baseline_vpc_config from '../config/vpc/apply_orgs_baseline_vpc_config';
-import * as lower_envs_vpc_config from '../config/vpc/apply_lower_envs_vpc_config';
-import * as higher_envs_vpc_config from '../config/vpc/apply_higher_envs_vpc_config';
 import * as global_baseline_eks_config from '../config/eks/apply_global_baseline_eks_config';
 import * as orgs_baseline_eks_config from '../config/eks/apply_orgs_baseline_eks_config';
 import * as dev_eks_config from '../config/eks/apply_dev_eks_config';
@@ -41,7 +37,7 @@ userLog.settings.minLevel = 3; //<-- Hide's eks blueprint's debug logs, 3 = info
 
 ////////////////////////////////////////////////////////////////////////////////////////////
 // IMPORTANT NOTE: For Conceptual Understanding and Comprehension:
-const storage_for_stacks = new cdk.App(); //<-- Root AWS "Construct"
+const storage_for_stacks_state = new cdk.App(); //<-- Root AWS "Construct"
 /* https://docs.aws.amazon.com/cdk/v2/guide/constructs.html
 cdk.App & cdk.Stack classes from the AWS Construct Library are unique constructs.
 Unlike mosts constructs they don't configure AWS resources on their own.
@@ -76,26 +72,68 @@ Stacks are a collection of 1 or more CDK constructs (including nested stacks)
        (where dev1-eks is a stackID, can then be used to dry-run a deployment, 
        and prompt's y to confirm deployment. (A deployment will take about 17 minutes.)
 *///////////////////////////////////////////////////////////////////////////////////////////
+const default_stack_config: cdk.StackProps = {
+    env: {
+        account: process.env.CDK_DEFAULT_ACCOUNT!, //<-- process.env pulls value from CLI env,
+        region: process.env.CDK_DEFAULT_REGION! //<-- ! after var, tells TS it won't be null.
+    }
+}
+/*Useful Notes:
+UX (User Experience)
+AMER (North and South American Contents)
+EMEA (European Union, Middle East, Africa)
+per https://www.concurrencylabs.com/blog/choose-your-aws-region-wisely/
+    https://openupthecloud.com/which-aws-region-cheapest/
+    https://statusgator.com/blog/is-north-virginia-aws-region-the-least-reliable-and-why/
+us-east-2 (Ohio, USA) is cheapest and most reliable for AMER
+eu-west-1 (Ireland, EU) is cheapest and most reliable for EMEA
+ca-central-1 (Montreal, Canada) is a Hydro Powered AWS Region (Low CO2 Emissions)*/
+
+//v-- consider for lower or small envs, per AWS's Well Architected Framework's sustainability pillar
+const low_co2_AMER_stack_config: cdk.StackProps = {
+    env: {
+        account: process.env.CDK_DEFAULT_ACCOUNT!,
+        region: "ca-central-1" //Montreal, Canada (low co2)
+        //Heads Up About UX Oddity specific to this region:
+        //ca-central-1 has 3 user facing regions: a, b, d
+        //`aws ec2 describe-availability-zones --region ca-central-1` can be used to verify
+        //AWS lore suggests ca-central-1's c AZ exists for AWS internal use
+    }
+}
+
+//v-- consider for higher or big envs, per AWS's Well Architected Framework's cost optimization pillar
+const low_cost_AMER_stack_config: cdk.StackProps = {
+    env: {
+        account: process.env.CDK_DEFAULT_ACCOUNT!,
+        region: "us-east-2" //Ohio, USA (cheap and reliable)
+    }
+}
+const low_cost_EMEA_stack_config: cdk.StackProps = {
+    env: {
+        account: process.env.CDK_DEFAULT_ACCOUNT!,
+        region: "eu-west-1" //Ireland, EU (cheap and reliable)
+    }
+}
+///////////////////////////////////////////////////////////////////////////////////////////
 
 
 
 ///////////////////////////////////////////////////////////////////////////////////////////
-//VPC Infrastructure as Code (Recommended, yet optional)
+//VPC Infrastructure as Code (Use of Opinionated VPC is Recommended, yet optional)
 //Note: 'lower-envs-vpc' is both the VPC name and the CloudFormation Stack Name
-const lower_envs_vpc_cfg: Opinionated_VPC_Config_Data = new Opinionated_VPC_Config_Data('lower-envs-vpc');
-      global_baseline_vpc_config.apply_config(lower_envs_vpc_cfg);
-      orgs_baseline_vpc_config.apply_config(lower_envs_vpc_cfg);
-      lower_envs_vpc_config.apply_config(lower_envs_vpc_cfg);
-const higher_envs_vpc_cfg: Opinionated_VPC_Config_Data = new Opinionated_VPC_Config_Data('higher-envs-vpc');
-      global_baseline_vpc_config.apply_config(higher_envs_vpc_cfg);
-      orgs_baseline_vpc_config.apply_config(higher_envs_vpc_cfg);
-      higher_envs_vpc_config.apply_config(higher_envs_vpc_cfg);
-      //^-- Note some of the apply_config, uses methods to set a value, which is overrideable
-      //    so the order of application can matter. 
-      //    So it's best to follow a pattern of global --> org --> env when applying config.
+const lower_envs_vpc = new Opinionated_VPC(storage_for_stacks_state, 'lower-envs-vpc', low_co2_AMER_stack_config);
+//Note: About the below lower_envs_vpc.apply_*_config() functions
+//      The order in which you call these functions matters, because some functions set
+//      values in a way that's intended to be overridable. This is why it's
+//      recommended to follow the below order of application (global -> my_org -> env)
+lower_envs_vpc.apply_global_baseline_config();
+lower_envs_vpc.apply_my_orgs_baseline_config();
+lower_envs_vpc.apply_lower_envs_config();
+lower_envs_vpc.deploy_vpc_construct_into_this_objects_stack();
+///////////////////////////////////////////////////////////////////////////////////////////
 
-Opinionated_VPC.add_to_list_of_deployable_stacks(storage_for_stacks, lower_envs_vpc_cfg);
-Opinionated_VPC.add_to_list_of_deployable_stacks(storage_for_stacks, higher_envs_vpc_cfg);
+
+
 ///////////////////////////////////////////////////////////////////////////////////////////
 /*sudo code brainstorm of things needed
 opionated vpc to be a stack
@@ -136,7 +174,10 @@ const lower_envs_vpc = new Opinionated_VPC('storage_for_stack','this_stacks_id')
       lower_envs_vpc.apply_global_baseline_config();
       lower_envs_vpc.apply_my_orgs_baseline_config();
       lower_envs_vpc.apply_lower_envs_config();
-      lower_envs_vpc.deploy_vpc_construct_this_objects_stack();
+      lower_envs_vpc.deploy_vpc_construct_into_this_objects_stack();
+
+...hum...
+      I still want the config fined in the config folder though...
 */ 
 ///////////////////////////////////////////////////////////////////////////////////////////
 
@@ -150,7 +191,7 @@ const dev1cfg: Easy_EKS_Config_Data = new Easy_EKS_Config_Data('dev1-eks');
   //console.log('dev1cfg:\n', dev1cfg); //<-- \n is newline
   //^--this and `cdk synth $StackID | grep -C 5 "parameter"` can help config validation feedback loop)
 
-EKS_Blueprints_Based_Cluster.add_to_list_of_deployable_stacks(storage_for_stacks, dev1cfg);
+EKS_Blueprints_Based_Cluster.add_to_list_of_deployable_stacks(storage_for_stacks_state, dev1cfg);
 
 
 //new EKS_Blueprints_Based_Cluster(cdks_root_storage_for_stacks, dev1cfg);
