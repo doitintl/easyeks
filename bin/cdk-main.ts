@@ -41,7 +41,7 @@ userLog.settings.minLevel = 3; //<-- Hide's eks blueprint's debug logs, 3 = info
 
 ////////////////////////////////////////////////////////////////////////////////////////////
 // IMPORTANT NOTE: For Conceptual Understanding and Comprehension:
-const cdk_construct_storage = new cdk.App(); //<-- Root AWS "Construct"
+const storage_for_stacks = new cdk.App(); //<-- Root AWS "Construct"
 /* https://docs.aws.amazon.com/cdk/v2/guide/constructs.html
 cdk.App & cdk.Stack classes from the AWS Construct Library are unique constructs.
 Unlike mosts constructs they don't configure AWS resources on their own.
@@ -94,10 +94,51 @@ const higher_envs_vpc_cfg: Opinionated_VPC_Config_Data = new Opinionated_VPC_Con
       //    so the order of application can matter. 
       //    So it's best to follow a pattern of global --> org --> env when applying config.
 
-Opinionated_VPC.add_to_list_of_deployable_stacks(cdk_construct_storage, lower_envs_vpc_cfg);
-Opinionated_VPC.add_to_list_of_deployable_stacks(cdk_construct_storage, higher_envs_vpc_cfg);
+Opinionated_VPC.add_to_list_of_deployable_stacks(storage_for_stacks, lower_envs_vpc_cfg);
+Opinionated_VPC.add_to_list_of_deployable_stacks(storage_for_stacks, higher_envs_vpc_cfg);
 ///////////////////////////////////////////////////////////////////////////////////////////
+/*sudo code brainstorm of things needed
+opionated vpc to be a stack
+eks to be a stack (that can reference a pre-existing vpc)
+to have ongoing access to a stack as a variable that I can pass around.
+to have ongoing access to vpc construct as  variable I can pass around.
+consistency (because I want consistency I might do easy eks 1st)
 
+The lower envs config needs me to pass a stack so configuring SG is even possible.
+Hum... instead of passing config like above
+I could have the config work against an object.
+
+ok so opinionated vpc & opinionated eks I'll each give a config, stack, and vpc variable.
+my config setup is fine. more or less... (wait there might be a circular dependency.)
+but the applying config I need to think about. 
+I was thinking opinionated vpc could extend cdk stack.
+If I did that I'd need to say new Opinionated_VPC to instanciate it.
+
+in the case of Easy EKS instanciating might? be useful, so I could have access to a stack, vpc, and config
+hum... I kind of like the format I have now (new user optimized) and it's workable but let me think about it some more...
+wait it's not workable... easy eks config data needs access to a stack immediately.
+What if I combine the objects a bit more?
+
+const dev1_eks = new Easy_EKS('storage_for_stacks','this-stacks-id')
+      ^-- this obj would have a stack, so it'd show up immediately
+      (making the object would immediately make it show up on the list of stacks)
+      dev1_eks.apply_global_baseline_config();
+      dev1_eks.apply_my_orgs_baseline_config();
+      dev1_eks.apply_dev_config();
+      dev1_eks.deploy_eks_construct_in_this_objects_stack();
+      
+      for the config should I use the words apply, populate, or stage. I think apply. o what about build, build is nice. doesn't fit though.
+      what should I name the class?
+      Easy_EKS <-- would be consistent with Opinionated VPC, and give me flexibility in the future.
+
+would this work for vpc?
+const lower_envs_vpc = new Opinionated_VPC('storage_for_stack','this_stacks_id')
+      lower_envs_vpc.apply_global_baseline_config();
+      lower_envs_vpc.apply_my_orgs_baseline_config();
+      lower_envs_vpc.apply_lower_envs_config();
+      lower_envs_vpc.deploy_vpc_construct_this_objects_stack();
+*/ 
+///////////////////////////////////////////////////////////////////////////////////////////
 
 
 ///////////////////////////////////////////////////////////////////////////////////////////
@@ -109,7 +150,10 @@ const dev1cfg: Easy_EKS_Config_Data = new Easy_EKS_Config_Data('dev1-eks');
   //console.log('dev1cfg:\n', dev1cfg); //<-- \n is newline
   //^--this and `cdk synth $StackID | grep -C 5 "parameter"` can help config validation feedback loop)
 
-const dev1_eks_stack = EKS_Blueprints_Based_Cluster.add_to_list_of_deployable_stacks(cdk_construct_storage, dev1cfg);
+EKS_Blueprints_Based_Cluster.add_to_list_of_deployable_stacks(storage_for_stacks, dev1cfg);
+
+
+//new EKS_Blueprints_Based_Cluster(cdks_root_storage_for_stacks, dev1cfg);
 ///////////////////////////////////////////////////////////////////////////////////////////
 
 
