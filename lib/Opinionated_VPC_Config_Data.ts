@@ -40,28 +40,7 @@ export class Opinionated_VPC_Config_Data { //This object just holds config data.
     if(this.tags === undefined){ this.tags = { [key] : value } }
     else{ this.tags = { ...this.tags, [key] : value }}
   }
-  setNatGatewayProviderAsFckNat(stack_to_deploy_into: cdk.Stack, props: FckNatInstanceProps){
-    //fix for https://github.com/AndrewGuenther/cdk-fck-nat/issues/118
-    const sg_construct = new Construct(stack_to_deploy_into, "fck-NAT-security-group");
-    // const sg = new ec2.SecurityGroup(sg_construct, "fck-nat-sg", {
-    //   vpc: 'TODO', //the vpc in which to create the SG,
-    //   allowAllIpv6Outbound: true,
-    //   allowAllOutbound: true,
-    //   description: "allow NAT to accept inbound traffic",
-    //   securityGroupName: "fck-nat-sg"
-    // });
-    const modified_properties:FckNatInstanceProps = { 
-      instanceType: props.instanceType,
-      cloudWatchConfigParam: props?.cloudWatchConfigParam,
-      eipPool: props?.eipPool,
-      enableCloudWatch: props.enableCloudWatch,
-      enableSsm: props.enableSsm,
-      keyName: props.keyName,
-      keyPair: props.keyPair,
-      machineImage: props?.machineImage,
-      // securityGroup: sg,
-      userData: props?.userData
-    };
+  setNatGatewayProviderAsFckNat(props: FckNatInstanceProps){
     this.natGatewayProvider = new FckNatInstanceProvider( props );
   }
   setNatGatewayProviderAsAwsManagedNat(){

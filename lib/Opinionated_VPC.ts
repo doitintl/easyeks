@@ -13,6 +13,7 @@ import * as global_baseline_vpc_config from '../config/vpc/apply_global_baseline
 import * as my_orgs_baseline_vpc_config from '../config/vpc/apply_my_orgs_baseline_vpc_config';
 import * as lower_envs_vpc_config from '../config/vpc/apply_lower_envs_vpc_config';
 import * as higher_envs_vpc_config from '../config/vpc/apply_higher_envs_vpc_config';
+import { FckNatInstanceProvider } from 'cdk-fck-nat' //source: npm install cdk-fck-nat@latest
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -21,7 +22,8 @@ export class Opinionated_VPC{
     //Class Variables:
     stack: cdk.Stack;
     config: Opinionated_VPC_Config_Data;
-  
+    vpc: ec2.Vpc;
+
     //Class Constructor:
     constructor(storage_for_stacks_state: Construct, id_for_stack_and_vpc: string, stack_config: cdk.StackProps) {
         this.stack = new cdk.Stack(storage_for_stacks_state, id_for_stack_and_vpc, stack_config);
@@ -35,7 +37,7 @@ export class Opinionated_VPC{
     apply_higher_envs_config(){ higher_envs_vpc_config.apply_config(this.config,this.stack); }
     deploy_vpc_construct_into_this_objects_stack(){
         //https://docs.aws.amazon.com/cdk/api/v2/docs/aws-cdk-lib.aws_ec2.VpcProps.html
-        const vpc = new ec2.Vpc(this.stack, this.config.id, {
+        this.vpc = new ec2.Vpc(this.stack, this.config.id, {
             vpcName: this.config.id,
             natGatewayProvider: this.config.natGatewayProvider,
             natGateways: this.config.numNatGateways,
@@ -70,17 +72,40 @@ export class Opinionated_VPC{
             },
         });//end vpc
 
+        //Fck-NAT compatibility requirement:
+        if(this.config.natGatewayProvider instanceof FckNatInstanceProvider){
+            //v-- Configure Security Group
+            (this.config.natGatewayProvider as FckNatInstanceProvider).securityGroup
+                .addIngressRule(
+                    ec2.Peer.ipv4(this.config.vpcNetworkWithCIDRSlash),
+                    ec2.Port.allTraffic(),
+                    "Allow vpc clients ingress into NAT, to enable outbound internet connectivity."
+                );
+            //v-- UX Improvement: Add Name Tag to SG
+            let sg_construct = this.vpc.node.findChild('NatSecurityGroup').node.defaultChild!;//!=not null, true due to if
+            cdk.Tags.of(sg_construct).add("Name", `${this.config.id}/nat-gw`); 
+        } /*Side Note about the if logic above:
+        The ability to customize NAT GW's SG is limited, to the above methodology.
+        Normally SG's can be customized further using other methodologies, but those won't work here.
+        In this case the VPC Construct only allows the above methodology.
+        The above methodology is able to allow partial customization, 
+        while avoiding a circular reference scenario:
+        1. when constructing vpc with ec2-based NAT, it's required the nat-gw object be fully initialized.
+        2. nat-gw's constructor mentions sg as an optional parameter, but that can't be used, because
+        3. sg's constructor requires a fully initialized vpc to exist.
+        */
+
         //UX Improvement: Improved Naming for Subnets and NAT-GWs/NAT-Instances
-        const publicSubnets = vpc.selectSubnets({subnetType: ec2.SubnetType.PUBLIC}).subnets;
-        const privateSubnets = vpc.selectSubnets({subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS}).subnets;
+        const publicSubnets = this.vpc.selectSubnets({subnetType: ec2.SubnetType.PUBLIC}).subnets;
+        const privateSubnets = this.vpc.selectSubnets({subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS}).subnets;
         publicSubnets.forEach((subnet, i) => {
             const subnetName: string = `${this.config.id}/PublicSubnet${i+1}/${subnet.availabilityZone}`;
             const NAT_GW_Name: string = `${subnetName}/NAT-GW`;
             cdk.Tags.of(subnet).add("Name", subnetName);
             cdk.Tags.of(subnet).add("kubernetes.io/role/elb", "1");
             //Note tryFindChild values correspond to CF Stack's Resources Tab
-            let potential_NAT_ASG = vpc.node.tryFindChild(`PublicSubnet${i+1}`)?.node.tryFindChild('FckNatAsg');
-            let potential_NAT_GW = vpc.node.tryFindChild(`PublicSubnet${i+1}`)?.node.tryFindChild('NATGateway');
+            let potential_NAT_ASG = this.vpc.node.tryFindChild(`PublicSubnet${i+1}`)?.node.tryFindChild('FckNatAsg');
+            let potential_NAT_GW = this.vpc.node.tryFindChild(`PublicSubnet${i+1}`)?.node.tryFindChild('NATGateway');
             if(potential_NAT_ASG){ cdk.Tags.of(potential_NAT_ASG).add("Name", NAT_GW_Name) };
             if(potential_NAT_GW){ cdk.Tags.of(potential_NAT_GW).add("Name", NAT_GW_Name) };
         });
@@ -88,6 +113,9 @@ export class Opinionated_VPC{
             cdk.Tags.of(subnet).add("Name", `${this.config.id}/PrivateSubnet${i+1}/${subnet.availabilityZone}`);
             cdk.Tags.of(subnet).add("kubernetes.io/role/internal-elb", "1");
         });
+        //Note the VPC's default SG is blank, not tagable, not editable, this seems to be by design. AWS Foundational
+        //Security Best Practices state The VPC default security group should not allow inbound and outbound traffic.
+
     }//end deploy_vpc_construct_into_this_objects_stack()
 
 }//end class of Opinionated_VPC

@@ -37,7 +37,7 @@ userLog.settings.minLevel = 3; //<-- Hide's eks blueprint's debug logs, 3 = info
 
 ////////////////////////////////////////////////////////////////////////////////////////////
 // IMPORTANT NOTE: For Conceptual Understanding and Comprehension:
-const storage_for_stacks_state = new cdk.App(); //<-- Root AWS "Construct"
+const storage_reference_for_stack_state = new cdk.App(); //<-- Root AWS "Construct"
 /* https://docs.aws.amazon.com/cdk/v2/guide/constructs.html
 cdk.App & cdk.Stack classes from the AWS Construct Library are unique constructs.
 Unlike mosts constructs they don't configure AWS resources on their own.
@@ -121,7 +121,8 @@ const low_cost_EMEA_stack_config: cdk.StackProps = {
 ///////////////////////////////////////////////////////////////////////////////////////////
 //VPC Infrastructure as Code (Use of Opinionated VPC is Recommended, yet optional)
 //Note: 'lower-envs-vpc' is both the VPC name and the CloudFormation Stack Name
-const lower_envs_vpc = new Opinionated_VPC(storage_for_stacks_state, 'lower-envs-vpc', low_co2_AMER_stack_config);
+
+const lower_envs_vpc = new Opinionated_VPC(storage_reference_for_stack_state, 'lower-envs-vpc', low_co2_AMER_stack_config);
 //Note: About the below lower_envs_vpc.apply_*_config() functions
 //      The order in which you call these functions matters, because some functions set
 //      values in a way that's intended to be overridable. This is why it's
@@ -191,7 +192,7 @@ const dev1cfg: Easy_EKS_Config_Data = new Easy_EKS_Config_Data('dev1-eks');
   //console.log('dev1cfg:\n', dev1cfg); //<-- \n is newline
   //^--this and `cdk synth $StackID | grep -C 5 "parameter"` can help config validation feedback loop)
 
-EKS_Blueprints_Based_Cluster.add_to_list_of_deployable_stacks(storage_for_stacks_state, dev1cfg);
+EKS_Blueprints_Based_Cluster.add_to_list_of_deployable_stacks(storage_reference_for_stack_state, dev1cfg);
 
 
 //new EKS_Blueprints_Based_Cluster(cdks_root_storage_for_stacks, dev1cfg);
@@ -216,7 +217,7 @@ EKS_Blueprints_Based_Cluster.add_to_list_of_deployable_stacks(storage_for_stacks
 //const pre_existing_vpc = ec2.Vpc.fromLookup(dev1_eks_stack,'pre-existing-vpc', { vpcId: vpcID });
 
 // const eksBlueprint = blueprints.EksBlueprint.builder();
-// eksBlueprint.resourceProvider(blueprints.GlobalResources.Vpc, new blueprints.VpcProvider(vpcID));
+//eksBlueprint.resourceProvider(blueprints.GlobalResources.Vpc, new blueprints.VpcProvider(vpcID));
 // eksBlueprint.version(KubernetesVersion.V1_30);
-// eksBlueprint.build(cdk_construct_storage, "test-eks");
+// eksBlueprint.build(storage_reference_for_stack_state, "stormforge-eks");
 

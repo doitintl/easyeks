@@ -2,8 +2,10 @@ import { Opinionated_VPC_Config_Data } from '../../lib/Opinionated_VPC_Config_Da
 import * as cdk from 'aws-cdk-lib';
 import { FckNatInstanceProps } from 'cdk-fck-nat' //source: npm install cdk-fck-nat@latest
 import * as ec2 from 'aws-cdk-lib/aws-ec2';
+import { Construct } from 'constructs';
 
-export function apply_config(config: Opinionated_VPC_Config_Data, stack?: cdk.Stack){ //config: is of type Opinionated_VPC_Config_Data
+export function apply_config(config: Opinionated_VPC_Config_Data, stack: cdk.Stack){ //config: is of type Opinionated_VPC_Config_Data
+
   const good_and_affordable_NAT_properties: FckNatInstanceProps = {
     /*Pros of Fck NAT (Summary of https://fck-nat.dev/stable/)
       * Good:
@@ -26,8 +28,8 @@ export function apply_config(config: Opinionated_VPC_Config_Data, stack?: cdk.St
                              //just bump up to bigger size or switched to AWS Managed NAT
     enableSsm: true, //allows ssh via systems manager.
   }
-  config.setNatGatewayProviderAsAwsManagedNat(); //Semi-Expensive Alternative
-  //config.setNatGatewayProviderAsFckNat( TODO, good_and_affordable_NAT_properties);
+  //config.setNatGatewayProviderAsAwsManagedNat(); //Costly Alternative
+  config.setNatGatewayProviderAsFckNat(good_and_affordable_NAT_properties);
   config.setNumNatGateways(1);
       /*                   ^-- Use 1, 2, or 3
       1 is recommended when, you have low traffic (under 1000 GB/month), and want lowest price.
