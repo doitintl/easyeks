@@ -18,7 +18,7 @@ export class Easy_EKS_Config_Data { //This object just holds config data.
 
   constructor(stackId: string){
   this.stackId = stackId; /*
-  Constructor with minimal args is on purpose for desired UX
+  Constructor with minimal args is on purpose for desired UX of "builder pattern".
   The idea is to add partial configuration snippets over time/as multiple operations
   rather than populate a complete config all at once in one go.*/
   } 

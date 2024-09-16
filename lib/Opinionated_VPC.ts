@@ -41,24 +41,24 @@ export class Opinionated_VPC{
             vpcName: this.config.id,
             natGatewayProvider: this.config.natGatewayProvider,
             natGateways: this.config.numNatGateways,
-            ipProtocol: ec2.IpProtocol.IPV4_ONLY,
-            // ipProtocol: ec2.IpProtocol.DUAL_STACK,
+            ipProtocol: ec2.IpProtocol.DUAL_STACK,
             ipAddresses: ec2.IpAddresses.cidr(this.config.vpcNetworkWithCIDRSlash),
-            // ipv6Addresses: ec2.Ipv6Addresses.amazonProvided(),
+            ipv6Addresses: ec2.Ipv6Addresses.amazonProvided(),
             vpnGateway: this.config.provisionVPN,
             subnetConfiguration: [
                 { 
                     name: "Public", 
                     subnetType: ec2.SubnetType.PUBLIC,
                     cidrMask: this.config.publicSubNetCIDRSlash,
-                    // mapPublicIpOnLaunch: true, //(this is needed for fck-NAT to work)
-                    // ipv6AssignAddressOnCreation: true,
+                    mapPublicIpOnLaunch: true, //<--this is temporarily needed for fck-NAT to work,
+                    //until the following is resolved https://github.com/AndrewGuenther/cdk-fck-nat/issues/344
+                    ipv6AssignAddressOnCreation: true,
                 },
                 { 
                     name: "Private",
                     subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS,
                     cidrMask: this.config.privateSubNetCIDRSlash,
-                    // ipv6AssignAddressOnCreation: true,
+                    ipv6AssignAddressOnCreation: true,
                 }
             ],
             //v--S3 and DynamoDB GW Endpoints cost nothing extra, can only safe money. should be default
@@ -70,7 +70,7 @@ export class Opinionated_VPC{
                     service: ec2.GatewayVpcEndpointAwsService.DYNAMODB,
                 },
             },
-        });//end vpc
+        });//end vpc    
 
         //Fck-NAT compatibility requirement:
         if(this.config.natGatewayProvider instanceof FckNatInstanceProvider){
@@ -84,7 +84,7 @@ export class Opinionated_VPC{
             //v-- UX Improvement: Add Name Tag to SG
             let sg_construct = this.vpc.node.findChild('NatSecurityGroup').node.defaultChild!;//!=not null, true due to if
             cdk.Tags.of(sg_construct).add("Name", `${this.config.id}/nat-gw`); 
-        } /*Side Note about the if logic above:
+        } /*Note about the above logic in the if statement:
         The ability to customize NAT GW's SG is limited, to the above methodology.
         Normally SG's can be customized further using other methodologies, but those won't work here.
         In this case the VPC Construct only allows the above methodology.

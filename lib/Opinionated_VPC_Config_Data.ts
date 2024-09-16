@@ -26,7 +26,7 @@ export class Opinionated_VPC_Config_Data { //This object just holds config data.
 
   constructor(id_for_stack_and_vpc: string){
       this.id = id_for_stack_and_vpc; /*
-      Constructor with minimal args is on purpose for desired UX
+      Constructor with minimal args is on purpose for desired UX of "builder pattern".
       The idea is to add partial configuration snippets over time/as multiple operations
       rather than populate a complete config all at once in one go.*/
   }

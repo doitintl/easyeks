@@ -37,7 +37,7 @@ userLog.settings.minLevel = 3; //<-- Hide's eks blueprint's debug logs, 3 = info
 
 ////////////////////////////////////////////////////////////////////////////////////////////
 // IMPORTANT NOTE: For Conceptual Understanding and Comprehension:
-const storage_reference_for_stack_state = new cdk.App(); //<-- Root AWS "Construct"
+const reference_to_cdk_bootstrapped_cf_for_storing_state_of_stacks = new cdk.App(); //<-- Root AWS "Construct"
 /* https://docs.aws.amazon.com/cdk/v2/guide/constructs.html
 cdk.App & cdk.Stack classes from the AWS Construct Library are unique constructs.
 Unlike mosts constructs they don't configure AWS resources on their own.
@@ -122,7 +122,7 @@ const low_cost_EMEA_stack_config: cdk.StackProps = {
 //VPC Infrastructure as Code (Use of Opinionated VPC is Recommended, yet optional)
 //Note: 'lower-envs-vpc' is both the VPC name and the CloudFormation Stack Name
 
-const lower_envs_vpc = new Opinionated_VPC(storage_reference_for_stack_state, 'lower-envs-vpc', low_co2_AMER_stack_config);
+const lower_envs_vpc = new Opinionated_VPC(reference_to_cdk_bootstrapped_cf_for_storing_state_of_stacks, 'lower-envs-vpc', low_co2_AMER_stack_config);
 //Note: About the below lower_envs_vpc.apply_*_config() functions
 //      The order in which you call these functions matters, because some functions set
 //      values in a way that's intended to be overridable. This is why it's
@@ -136,7 +136,7 @@ lower_envs_vpc.deploy_vpc_construct_into_this_objects_stack();
 
 
 ///////////////////////////////////////////////////////////////////////////////////////////
-/*sudo code brainstorm of things needed
+/*pseudo code brainstorm of things needed
 opionated vpc to be a stack
 eks to be a stack (that can reference a pre-existing vpc)
 to have ongoing access to a stack as a variable that I can pass around.
@@ -192,7 +192,7 @@ const dev1cfg: Easy_EKS_Config_Data = new Easy_EKS_Config_Data('dev1-eks');
   //console.log('dev1cfg:\n', dev1cfg); //<-- \n is newline
   //^--this and `cdk synth $StackID | grep -C 5 "parameter"` can help config validation feedback loop)
 
-EKS_Blueprints_Based_Cluster.add_to_list_of_deployable_stacks(storage_reference_for_stack_state, dev1cfg);
+EKS_Blueprints_Based_Cluster.add_to_list_of_deployable_stacks(reference_to_cdk_bootstrapped_cf_for_storing_state_of_stacks, dev1cfg);
 
 
 //new EKS_Blueprints_Based_Cluster(cdks_root_storage_for_stacks, dev1cfg);
