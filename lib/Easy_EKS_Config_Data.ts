@@ -9,7 +9,7 @@ export class Easy_EKS_Config_Data { //This object just holds config data.
     //Config_Var: Data_Type
     //(var?: is TS syntax to ignore initial null value)
     id: string; //id of cloud formation stack and eks cluster
-    vpc: ec2.IVpc;
+    vpc: ec2.Vpc; //populated with pre-existing VPC
     kubernetesVersion: KubernetesVersion;
     tags?: { [key: string]: string };
     clusterAdminARNs?: string[];
@@ -31,13 +31,14 @@ export class Easy_EKS_Config_Data { //This object just holds config data.
         const pre_existing_vpc = ec2.Vpc.fromLookup(stack,'pre-existing-vpc', {
             vpcId: vpcId,
         });
-        this.vpc = pre_existing_vpc;
+        this.vpc = pre_existing_vpc as ec2.Vpc;
     }
     setVpcByName(vpcName: string, config: Easy_EKS_Config_Data, stack: cdk.Stack){ 
         const pre_existing_vpc = ec2.Vpc.fromLookup(stack,'pre-existing-vpc', {
-            vpcName: 'lower-envs-vpc', //This assumes vpcName is unique, looks up by name tag
+            isDefault: false,
+            tags: { ["Name"]: vpcName },
         });
-        this.vpc = pre_existing_vpc;    
+        this.vpc = pre_existing_vpc as ec2.Vpc;    
     }
     setKubernetesVersion(version: KubernetesVersion){ this.kubernetesVersion = version; }
     addTag(key: string, value: string){ 

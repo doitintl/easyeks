@@ -23,7 +23,7 @@ TS import syntax means:
 ////////////////////////////////////////////////////////////////////////////////////////////
 //Log Verbosity Config:
 import { userLog } from '@aws-quickstart/eks-blueprints/dist/utils';
-userLog.settings.minLevel = 3; //<-- Hide's eks blueprint's debug logs, 3 = info, 2 = debug
+userLog.settings.minLevel = 6; //<-- Hide's eks blueprint's debug logs, 3 = info, 2 = debug
 ////////////////////////////////////////////////////////////////////////////////////////////
 
 
