@@ -38,8 +38,6 @@ export class Easy_EKS{
         const eksBlueprint = blueprints.EksBlueprint.builder();
         eksBlueprint.resourceProvider(blueprints.GlobalResources.Vpc, new blueprints.VpcProvider('vpc-0dbcacb511f9bac4e'));
         eksBlueprint.clusterProvider(generate_cluster_blueprint(this.config));
-        // eksBlueprint.account(this.config.account);
-        // eksBlueprint.region(this.config.region);
         eksBlueprint.version(this.config.kubernetesVersion);
         if(this.config.clusterAddOns){ //<--JS truthy statement saying if not null
             eksBlueprint.addOns(...this.config.getClusterAddons());

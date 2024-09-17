@@ -10,8 +10,6 @@ import { NodeLocalDNSCacheAddOn } from '../../lib/Node_Local_DNS_Cache_AddOn';
 export function apply_config(config: Easy_EKS_Config_Data, stack: cdk.Stack){ //config: is of type Easy_EKS_Config_Data
     config.addTag("IaC Tooling used for Provisioning and Management", "aws cdk");
     config.addTag("Upstream Methodology Docs", "https://github.com/doitintl/eks-cdk-quickstart");
-    // config.setAccount( process.env.CDK_DEFAULT_ACCOUNT! ); //<-- pulls value from CLI env,
-    // config.setRegion( process.env.CDK_DEFAULT_REGION! ); //<-- ! after var, tells TS it won't be null.
 
     //^--If you follow suggested order of application (global -> org -> env), then the set's functionally act as overrideable defaults.
     // config.addAddOn( new blueprints.addons.KubeProxyAddOn() );

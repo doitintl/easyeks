@@ -9,8 +9,6 @@ export class Easy_EKS_Config_Data { //This object just holds config data.
     //Config_Var: Data_Type
     //(var?: is TS syntax to ignore initial null value)
     id: string; //id of cloud formation stack and eks cluster
-    // account: string;
-    // region: string;
     vpc: ec2.IVpc;
     kubernetesVersion: KubernetesVersion;
     tags?: { [key: string]: string };
@@ -29,8 +27,6 @@ export class Easy_EKS_Config_Data { //This object just holds config data.
   
   
     //Config Snippet Population Methods
-    // setAccount(account: string){ this.account = account; }
-    // setRegion(region: string){ this.region = region; }
     setVpcById(vpcId: string, config: Easy_EKS_Config_Data, stack: cdk.Stack){
         const pre_existing_vpc = ec2.Vpc.fromLookup(stack,'pre-existing-vpc', {
             vpcId: vpcId,
