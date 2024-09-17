@@ -5,28 +5,21 @@
 import console = require('console'); //Helps feedback loop, when manually debugging
 //     ^-- allows `console.log(dev1cfg);` to work, when `cdk list` is run.
 import * as cdk from 'aws-cdk-lib';
-import { Opinionated_VPC } from '../lib/Opinionated_VPC';
-import * as EKS_Blueprints_Based_Cluster from '../lib/EKS_Blueprints_Based_EKS_Cluster';
-/*     ^-------------This--------------^
+/*     ^-This-^
 TS import syntax means:
 * Import *("all") exported items from the specified source, into a "named import".
 * The "named import" can be arbtirarily named.
 * Items in the named import can be referenced with the dot operator.
 */
-import { Opinionated_VPC_Config_Data } from '../lib/Opinionated_VPC_Config_Data';
-import { Easy_EKS_Config_Data } from '../lib/Easy_EKS_Config_Data';
-/*     ^---------This---------^ 
+import { Opinionated_VPC } from '../lib/Opinionated_VPC';
+import { Easy_EKS } from '../lib/Easy_EKS'; //AWS EKS Blueprints based cluster
+/*     ^--_This---^ 
 TS import syntax means:
 * Import a "specificallyly named" exported item, (or csv items) from the specified source.
 * Here the "specifically named" item, must be an exact match for the name of the exported
   item in the referenced file.
 * Items imported this way, can be referenced directly by name.
 */
-////////////////////////////////////////////////////////////////////////////////////////////
-//Config Library Imports:
-import * as global_baseline_eks_config from '../config/eks/apply_global_baseline_eks_config';
-import * as orgs_baseline_eks_config from '../config/eks/apply_orgs_baseline_eks_config';
-import * as dev_eks_config from '../config/eks/apply_dev_eks_config';
 ////////////////////////////////////////////////////////////////////////////////////////////
 //Log Verbosity Config:
 import { userLog } from '@aws-quickstart/eks-blueprints/dist/utils';
@@ -127,97 +120,23 @@ const lower_envs_vpc = new Opinionated_VPC(reference_to_cdk_bootstrapped_cf_for_
 //      The order in which you call these functions matters, because some functions set
 //      values in a way that's intended to be overridable. This is why it's
 //      recommended to follow the below order of application (global -> my_org -> env)
-lower_envs_vpc.apply_global_baseline_config();
-lower_envs_vpc.apply_my_orgs_baseline_config();
-lower_envs_vpc.apply_lower_envs_config();
+lower_envs_vpc.apply_global_baseline_vpc_config();
+lower_envs_vpc.apply_my_orgs_baseline_vpc_config();
+lower_envs_vpc.apply_lower_envs_vpc_config();
 lower_envs_vpc.deploy_vpc_construct_into_this_objects_stack();
 ///////////////////////////////////////////////////////////////////////////////////////////
 
 
 
 ///////////////////////////////////////////////////////////////////////////////////////////
-/*pseudo code brainstorm of things needed
-opionated vpc to be a stack
-eks to be a stack (that can reference a pre-existing vpc)
-to have ongoing access to a stack as a variable that I can pass around.
-to have ongoing access to vpc construct as  variable I can pass around.
-consistency (because I want consistency I might do easy eks 1st)
-
-The lower envs config needs me to pass a stack so configuring SG is even possible.
-Hum... instead of passing config like above
-I could have the config work against an object.
-
-ok so opinionated vpc & opinionated eks I'll each give a config, stack, and vpc variable.
-my config setup is fine. more or less... (wait there might be a circular dependency.)
-but the applying config I need to think about. 
-I was thinking opinionated vpc could extend cdk stack.
-If I did that I'd need to say new Opinionated_VPC to instanciate it.
-
-in the case of Easy EKS instanciating might? be useful, so I could have access to a stack, vpc, and config
-hum... I kind of like the format I have now (new user optimized) and it's workable but let me think about it some more...
-wait it's not workable... easy eks config data needs access to a stack immediately.
-What if I combine the objects a bit more?
-
-const dev1_eks = new Easy_EKS('storage_for_stacks','this-stacks-id')
-      ^-- this obj would have a stack, so it'd show up immediately
-      (making the object would immediately make it show up on the list of stacks)
-      dev1_eks.apply_global_baseline_config();
-      dev1_eks.apply_my_orgs_baseline_config();
-      dev1_eks.apply_dev_config();
-      dev1_eks.deploy_eks_construct_in_this_objects_stack();
-      
-      for the config should I use the words apply, populate, or stage. I think apply. o what about build, build is nice. doesn't fit though.
-      what should I name the class?
-      Easy_EKS <-- would be consistent with Opinionated VPC, and give me flexibility in the future.
-
-would this work for vpc?
-const lower_envs_vpc = new Opinionated_VPC('storage_for_stack','this_stacks_id')
-      lower_envs_vpc.apply_global_baseline_config();
-      lower_envs_vpc.apply_my_orgs_baseline_config();
-      lower_envs_vpc.apply_lower_envs_config();
-      lower_envs_vpc.deploy_vpc_construct_into_this_objects_stack();
-
-...hum...
-      I still want the config fined in the config folder though...
-*/ 
-///////////////////////////////////////////////////////////////////////////////////////////
-
-
-///////////////////////////////////////////////////////////////////////////////////////////
 //EKS Infrastructure as Code:
-const dev1cfg: Easy_EKS_Config_Data = new Easy_EKS_Config_Data('dev1-eks');
-  global_baseline_eks_config.apply_config(dev1cfg);
-  orgs_baseline_eks_config.apply_config(dev1cfg);
-  dev_eks_config.apply_config(dev1cfg);
-  //console.log('dev1cfg:\n', dev1cfg); //<-- \n is newline
-  //^--this and `cdk synth $StackID | grep -C 5 "parameter"` can help config validation feedback loop)
-
-EKS_Blueprints_Based_Cluster.add_to_list_of_deployable_stacks(reference_to_cdk_bootstrapped_cf_for_storing_state_of_stacks, dev1cfg);
-
-
-//new EKS_Blueprints_Based_Cluster(cdks_root_storage_for_stacks, dev1cfg);
+const dev1_eks = new Easy_EKS(reference_to_cdk_bootstrapped_cf_for_storing_state_of_stacks, 'dev1-eks', low_co2_AMER_stack_config);
+dev1_eks.apply_global_baseline_eks_config();
+dev1_eks.apply_my_orgs_baseline_eks_config();
+dev1_eks.apply_lower_envs_eks_config();
+dev1_eks.apply_dev_eks_config();
+dev1_eks.deploy_eks_construct_into_this_objects_stack();
+//console.log("dev1_eks's config:\n", dev1_eks.config) //<-- \n is newline
+//^--this and `cdk synth $StackID | grep -C 5 "parameter"` can help config validation feedback loop)
 ///////////////////////////////////////////////////////////////////////////////////////////
-
-
-//BELOW is temp experiment that's deletable.
-// import * as ec2 from 'aws-cdk-lib/aws-ec2';
-// import * as blueprints from '@aws-quickstart/eks-blueprints'; 
-// import { KubernetesVersion } from 'aws-cdk-lib/aws-eks';
-
-// const vpcID = "vpc-0d419b717d34dba79" //lower-envs-vpc  <--- 
-
-// const pre_existing_vpc_stack = new cdk.Stack(cdk_construct_storage, 'pre-existing-vpc2', {
-//   env: {
-//     account: process.env.CDK_DEFAULT_ACCOUNT!,
-//     region: process.env.CDK_DEFAULT_REGION!
-//   }
-// });
-// const pre_existing_vpc = ec2.Vpc.fromLookup(pre_existing_vpc_stack,'pre-existing-vpc2', { vpcId: vpcID });
-
-//const pre_existing_vpc = ec2.Vpc.fromLookup(dev1_eks_stack,'pre-existing-vpc', { vpcId: vpcID });
-
-// const eksBlueprint = blueprints.EksBlueprint.builder();
-//eksBlueprint.resourceProvider(blueprints.GlobalResources.Vpc, new blueprints.VpcProvider(vpcID));
-// eksBlueprint.version(KubernetesVersion.V1_30);
-// eksBlueprint.build(storage_reference_for_stack_state, "stormforge-eks");
 

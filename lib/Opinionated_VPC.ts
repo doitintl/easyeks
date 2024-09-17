@@ -9,17 +9,17 @@ import { Construct } from 'constructs';
 import * as ec2 from 'aws-cdk-lib/aws-ec2'; 
 import * as cdk from 'aws-cdk-lib';
 import { Opinionated_VPC_Config_Data } from './Opinionated_VPC_Config_Data';
-import * as global_baseline_vpc_config from '../config/vpc/apply_global_baseline_vpc_config';
-import * as my_orgs_baseline_vpc_config from '../config/vpc/apply_my_orgs_baseline_vpc_config';
-import * as lower_envs_vpc_config from '../config/vpc/apply_lower_envs_vpc_config';
-import * as higher_envs_vpc_config from '../config/vpc/apply_higher_envs_vpc_config';
+import * as global_baseline_vpc_config from '../config/vpc/global_baseline_vpc_config';
+import * as my_orgs_baseline_vpc_config from '../config/vpc/my_orgs_baseline_vpc_config';
+import * as lower_envs_vpc_config from '../config/vpc/lower_envs_vpc_config';
+import * as higher_envs_vpc_config from '../config/vpc/higher_envs_vpc_config';
 import { FckNatInstanceProvider } from 'cdk-fck-nat' //source: npm install cdk-fck-nat@latest
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 export class Opinionated_VPC{
 
-    //Class Variables:
+    //Class Variables/Properties:
     stack: cdk.Stack;
     config: Opinionated_VPC_Config_Data;
     vpc: ec2.Vpc;
@@ -31,10 +31,10 @@ export class Opinionated_VPC{
     }//end constructor of Opinionated_VPC
 
     //Class Functions:
-    apply_global_baseline_config(){ global_baseline_vpc_config.apply_config(this.config,this.stack); }
-    apply_my_orgs_baseline_config(){ my_orgs_baseline_vpc_config.apply_config(this.config,this.stack); }
-    apply_lower_envs_config(){ lower_envs_vpc_config.apply_config(this.config,this.stack); }
-    apply_higher_envs_config(){ higher_envs_vpc_config.apply_config(this.config,this.stack); }
+    apply_global_baseline_vpc_config(){ global_baseline_vpc_config.apply_config(this.config,this.stack); }
+    apply_my_orgs_baseline_vpc_config(){ my_orgs_baseline_vpc_config.apply_config(this.config,this.stack); }
+    apply_lower_envs_vpc_config(){ lower_envs_vpc_config.apply_config(this.config,this.stack); }
+    apply_higher_envs_vpc_config(){ higher_envs_vpc_config.apply_config(this.config,this.stack); }
     deploy_vpc_construct_into_this_objects_stack(){
         //https://docs.aws.amazon.com/cdk/api/v2/docs/aws-cdk-lib.aws_ec2.VpcProps.html
         this.vpc = new ec2.Vpc(this.stack, this.config.id, {
