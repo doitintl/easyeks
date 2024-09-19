@@ -79,7 +79,7 @@ function generate_cluster_blueprint( config: Easy_EKS_Config_Data){
         partialEKSAccessEntries: partialEKSAccessEntriesFromConfig,
         managedNodeGroups: [
             {
-                id: "ARM64-mng",
+                id: "ARM64-MNG",
                 amiType: eks.NodegroupAmiType.AL2_ARM_64,
                 instanceTypes: [new ec2.InstanceType('t4g.small')], //t4g.small = 2cpu, 2gb ram, 11pod max
                 nodeGroupCapacityType: eks.CapacityType.SPOT,
@@ -91,7 +91,8 @@ function generate_cluster_blueprint( config: Easy_EKS_Config_Data){
                 enableSsmPermissions: true, //<-- allows aws managed ssh to private nodes, can be useful for debuging
                 //^-- AWS Systems Manager --> Session Manager --> Start Session
                 nodeGroupSubnets: { subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS },
-                launchTemplate: { tags: config.tags } //<-- attaches tags to Launch Template, which gets propagated to these worker node
+                launchTemplate: { tags: {...config.tags, ["Name"]: `${config.id}/baseline-MNG/ARM64-spot`} }
+                //^-- attaches tags to Launch Template, which gets propagated to these kubernetes worker node
             }
         ],
         outputConfigCommand: true,
