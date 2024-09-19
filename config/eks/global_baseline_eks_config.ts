@@ -8,10 +8,13 @@ import { NodeLocalDNSCacheAddOn } from '../../lib/Node_Local_DNS_Cache_AddOn';
 //That 95% of global users will feel comfortable using with 0 changes, but can change.
 
 export function apply_config(config: Easy_EKS_Config_Data, stack: cdk.Stack){ //config: is of type Easy_EKS_Config_Data
-    config.addTag("IaC Tooling used for Provisioning and Management", "aws cdk");
+    config.addTag("IaC Tooling used for Provisioning and Management", "cdk: a CLI tool that stands for AWS Cloud Development Kit.");
     config.addTag("Upstream Methodology Docs", "https://github.com/doitintl/eks-cdk-quickstart");
+    //^-- NOTE: hashtag(#)   comma(,)   singlequote(')   doublequote(\")   parenthesis()   and more are not valid tag values
+    //    https://docs.aws.amazon.com/codeguru/latest/bugbust-ug/limits-tags.html
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    //^--If you follow suggested order of application (global -> org -> env), then the set's functionally act as overrideable defaults.
+    //v--If you follow suggested order of application (global -> org -> env), then the set's functionally act as overrideable defaults.
     // config.addAddOn( new blueprints.addons.KubeProxyAddOn() );
     // config.addAddOn( new blueprints.addons.VpcCniAddOn({
     //   serviceAccountPolicies: [iam.ManagedPolicy.fromAwsManagedPolicyName("AmazonEKS_CNI_Policy")]

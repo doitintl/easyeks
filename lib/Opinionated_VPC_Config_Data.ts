@@ -6,7 +6,7 @@ export class Opinionated_VPC_Config_Data { //This object just holds config data.
     //Config_Var: Data_Type
     //(var?: is TS syntax to ignore initial null value)
     id: string; //id of cloud formation stack and vpc
-    tags?: { [key: string]: string };
+    tags?: {key: string, value: string}[];
     natGatewayProvider: ec2.NatProvider;
     numNatGateways: number;
     provisionVPN: boolean;
@@ -30,11 +30,9 @@ export class Opinionated_VPC_Config_Data { //This object just holds config data.
 
 
     //Config Snippet Population Methods
-    // setAccount(account: string){ this.account = account; }
-    // setRegion(region: string){ this.region = region; }
     addTag(key: string, value: string){ 
-        if(this.tags === undefined){ this.tags = { [key] : value } }
-        else{ this.tags = { ...this.tags, [key] : value }}
+        if(this.tags === undefined){ this.tags = [{key: key, value: value}] }
+        else{ this.tags.push({key: key, value: value}) }
     }
     setNatGatewayProviderAsFckNat(props: FckNatInstanceProps){
         this.natGatewayProvider = new FckNatInstanceProvider( props );

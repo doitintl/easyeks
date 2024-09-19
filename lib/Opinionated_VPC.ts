@@ -72,7 +72,7 @@ export class Opinionated_VPC{
             },
         });//end vpc
 
-        //Fck-NAT compatibility requirement:
+        //v-- Fck-NAT compatibility requirement:
         if(this.config.natGatewayProvider instanceof FckNatInstanceProvider){
             //v-- Configure Security Group
             (this.config.natGatewayProvider as FckNatInstanceProvider).securityGroup
@@ -95,7 +95,12 @@ export class Opinionated_VPC{
         3. sg's constructor requires a fully initialized vpc to exist.
         */
 
-        //UX Improvement: Improved Naming for Subnets and NAT-GWs/NAT-Instances
+        //v-- UX Improvement: Add configured tags to VPC
+        this.config.tags?.forEach((tag,i) => {
+            cdk.Tags.of(this.vpc).add(tag.key, tag.value);
+        });
+
+        //v-- UX Improvement: Improved Naming for Subnets and NAT-GWs/NAT-Instances
         const publicSubnets = this.vpc.selectSubnets({subnetType: ec2.SubnetType.PUBLIC}).subnets;
         const privateSubnets = this.vpc.selectSubnets({subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS}).subnets;
         publicSubnets.forEach((subnet, i) => {

@@ -10,8 +10,10 @@ import * as kms from 'aws-cdk-lib/aws-kms';
 export function apply_config(config: Easy_EKS_Config_Data, stack: cdk.Stack){ //config: is of type Easy_EKS_Config_Data
     config.addTag("Maintained By", "Cloud Platform Team");
     config.addTag("Contact Methods for Questions", "devops slack channel or email devops@my.org");
-    //^-- NOTE: hashtag(#)  comma(,)   singlequote(')  and more are not valid tag keys or tag values
-    //    https://docs.aws.amazon.com/directoryservice/latest/devguide/API_Tag.html
+    //^-- NOTE: hashtag(#)   comma(,)   singlequote(')   doublequote(\")   parenthesis()   and more are not valid tag values
+    //    https://docs.aws.amazon.com/codeguru/latest/bugbust-ug/limits-tags.html
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
     config.setKubernetesVersion(KubernetesVersion.V1_30); //<--This library might not support latest
     // config.addAddOn( new blueprints.addons.MetricsServerAddOn() ); //allows kubectl top to work
     // config.addAddOn(
