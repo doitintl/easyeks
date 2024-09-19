@@ -13,6 +13,7 @@ import { partialEKSAccessEntry, GenericClusterProviderWithAccessEntrySupport } f
 import * as global_baseline_eks_config from '../config/eks/global_baseline_eks_config';
 import * as my_orgs_baseline_eks_config from '../config/eks/my_orgs_baseline_eks_config';
 import * as lower_envs_eks_config from '../config/eks/lower_envs_eks_config';
+import * as higher_envs_eks_config from '../config/eks/higher_envs_eks_config';
 import * as dev_eks_config from '../config/eks/dev_eks_config';
 import * as monitoring from './Frugal_GPL_Monitoring_Stack'; //TO DO
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -33,6 +34,7 @@ export class Easy_EKS{
     apply_global_baseline_eks_config(){ global_baseline_eks_config.apply_config(this.config,this.stack); }
     apply_my_orgs_baseline_eks_config(){ my_orgs_baseline_eks_config.apply_config(this.config,this.stack); }
     apply_lower_envs_eks_config(){ lower_envs_eks_config.apply_config(this.config,this.stack); }
+    apply_higher_envs_eks_config(){ higher_envs_eks_config.apply_config(this.config,this.stack); }
     apply_dev_eks_config(){ dev_eks_config.apply_config(this.config,this.stack); }
     deploy_eks_construct_into_this_objects_stack(){
         const eksBlueprint = blueprints.EksBlueprint.builder();
