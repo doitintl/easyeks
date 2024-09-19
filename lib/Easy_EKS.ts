@@ -96,7 +96,7 @@ function generate_cluster_blueprint( config: Easy_EKS_Config_Data){
         ],
         outputConfigCommand: true,
         privateCluster: false,
-        ipFamily: eks.IpFamily.IP_V4, 
+        ipFamily: config.ipMode,
     });
     return cluster_blueprint;
 }

@@ -2,7 +2,7 @@ import { KubernetesVersion } from 'aws-cdk-lib/aws-eks';
 import * as blueprints from '@aws-quickstart/eks-blueprints'; 
 import * as ec2 from 'aws-cdk-lib/aws-ec2';
 import * as cdk from 'aws-cdk-lib';
-
+import * as eks from 'aws-cdk-lib/aws-eks';
 
 export class Easy_EKS_Config_Data { //This object just holds config data.
     //Typescript(TS) readability notes
@@ -12,6 +12,7 @@ export class Easy_EKS_Config_Data { //This object just holds config data.
     vpc: ec2.Vpc; //populated with pre-existing VPC
     kubernetesVersion: KubernetesVersion;
     tags?: { [key: string]: string };
+    ipMode: eks.IpFamily;
     clusterAdminARNs?: string[];
     clusterAddOns?: Map<string, blueprints.ClusterAddOn>;
   
@@ -51,6 +52,7 @@ export class Easy_EKS_Config_Data { //This object just holds config data.
         if(this.tags === undefined){ this.tags = { [key] : value } }
         else{ this.tags = { ...this.tags, [key] : value }}
     }
+    setIpMode(ipMode: eks.IpFamily){ this.ipMode = ipMode; }
     addClusterAdminARN(arn:string){ 
         if(this.clusterAdminARNs === undefined){ this.clusterAdminARNs = [arn] } //<--initialize if undfined
         else{ this.clusterAdminARNs.push(arn); } //push means add to end of array
