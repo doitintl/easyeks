@@ -38,7 +38,13 @@ export class Easy_EKS_Config_Data { //This object just holds config data.
             isDefault: false,
             tags: { ["Name"]: vpcName },
         });
-        this.vpc = pre_existing_vpc as ec2.Vpc;    
+        if(vpcName === "lower-envs-vpc" || vpcName === "higher-envs-vpc"){
+            cdk.Annotations.of(stack).acknowledgeWarning('@aws-cdk/aws-eks:clusterMustManuallyTagSubnet');
+            //By default you'll see a false positive warning message about needing to manually tag Subnets
+            //If you're using the vpc naming convention suggested by this automation, then the automation
+            //has already taken care of it, so this disables the warning for vpcs created by this automation.
+        }
+        this.vpc = pre_existing_vpc as ec2.Vpc;
     }
     setKubernetesVersion(version: KubernetesVersion){ this.kubernetesVersion = version; }
     addTag(key: string, value: string){ 

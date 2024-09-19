@@ -70,7 +70,7 @@ export class Opinionated_VPC{
                     service: ec2.GatewayVpcEndpointAwsService.DYNAMODB,
                 },
             },
-        });//end vpc    
+        });//end vpc
 
         //Fck-NAT compatibility requirement:
         if(this.config.natGatewayProvider instanceof FckNatInstanceProvider){

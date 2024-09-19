@@ -1,5 +1,5 @@
 import console = require('console'); //can help debug feedback loop, allows `console.log("hi");` to work, when `cdk list` is run.
-import { Construct } from 'constructs';
+import { Construct, IConstruct } from 'constructs';
 import * as cdk from 'aws-cdk-lib';
 import * as eks from 'aws-cdk-lib/aws-eks';
 import * as ec2 from 'aws-cdk-lib/aws-ec2';
@@ -97,7 +97,6 @@ function generate_cluster_blueprint( config: Easy_EKS_Config_Data){
         outputConfigCommand: true,
         privateCluster: false,
         ipFamily: eks.IpFamily.IP_V4, 
-    //    vpc: pre_existing_vpc,
     });
     return cluster_blueprint;
 }
