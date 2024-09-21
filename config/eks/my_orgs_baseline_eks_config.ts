@@ -2,7 +2,6 @@ import { Easy_EKS_Config_Data } from '../../lib/Easy_EKS_Config_Data';
 import { KubernetesVersion } from 'aws-cdk-lib/aws-eks';
 import * as cdk from 'aws-cdk-lib';
 import * as eks from 'aws-cdk-lib/aws-eks';
-import * as ec2 from 'aws-cdk-lib/aws-ec2';
 import * as blueprints from '@aws-quickstart/eks-blueprints'
 import * as kms from 'aws-cdk-lib/aws-kms';
 //Intended Use:
@@ -15,7 +14,14 @@ export function apply_config(config: Easy_EKS_Config_Data, stack: cdk.Stack){ //
     //^-- NOTE: hashtag(#)   comma(,)   singlequote(')   doublequote(\")   parenthesis()   and more are not valid tag values
     //    https://docs.aws.amazon.com/codeguru/latest/bugbust-ug/limits-tags.html
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    config.setIpMode(eks.IpFamily.IP_V6); //<--EasyEKS Recommended Default for DualStack VPCs
+    config.setIpMode(eks.IpFamily.IP_V4); 
+    //^--EasyEKS Recommended Default:
+    //   * Currently: DualStack VPC + IPv4 EKS
+    //   * Future: DualStack VPC + IPv6 EKS
+    //Note: eks blueprints karpenter addon doesn't support IP_V6 (everything else works out of the box with IP_v6)
+    // https://github.com/aws-quickstart/cdk-eks-blueprints/issues/1079
+    //It's not hard to support, but their karpenter implementation has a scary amount of bugs spread across multiple repos,
+    //I suspect I'd be better off implementing a project specific custom fix.
     /* Note:
     You can deploy eks.IpFamily.IP_V4 into a dualStack VPC or classic IPv4 VPC
     Summary of IP_V6 Mode: 

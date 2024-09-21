@@ -15,10 +15,13 @@ export function apply_config(config: Easy_EKS_Config_Data, stack: cdk.Stack){ //
     //    Alternatively you could try ${stack.region}a, b, c, but that assumption doesn't work for all regions.
     config.addAddOn( //https://github.com/aws-quickstart/cdk-eks-blueprints/blob/blueprints-1.15.1/lib/addons/karpenter/index.ts
         new blueprints.addons.KarpenterAddOn({
-            version: "0.37.0", //replace with 1.0.0 in future
+            version: "0.37.0", //https://github.com/aws/karpenter-provider-aws/releases
+            // newer versions 0.37.3 and 1.0.2 are currently broken upstream
+            // https://github.com/aws-quickstart/cdk-eks-blueprints/issues/1078
+            namespace: "kube-system", //yet anther workaround for upstream bug... :\
             ec2NodeClassSpec: {
-                amiFamily: "Bottlerocket",
-                subnetSelectorTerms: [{ tags: { "Name": `${config.id}/${config.id}-vpc/PrivateSubnet*` } }],
+                amiFamily: "AL2", //"AL2 = Amazon Linux 2", "Bottlerocket" has a node-local-dns-cache bug to troubleshoot later
+                subnetSelectorTerms: [{ tags: { "Name": `higher-envs-vpc/PrivateSubnet*` } }],
                 securityGroupSelectorTerms: [{ tags: { "aws:eks:cluster-name": `${config.id}` } }],
                 detailedMonitoring: false,
                 tags: config.tags,
@@ -34,7 +37,7 @@ export function apply_config(config: Easy_EKS_Config_Data, stack: cdk.Stack){ //
                     { key: 'karpenter.sh/capacity-type', operator: 'In', values: ['on-demand']}, //on-demand for higher_envs
                 ],
                 disruption: {
-                    consolidationPolicy: "WhenEmpty", //WhenUnderutilized is more agressive cost savings / slightly worse stability
+                    consolidationPolicy: "WhenEmpty", //"WhenEmpty" is slightly higher cost and stability
                     consolidateAfter: "30s",
                     expireAfter: "20m",
                     budgets: [{nodes: "10%"}] 
@@ -47,7 +50,6 @@ export function apply_config(config: Easy_EKS_Config_Data, stack: cdk.Stack){ //
                 //Note: good helm default will make the replicas spread across nodes.
             }
         })
-    );
+    );//end Karpenter AddOn
     
-    console.log();
 }
