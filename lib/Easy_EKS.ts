@@ -58,9 +58,9 @@ export class Easy_EKS{
             resources: ['arn:aws:ec2:*:*:network-interface/*'],
         })
         const karpenter_node_role = this.stack.node.findChild(this.config.id).node.tryFindChild('karpenter-node-role') as iam.Role;
-        const aws_vpi_cni_pod_role = this.stack.node.findChild(this.config.id).node.tryFindChild('aws-node-sa')?.node.tryFindChild('Role') as iam.Role;
+        const aws_vpc_cni_pod_role = this.stack.node.findChild(this.config.id).node.tryFindChild('aws-node-sa')?.node.tryFindChild('Role') as iam.Role;
         karpenter_node_role.addToPolicy(ipv6_support_policy_statement);
-        aws_vpi_cni_pod_role.addToPolicy(ipv6_support_policy_statement);
+        aws_vpc_cni_pod_role.addToPolicy(ipv6_support_policy_statement);
     }//end deploy_eks_construct_into_this_objects_stack()
 
 }//end class of Easy_EKS
