@@ -18,9 +18,8 @@ export function apply_config(config: Easy_EKS_Config_Data, stack: cdk.Stack){ //
     config.addAddOn( new blueprints.addons.KubeProxyAddOn() );
     config.addAddOn( new blueprints.addons.VpcCniAddOn({
         version: "v1.18.3-eksbuild.3", //latest is valid for all kubernetes
-        //serviceAccountPolicies: [ iam.ManagedPolicy.fromAwsManagedPolicyName("AmazonEKS_CNI_Policy"),]
-        //^-- Don't use this, it only supports attaching AWS Managed IAM Policies, which only support ipv4 clusters
-        //    Using Node Roles allows the flexibility to support dualstack VPCs. 
+        serviceAccountPolicies: [ iam.ManagedPolicy.fromAwsManagedPolicyName("AmazonEKS_CNI_Policy"),]
+        //^-- Note Easy_EKS.ts also adds ipv6 support to this role
     }));
     config.addAddOn( new blueprints.addons.EksPodIdentityAgentAddOn() );
     config.addAddOn( new blueprints.addons.AwsLoadBalancerControllerAddOn( {

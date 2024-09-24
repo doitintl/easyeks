@@ -134,9 +134,13 @@ const dev1_eks = new Easy_EKS(reference_to_cdk_bootstrapped_cf_for_storing_state
 dev1_eks.apply_global_baseline_eks_config();
 dev1_eks.apply_my_orgs_baseline_eks_config();
 dev1_eks.apply_lower_envs_eks_config();
-dev1_eks.apply_dev_eks_config();
+dev1_eks.apply_only_dev_eks_config();
 dev1_eks.deploy_eks_construct_into_this_objects_stack();
 //console.log("dev1_eks's config:\n", dev1_eks.config) //<-- \n is newline
 //^--this and `cdk synth $StackID | grep -C 5 "parameter"` can help config validation feedback loop)
+
+const dev2_eks = new Easy_EKS(reference_to_cdk_bootstrapped_cf_for_storing_state_of_stacks, 'dev2-eks', low_co2_AMER_stack_config);
+dev2_eks.apply_dev_eks_config(); //<-- this convenience method is equivalent to the earlier 4 listed above
+dev2_eks.deploy_eks_construct_into_this_objects_stack();
 ///////////////////////////////////////////////////////////////////////////////////////////
 

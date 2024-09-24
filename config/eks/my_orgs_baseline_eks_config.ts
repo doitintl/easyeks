@@ -14,21 +14,17 @@ export function apply_config(config: Easy_EKS_Config_Data, stack: cdk.Stack){ //
     //^-- NOTE: hashtag(#)   comma(,)   singlequote(')   doublequote(\")   parenthesis()   and more are not valid tag values
     //    https://docs.aws.amazon.com/codeguru/latest/bugbust-ug/limits-tags.html
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    config.setIpMode(eks.IpFamily.IP_V4); 
-    //^--EasyEKS Recommended Default:
-    //   * Currently: DualStack VPC + IPv4 EKS
-    //   * Future: DualStack VPC + IPv6 EKS
-    //Note: eks blueprints karpenter addon doesn't support IP_V6 (everything else works out of the box with IP_v6)
-    // https://github.com/aws-quickstart/cdk-eks-blueprints/issues/1079
-    //It's not hard to support, but their karpenter implementation has a scary amount of bugs spread across multiple repos,
-    //I suspect I'd be better off implementing a project specific custom fix.
-    /* Note:
-    You can deploy eks.IpFamily.IP_V4 into a dualStack VPC or classic IPv4 VPC
-    Summary of IP_V6 Mode: 
-    * worker nodes get IPv4 IPs, pods get IPv6 IPs. 
-    * It's EasyEKS's Default because it aligns with design goals:
-      * Reliability/Maintainability Improvement: It eliminates the possibility of running out of IP Addresses.
-      * Cost Savings: Due to the above is safe to run multiple EasyEKS Clusters in 1 VPC (which saves on NAT GW Costs)    */
+    config.setIpMode(eks.IpFamily.IP_V6); 
+    //^--EasyEKS Recommended Default: is IP_V6
+    /* Useful Notes:
+    * eks.IpFamily.IP_V4
+      * can be deployed into a IPv4/v6 DualStack VPC or classic IPv4 VPC
+    * eks.IpFamily.IP_V6:
+      * Worker nodes get IPv4 IPs
+      * Pods get IPv6 IPs
+      * It's EasyEKS's Default because it aligns with design goals:
+        * Reliability/Maintainability Improvement: It eliminates the possibility of running out of IP Addresses.
+        * Cost Savings: Due to the above, it's safe to run multiple EasyEKS Clusters in 1 VPC (which saves on NAT GW Costs)*/
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     config.setKubernetesVersion(KubernetesVersion.V1_30); //<--This library might not support latest
     config.addAddOn( new blueprints.addons.MetricsServerAddOn() ); //allows kubectl top to work

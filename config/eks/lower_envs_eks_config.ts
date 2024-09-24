@@ -11,7 +11,7 @@ export function apply_config(config: Easy_EKS_Config_Data, stack: cdk.Stack){ //
     //^--Note: identity referenced in ARN must exist or the deployment will fail
 
     //v-- Karpenter addon needs to be configured after vpc is set. 
-    //    (Remember cdk is imperative as in step by step, so order matters)
+    //    (Remember cdk is imperative, as in step by step, so order of code execution matters)
     //    Alternatively you could try ${stack.region}a, b, c, but that assumption doesn't work for all regions.
     config.addAddOn( //https://github.com/aws-quickstart/cdk-eks-blueprints/blob/blueprints-1.15.1/lib/addons/karpenter/index.ts
         new blueprints.addons.KarpenterAddOn({

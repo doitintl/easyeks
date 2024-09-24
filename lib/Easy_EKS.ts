@@ -35,7 +35,13 @@ export class Easy_EKS{
     apply_my_orgs_baseline_eks_config(){ my_orgs_baseline_eks_config.apply_config(this.config,this.stack); }
     apply_lower_envs_eks_config(){ lower_envs_eks_config.apply_config(this.config,this.stack); }
     apply_higher_envs_eks_config(){ higher_envs_eks_config.apply_config(this.config,this.stack); }
-    apply_dev_eks_config(){ dev_eks_config.apply_config(this.config,this.stack); }
+    apply_only_dev_eks_config(){ dev_eks_config.apply_config(this.config,this.stack); }
+    apply_dev_eks_config(){ //convenience method
+        global_baseline_eks_config.apply_config(this.config,this.stack);
+        my_orgs_baseline_eks_config.apply_config(this.config,this.stack);
+        lower_envs_eks_config.apply_config(this.config,this.stack);
+        dev_eks_config.apply_config(this.config,this.stack); 
+    }
     deploy_eks_construct_into_this_objects_stack(){
         const eksBlueprint = blueprints.EksBlueprint.builder();
         eksBlueprint.resourceProvider(blueprints.GlobalResources.Vpc, new blueprints.DirectVpcProvider(this.config.vpc));
@@ -47,6 +53,14 @@ export class Easy_EKS{
         }
         const eks_blueprint_properties = convert_blueprintBuilder_to_blueprintProperties(this.config.id, eksBlueprint);
         const deploy_construct_into_stack = new blueprints.EksBlueprintConstruct(this.stack, eks_blueprint_properties);
+        const ipv6_support_policy_statement = new iam.PolicyStatement({
+            actions: ['ec2:AssignIpv6Addresses','ec2:UnassignIpv6Addresses'],
+            resources: ['arn:aws:ec2:*:*:network-interface/*'],
+        })
+        const karpenter_node_role = this.stack.node.findChild(this.config.id).node.tryFindChild('karpenter-node-role') as iam.Role;
+        const aws_vpi_cni_pod_role = this.stack.node.findChild(this.config.id).node.tryFindChild('aws-node-sa')?.node.tryFindChild('Role') as iam.Role;
+        karpenter_node_role.addToPolicy(ipv6_support_policy_statement);
+        aws_vpi_cni_pod_role.addToPolicy(ipv6_support_policy_statement);
     }//end deploy_eks_construct_into_this_objects_stack()
 
 }//end class of Easy_EKS
