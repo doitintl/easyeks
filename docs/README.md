@@ -41,7 +41,7 @@
    * For initial testing just fork the upstream repo 
    * For adoption fork the repo and clone your fork
 4. cd into git repo (it has a .flox folder)
-   `cd ~/eks-cdk-quickstart
+   `cd ~/eks-cdk-quickstart`
 5. `flox activate`  
    Flox will use nix packages to overlay(merge/override) pre-requisite dependencies
    into your current working directory. (and append "flox [flox.dev]\n" to your $PS1 prompt var)  
