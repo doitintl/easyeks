@@ -166,11 +166,22 @@ aws --version
 cdk --version
 npm --version
 ```
-7. Deploy
+7. CDK Bootstrap and Deploy
 ```shell
 #[ec2-user@ec2-bastion-with-iam-admin-role:~/eks-cdk-quickstart]#
-export AWS_REGION=ca-central-1
+aws sts get-caller-identity
+# ^-- verify you have rights
+export AWS_REGION="ca-central-1"
+# ^-- recommend add a region to ~/.bashrc, or `aws configure`
+export AWS_ACCOUNT_ID=$(aws sts get-caller-identity | jq .Account | tr -d '\"')
+echo $AWS_ACCOUNT_ID
+cdk bootstrap aws://$AWS_ACCOUNT_ID/ca-central-1
+# ^-- bootstraps the region, after which you'll see a Stack name of "CDKToolkit"
+#     in AWS Web GUI Console > CloudFormation > Stacks (for that region)
+#     Note you can only deploy into region's that have been bootstrapped
 cdk list
+time cdk list
+# ^-- needs the env var set, in order to work, (normally takes 5-25 seconds)
 # lower-envs-vpc
 # dev1-eks
 # dev2-eks
