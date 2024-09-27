@@ -15,6 +15,7 @@ export class Easy_EKS_Config_Data { //This object just holds config data.
     ipMode: eks.IpFamily;
     clusterAdminARNs?: string[];
     clusterAddOns?: Map<string, blueprints.ClusterAddOn>;
+    kmsKeyAlias: string; //kms key with this alias will be created or reused if pre-existing
   
   
   
@@ -78,6 +79,16 @@ export class Easy_EKS_Config_Data { //This object just holds config data.
             //Since it's a Map, the newest entry can override the older entry
             //Which is a desired functionality for the sake of UX.
         } 
+    }
+    setKmsKeyAlias(kms_key_alias: string){
+        /*Note (About UX improvement logic):
+        Expectation is for end user to pass in value like "eks/lower-envs",
+        as that's what they'll see in the AWS Web GUI Console; however, the cdk library needs "alias/"
+        in front. Ex: "alias/eks/lower-envs".
+        This will check if string starts with "alias/", and add it if not there, for a better UX.
+        */
+        if(kms_key_alias.startsWith('alias/')){ this.kmsKeyAlias = kms_key_alias; }
+        else{ this.kmsKeyAlias = `alias/${kms_key_alias}`; }
     }
 
 

@@ -26,16 +26,14 @@ export function apply_config(config: Easy_EKS_Config_Data, stack: cdk.Stack){ //
         * Reliability/Maintainability Improvement: It eliminates the possibility of running out of IP Addresses.
         * Cost Savings: Due to the above, it's safe to run multiple EasyEKS Clusters in 1 VPC (which saves on NAT GW Costs)*/
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    config.setKubernetesVersion(KubernetesVersion.V1_30); //<--This library might not support latest
-    config.addAddOn( new blueprints.addons.MetricsServerAddOn() ); //allows kubectl top to work
-    // config.addAddOn(
-    //       new blueprints.addons.EbsCsiDriverAddOn({
-    //         version: "auto",
-    //         kmsKeys: [
-    //           blueprints.getResource( context => new kms.Key(context.scope, "ebs-csi-driver-key", { alias: "ebs-csi-driver-key"})),
-    //         ],
-    //         storageClass: "gp3"
-    //       })
-    // );
+    config.setKubernetesVersion(KubernetesVersion.V1_30); //<--Note: EKS Blueprints can be slow to support latest
+    config.addAddOn( new blueprints.addons.MetricsServerAddOn() ); //allows `kubectl top nodes` to work
+    config.addAddOn(
+      new blueprints.addons.EbsCsiDriverAddOn({
+          version: "auto", //latest version is always best, and works for all versions of kubernetes
+          kmsKeys: [ blueprints.getNamedResource(blueprints.GlobalResources.KmsKey) ],
+          storageClass: "gp3"
+      })
+  );
 
 }//end apply_config()
