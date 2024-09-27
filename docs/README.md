@@ -159,10 +159,11 @@ flox activate
 # ^-- this will create a flox.dev env, where 
 #     all cli tooling dependencies (aws, cdk, node, npm, typescript, jq)
 #     will be installed and on the correct version within ~2 minutes
+#     when you're in flox activate mode and in that folder or a subfolder
 #     future activations will be instant (think of it as downloading a docker image)
 aws --version
-
-
+cdk --version
+npm --version
 ```
 
 
