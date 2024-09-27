@@ -5,6 +5,7 @@ aws = { pkg-path = "awscli2", version = "2.17.0" }
 aws_cdk_dependency_ts = { pkg-path = "typescript", version = "5.5.2" }
 aws_cdk_dependency_nodejs = { pkg-path = "nodejs", version = "20.12.2" } #(v20 = LTS, long term support)
 cdk = { pkg-path = "nodePackages.aws-cdk", version = "2.133.0", pkg-group = "aws-cdk" } 
+jq = { pkg-path = "jq", version = "1.7.1" }
 # Note: pkg-group isolates dependencies to prevent conflict
 # Note: a cdk specific NixOS pgk bug exists https://github.com/NixOS/nixpkgs/issues/236151
 # cdk init app --language typescript

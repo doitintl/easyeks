@@ -1,0 +1,7 @@
+2024-09-27T05:28:35.227972Z DEBUG flox_watchdog::sentry: Initializing Sentry with DSN: https://85c9526795f5047c99a5247aab616295:@o4506548203094016.ingest.us.sentry.io/4506548241825792
+2024-09-27T05:28:35.228081Z DEBUG sentry: enabled sentry client for DSN https://85c9526795f5047c99a5247aab616295:@o4506548203094016.ingest.us.sentry.io/4506548241825792    
+2024-09-27T05:28:35.228094Z DEBUG flox_watchdog: starting
+2024-09-27T05:28:35.228110Z DEBUG flox_watchdog: registered termination interest
+2024-09-27T05:28:35.228118Z DEBUG flox_watchdog: checked socket path="/Users/chris.m/.cache/flox/run/flox.ecf05220.sock" exists=false
+2024-09-27T05:28:35.228201Z DEBUG flox_rust_sdk::models::env_registry: registering activation pid=72128 hash="ecf05220"
+2024-09-27T05:28:35.228416Z  INFO flox_watchdog: watchdog is on duty this_pid=72135 target_pid=72128

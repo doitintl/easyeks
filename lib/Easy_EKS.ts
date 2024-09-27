@@ -47,6 +47,7 @@ export class Easy_EKS{
     deploy_eks_construct_into_this_objects_stack(){
         ensure_existance_of_aliased_kms_key(this.config.kmsKeyAlias);
         const eksBlueprint = blueprints.EksBlueprint.builder();
+        //v--This refers to KmsKey used to encrypt kubernetes secrets stored in AWS Managed etcd hosted on EKS Control Plane
         eksBlueprint.resourceProvider(blueprints.GlobalResources.KmsKey, new blueprints.LookupKmsKeyProvider(this.config.kmsKeyAlias));
         eksBlueprint.resourceProvider(blueprints.GlobalResources.Vpc, new blueprints.DirectVpcProvider(this.config.vpc));
         eksBlueprint.clusterProvider(generate_cluster_blueprint(this.config));

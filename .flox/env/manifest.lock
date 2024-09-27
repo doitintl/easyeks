@@ -5,44 +5,29 @@
     "install": {
       "aws": {
         "pkg-path": "awscli2",
-        "pkg-group": null,
-        "priority": null,
-        "version": "2.17.0",
-        "systems": null
+        "version": "2.17.0"
       },
       "aws_cdk_dependency_nodejs": {
         "pkg-path": "nodejs",
-        "pkg-group": null,
-        "priority": null,
-        "version": "20.12.2",
-        "systems": null
+        "version": "20.12.2"
       },
       "aws_cdk_dependency_ts": {
         "pkg-path": "typescript",
-        "pkg-group": null,
-        "priority": null,
-        "version": "5.5.2",
-        "systems": null
+        "version": "5.5.2"
       },
       "cdk": {
         "pkg-path": "nodePackages.aws-cdk",
         "pkg-group": "aws-cdk",
-        "priority": null,
-        "version": "2.133.0",
-        "systems": null
+        "version": "2.133.0"
+      },
+      "jq": {
+        "pkg-path": "jq",
+        "version": "1.7.1"
       }
     },
     "vars": {},
-    "hook": {
-      "on-activate": null
-    },
-    "profile": {
-      "common": null,
-      "bash": null,
-      "zsh": null,
-      "fish": null,
-      "tcsh": null
-    },
+    "hook": {},
+    "profile": {},
     "options": {
       "systems": [
         "aarch64-darwin",
@@ -51,14 +36,12 @@
         "x86_64-linux"
       ],
       "allow": {
-        "unfree": null,
-        "broken": null,
         "licenses": []
       },
-      "semver": {
-        "allow-pre-releases": null
-      }
-    }
+      "semver": {}
+    },
+    "services": {},
+    "build": {}
   },
   "packages": [
     {
@@ -195,9 +178,6 @@
       "rev_count": 645454,
       "rev_date": "2024-06-29T19:44:37Z",
       "scrape_date": "2024-07-02T05:57:57Z",
-      "stabilities": [
-        "unstable"
-      ],
       "unfree": false,
       "version": "2.17.0",
       "outputs_to_install": [
@@ -225,9 +205,6 @@
       "rev_count": 645454,
       "rev_date": "2024-06-29T19:44:37Z",
       "scrape_date": "2024-07-02T05:57:57Z",
-      "stabilities": [
-        "unstable"
-      ],
       "unfree": false,
       "version": "2.17.0",
       "outputs_to_install": [
@@ -255,9 +232,6 @@
       "rev_count": 645454,
       "rev_date": "2024-06-29T19:44:37Z",
       "scrape_date": "2024-07-02T05:57:57Z",
-      "stabilities": [
-        "unstable"
-      ],
       "unfree": false,
       "version": "2.17.0",
       "outputs_to_install": [
@@ -285,9 +259,6 @@
       "rev_count": 645454,
       "rev_date": "2024-06-29T19:44:37Z",
       "scrape_date": "2024-07-02T05:57:57Z",
-      "stabilities": [
-        "unstable"
-      ],
       "unfree": false,
       "version": "2.17.0",
       "outputs_to_install": [
@@ -315,9 +286,6 @@
       "rev_count": 645454,
       "rev_date": "2024-06-29T19:44:37Z",
       "scrape_date": "2024-07-02T05:57:57Z",
-      "stabilities": [
-        "unstable"
-      ],
       "unfree": false,
       "version": "20.12.2",
       "outputs_to_install": [
@@ -345,9 +313,6 @@
       "rev_count": 645454,
       "rev_date": "2024-06-29T19:44:37Z",
       "scrape_date": "2024-07-02T05:57:57Z",
-      "stabilities": [
-        "unstable"
-      ],
       "unfree": false,
       "version": "20.12.2",
       "outputs_to_install": [
@@ -375,9 +340,6 @@
       "rev_count": 645454,
       "rev_date": "2024-06-29T19:44:37Z",
       "scrape_date": "2024-07-02T05:57:57Z",
-      "stabilities": [
-        "unstable"
-      ],
       "unfree": false,
       "version": "20.12.2",
       "outputs_to_install": [
@@ -405,9 +367,6 @@
       "rev_count": 645454,
       "rev_date": "2024-06-29T19:44:37Z",
       "scrape_date": "2024-07-02T05:57:57Z",
-      "stabilities": [
-        "unstable"
-      ],
       "unfree": false,
       "version": "20.12.2",
       "outputs_to_install": [
@@ -435,9 +394,6 @@
       "rev_count": 645454,
       "rev_date": "2024-06-29T19:44:37Z",
       "scrape_date": "2024-07-02T05:57:57Z",
-      "stabilities": [
-        "unstable"
-      ],
       "unfree": false,
       "version": "5.5.2",
       "outputs_to_install": [
@@ -464,9 +420,6 @@
       "rev_count": 645454,
       "rev_date": "2024-06-29T19:44:37Z",
       "scrape_date": "2024-07-02T05:57:57Z",
-      "stabilities": [
-        "unstable"
-      ],
       "unfree": false,
       "version": "5.5.2",
       "outputs_to_install": [
@@ -493,9 +446,6 @@
       "rev_count": 645454,
       "rev_date": "2024-06-29T19:44:37Z",
       "scrape_date": "2024-07-02T05:57:57Z",
-      "stabilities": [
-        "unstable"
-      ],
       "unfree": false,
       "version": "5.5.2",
       "outputs_to_install": [
@@ -522,9 +472,6 @@
       "rev_count": 645454,
       "rev_date": "2024-06-29T19:44:37Z",
       "scrape_date": "2024-07-02T05:57:57Z",
-      "stabilities": [
-        "unstable"
-      ],
       "unfree": false,
       "version": "5.5.2",
       "outputs_to_install": [
@@ -532,6 +479,134 @@
       ],
       "outputs": {
         "out": "/nix/store/8h5s7xk9pq5i0nqv5qhs6pn4vw8mrj5f-typescript-5.5.2"
+      },
+      "system": "x86_64-linux",
+      "group": "toplevel",
+      "priority": 5
+    },
+    {
+      "attr_path": "jq",
+      "broken": false,
+      "derivation": "/nix/store/23wb5s3lxhbywrpmkgj5qj748dakc8nl-jq-1.7.1.drv",
+      "description": "Lightweight and flexible command-line JSON processor",
+      "install_id": "jq",
+      "license": "MIT",
+      "locked_url": "https://github.com/flox/nixpkgs?rev=2741b4b489b55df32afac57bc4bfd220e8bf617e",
+      "name": "jq-1.7.1",
+      "pname": "jq",
+      "rev": "2741b4b489b55df32afac57bc4bfd220e8bf617e",
+      "rev_count": 645454,
+      "rev_date": "2024-06-29T19:44:37Z",
+      "scrape_date": "2024-07-02T05:57:57Z",
+      "unfree": false,
+      "version": "1.7.1",
+      "outputs_to_install": [
+        "bin",
+        "man"
+      ],
+      "outputs": {
+        "bin": "/nix/store/xg81izi6f47kqkdz18pfmrdc51dknlhw-jq-1.7.1-bin",
+        "dev": "/nix/store/imrjldza91f77jby5lxjbkgfxnfkz03y-jq-1.7.1-dev",
+        "doc": "/nix/store/5ia7b8a8g06qj1sbx8a5ps143nq6mvnl-jq-1.7.1-doc",
+        "lib": "/nix/store/22kzijygkrk06n9l47imyd03l94z24x9-jq-1.7.1-lib",
+        "man": "/nix/store/q0kqv0ykh9w2hgh2hy8vwfmlsbayfqga-jq-1.7.1-man",
+        "out": "/nix/store/kyidd4b152qrmd9f7bijg2wmg58j0ipn-jq-1.7.1"
+      },
+      "system": "aarch64-darwin",
+      "group": "toplevel",
+      "priority": 5
+    },
+    {
+      "attr_path": "jq",
+      "broken": false,
+      "derivation": "/nix/store/48nbmv5hmyy1qwn1q7n3k6k236ifv3m3-jq-1.7.1.drv",
+      "description": "Lightweight and flexible command-line JSON processor",
+      "install_id": "jq",
+      "license": "MIT",
+      "locked_url": "https://github.com/flox/nixpkgs?rev=2741b4b489b55df32afac57bc4bfd220e8bf617e",
+      "name": "jq-1.7.1",
+      "pname": "jq",
+      "rev": "2741b4b489b55df32afac57bc4bfd220e8bf617e",
+      "rev_count": 645454,
+      "rev_date": "2024-06-29T19:44:37Z",
+      "scrape_date": "2024-07-02T05:57:57Z",
+      "unfree": false,
+      "version": "1.7.1",
+      "outputs_to_install": [
+        "bin",
+        "man"
+      ],
+      "outputs": {
+        "bin": "/nix/store/ylxdhn87ciiikr3j7dj7zzyjiqpvvjf1-jq-1.7.1-bin",
+        "dev": "/nix/store/kvdypn2pnzyhygkddndm5dqr5r9bnh9j-jq-1.7.1-dev",
+        "doc": "/nix/store/24mr3119b8q2vldnxmqdvwifhyq9hvp5-jq-1.7.1-doc",
+        "lib": "/nix/store/fxbv61700rhfqszv71zzh8fpl2rmdn5x-jq-1.7.1-lib",
+        "man": "/nix/store/sv9fpin9yh8jzyak13rbkv095rjk9qxc-jq-1.7.1-man",
+        "out": "/nix/store/vgzh2ffaaj9yp64vayhqhc7qkc461fcq-jq-1.7.1"
+      },
+      "system": "aarch64-linux",
+      "group": "toplevel",
+      "priority": 5
+    },
+    {
+      "attr_path": "jq",
+      "broken": false,
+      "derivation": "/nix/store/ms3vpwzv4z23yzz708si7mb0p05k5qav-jq-1.7.1.drv",
+      "description": "Lightweight and flexible command-line JSON processor",
+      "install_id": "jq",
+      "license": "MIT",
+      "locked_url": "https://github.com/flox/nixpkgs?rev=2741b4b489b55df32afac57bc4bfd220e8bf617e",
+      "name": "jq-1.7.1",
+      "pname": "jq",
+      "rev": "2741b4b489b55df32afac57bc4bfd220e8bf617e",
+      "rev_count": 645454,
+      "rev_date": "2024-06-29T19:44:37Z",
+      "scrape_date": "2024-07-02T05:57:57Z",
+      "unfree": false,
+      "version": "1.7.1",
+      "outputs_to_install": [
+        "bin",
+        "man"
+      ],
+      "outputs": {
+        "bin": "/nix/store/n2ajnzxcpai56qgdpxmsjm3p0yh5x01w-jq-1.7.1-bin",
+        "dev": "/nix/store/m1rmwi29wl6sqayh03p2n5m2nr5bi7x9-jq-1.7.1-dev",
+        "doc": "/nix/store/kdihmz92mp651r2y8ayhrw7jyyy1cmmw-jq-1.7.1-doc",
+        "lib": "/nix/store/xa4rfy519k4ynxxiqzg964gp1gvcqrsz-jq-1.7.1-lib",
+        "man": "/nix/store/lgq2p12gxs4piikdnszwiiyxljpmk9d1-jq-1.7.1-man",
+        "out": "/nix/store/0pvazidxnykrznr7myzjq168s69n29dq-jq-1.7.1"
+      },
+      "system": "x86_64-darwin",
+      "group": "toplevel",
+      "priority": 5
+    },
+    {
+      "attr_path": "jq",
+      "broken": false,
+      "derivation": "/nix/store/ylvn3x16giyz4fha457jsf35n3k2gxmg-jq-1.7.1.drv",
+      "description": "Lightweight and flexible command-line JSON processor",
+      "install_id": "jq",
+      "license": "MIT",
+      "locked_url": "https://github.com/flox/nixpkgs?rev=2741b4b489b55df32afac57bc4bfd220e8bf617e",
+      "name": "jq-1.7.1",
+      "pname": "jq",
+      "rev": "2741b4b489b55df32afac57bc4bfd220e8bf617e",
+      "rev_count": 645454,
+      "rev_date": "2024-06-29T19:44:37Z",
+      "scrape_date": "2024-07-02T05:57:57Z",
+      "unfree": false,
+      "version": "1.7.1",
+      "outputs_to_install": [
+        "bin",
+        "man"
+      ],
+      "outputs": {
+        "bin": "/nix/store/d2kin53ib2ii492ql1kznjsgy85lhwdz-jq-1.7.1-bin",
+        "dev": "/nix/store/zdhjf7wlszzjywpy5zvvzpkf9iyllkw5-jq-1.7.1-dev",
+        "doc": "/nix/store/ji5hnw6mskl27rls3979bb2npzhjbqcb-jq-1.7.1-doc",
+        "lib": "/nix/store/xj4yxyfrac5gkphn4y7rjl049i4m01fn-jq-1.7.1-lib",
+        "man": "/nix/store/jlp81pv77mdfw10xqbrwfzn7j45jzvik-jq-1.7.1-man",
+        "out": "/nix/store/lbbfggfihm00ban6qn74z055czaqdmx5-jq-1.7.1"
       },
       "system": "x86_64-linux",
       "group": "toplevel",

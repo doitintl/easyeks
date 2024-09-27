@@ -1,0 +1,15 @@
+2024-09-27T05:26:36.342648Z DEBUG flox_watchdog::sentry: Initializing Sentry with DSN: https://85c9526795f5047c99a5247aab616295:@o4506548203094016.ingest.us.sentry.io/4506548241825792
+2024-09-27T05:26:36.342842Z DEBUG sentry: enabled sentry client for DSN https://85c9526795f5047c99a5247aab616295:@o4506548203094016.ingest.us.sentry.io/4506548241825792    
+2024-09-27T05:26:36.342860Z DEBUG flox_watchdog: starting
+2024-09-27T05:26:36.342885Z DEBUG flox_watchdog: registered termination interest
+2024-09-27T05:26:36.342898Z DEBUG flox_watchdog: checked socket path="/Users/chris.m/.cache/flox/run/flox.ecf05220.sock" exists=false
+2024-09-27T05:26:36.342995Z DEBUG flox_rust_sdk::models::env_registry: registering activation pid=71946 hash="ecf05220"
+2024-09-27T05:26:36.343494Z  INFO flox_watchdog: watchdog is on duty this_pid=71947 target_pid=71946
+2024-09-27T05:26:50.979770Z DEBUG flox_watchdog: received termination event, will proceed
+2024-09-27T05:26:50.980171Z DEBUG flox_rust_sdk::models::env_registry: deregistering activation pid=71946 hash="ecf05220"
+2024-09-27T05:26:50.980853Z DEBUG flox_watchdog: remaining activations n=0
+2024-09-27T05:26:50.980869Z DEBUG flox_watchdog: running cleanup
+2024-09-27T05:26:50.980886Z DEBUG flox_watchdog: did not shut down process-compose reason="no socket"
+2024-09-27T05:26:50.980895Z  INFO flox_watchdog: exiting
+2024-09-27T05:26:50.980915Z DEBUG sentry: dropping client guard -> disposing client    
+2024-09-27T05:26:50.981002Z DEBUG sentry: client close; request transport to shut down    

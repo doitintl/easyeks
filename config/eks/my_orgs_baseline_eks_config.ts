@@ -31,7 +31,7 @@ export function apply_config(config: Easy_EKS_Config_Data, stack: cdk.Stack){ //
     config.addAddOn(
       new blueprints.addons.EbsCsiDriverAddOn({
           version: "auto", //latest version is always best, and works for all versions of kubernetes
-          kmsKeys: [ blueprints.getNamedResource(blueprints.GlobalResources.KmsKey) ],
+          kmsKeys: [ blueprints.getNamedResource(blueprints.GlobalResources.KmsKey) ], //TO DO: Needs bug fix using default kms, and not user alias
           storageClass: "gp3"
       })
   );
