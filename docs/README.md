@@ -58,9 +58,10 @@
 8. Deploy a Cluster
    ```shell
    # flox [flox.dev]
-   # [admin@~/eks-cdk-quickstart]
+   # [admin@laptop:~/eks-cdk-quickstart]#
    cdk list
-   cdk deploy test-cluster
+   cdk deploy lower-envs-vpc
+   cdk deploy dev1-eks
    ```
    Note the above cdk commands assume 3 things are true
    1. your IAM identity and region are set to an account / region where cdk has been bootstrapped. (You can check CloudFormation in that region to verify this.)
@@ -79,7 +80,7 @@
    * manually create an aws admin ec2 instance role, and attach it
 2. SSH into bastion
    * **Option 2A: ~/.ssh/config**
-     ```bash
+     ```shell
      mkdir -p ~/.ssh
      chmod 700 ~/.ssh
      touch ~/.ssh/config
@@ -125,7 +126,7 @@
      2. Temporarily copy the token's value into a nodepad app, it'll look something like the following fake value:  
         `ghp_jwiZWtzLWNkay1xdWlja3N0YXJ0CgwMjQtMD`
 3. Copy Paste Commands (one line at a time) to clone private github repo from AWS Cloud Shell  
-```bash
+```shell
 #[ec2-user@ec2-bastion-with-iam-admin-role:~]#
 sudo dnf update -y
 sudo dnf install git -y
@@ -134,7 +135,7 @@ export TOKEN_PASS="ghp_jwiZWtzLWNkay1xdWlja3N0YXJ0CgwMjQtMD"
 git clone https://$TOKEN_NAME:$TOKEN_PASS@github.com/doitintl/eks-cdk-quickstart.git
 ```
 4. Install Flox (copy paste commands 1 line at a time)
-```bash
+```shell
 #[ec2-user@ec2-bastion-with-iam-admin-role:~]#
 cat /etc/os-release
 uname -r
@@ -147,25 +148,35 @@ rm ~/flox-*.rpm
 # 1.3.2
 ```
 5. Change current working directory to the repo, which has a .flox folder
-```bash
+```shell
 #[ec2-user@ec2-bastion-with-iam-admin-role:~]#
 ls -lah ~/eks-cdk-quickstart | grep .flox
 cd ~/eks-cdk-quickstart
 ```
 6. Run flox activate in that folder
-```bash
+```shell
 #[ec2-user@ec2-bastion-with-iam-admin-role:~/eks-cdk-quickstart]#
 flox activate
 # ^-- this will create a flox.dev env, where 
 #     all cli tooling dependencies (aws, cdk, node, npm, typescript, jq)
 #     will be installed and on the correct version within ~2 minutes
 #     when you're in flox activate mode and in that folder or a subfolder
-#     future activations will be instant (think of it as downloading a docker image)
+#     future activations will be instant (like a docker image, but with nix pgks)
 aws --version
 cdk --version
 npm --version
 ```
-
+7. Deploy
+```shell
+#[ec2-user@ec2-bastion-with-iam-admin-role:~/eks-cdk-quickstart]#
+export AWS_REGION=ca-central-1
+cdk list
+# lower-envs-vpc
+# dev1-eks
+# dev2-eks
+cdk deploy lower-envs-vpc
+cdk deploy dev1-eks
+```
 
 
 ### Purpose of files and folders worth knowing about or editing
