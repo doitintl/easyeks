@@ -14,4 +14,5 @@ helm repo update
 
 helm search repo grafana | egrep "CHART|kube-prom"
 helm upgrade --install kps prometheus-community/kube-prometheus-stack --version=61.9.0 --values=kps.helm-values.yaml --namespace=monitoring --create-namespace=true
+helm upgrade --install kps oci://registry-1.docker.io/bitnamicharts/kube-prometheus --version=9.6.2 --values=kps.helm-values.yaml --namespace=monitoring --create-namespace=true
 ===========================
