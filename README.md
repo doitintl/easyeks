@@ -1,44 +1,42 @@
 # Easy EKS (Pre-Alpha)
 
 ## What is Easy EKS?
-A user experience optimized approach to EKS, where using it becomes **simpler**, **accessible**, and **enjoyable**.
+* An answer to the problem of EKS (a great product), having a terrible out of the box user experience.
+  * https://www.reddit.com/r/aws/comments/qpw36d/aws_eks_rant/
+  * https://www.reddit.com/r/devops/comments/y5am95/why_is_eks_and_aws_in_general_so_much_more/
+  * https://matduggan.com/aws-eks/
+* Easy EKS is a user experience optimized approach to EKS, where using it becomes `**simpler**`, `**accessible**`, and `**enjoyable**`.
 
 ### Simpler EKS
-* `cdk` is used to automate the provisioning of production ready eks clusters.
-* A `kustomize` inspired design pattern is used to make the deployment and management over time of multiple clusters much easier.
-* A `helm` inspired design pattern to abstract away complexity.
-  * helm hides complexity in templatized yaml files, and helm values.yaml files, which represent sane default values of input parameters to feed into the templating engine.
-  * helm's end users see a significantly simplified interface:  
-    For example:
-    * A 15 line long `kps.helm-values.yaml` file (of values representing overrides of kube-prometheus-stack helm chart's default input parameters)
-        us a command like `helm upgrade --install kps oci://registry-1.docker.io/bitnamicharts/kube-prometheus --version=9.6.2 --values=kps.helm-values.yaml --namespace=monitoring --create-namespace=true`
-    * Can deploy over 10,000 lines of yaml to a cluster, the complexity still exists, but it's hidden, abstracted away, and replaced with a simplified interface that end users use.
-  * Easy EKS hides it's complexity in /lib/ (cdk library), and /.flox/ (a recommended, yet optional method of automating dependencies with `flox activate`)
-  * Easy EKS presents a simplified workflow to end users:
-    * Edit /config/ (which is an intuitive and simplified end user interface inspired by kustomize and helm values)
-    * `cdk list`
-    * `cdk deploy dev1-eks`
+1. **Deployment <u>and baseline configuration</u> are both automated:**
+   * `cdk` is used to automate the provisioning of production ready EKS Clusters.
+2. **The administrative overhead associated with managing multiple clusters is minimized.has been minimizedultiple cluster's introduces little overhead:**
+   * A `kustomize` inspired design pattern is used to make the deployment and management over time of multiple clusters much easier.
+3. **Complexity is simplified, by shielding the end user engineers from unnecessary complexity that's practical to hide away:**
+   * A `helm` inspired design pattern to abstract away complexity.
+     * helm hides complexity in templatized yaml files, and helm values.yaml files, which represent sane default values of input parameters to feed into the templating engine.
+     * helm's end users see a significantly simplified interface:  
+       For example:
+       * A 15 line long `kps.helm-values.yaml` file (of values representing overrides of kube-prometheus-stack helm chart's default input parameters)
+       * With a command like `helm upgrade --install kps oci://registry-1.docker.io/bitnamicharts/kube-prometheus --version=9.6.2 --values=kps.helm-values.yaml --namespace=monitoring --create-namespace=true`
+       * Can deploy over 10,000 lines of yaml to a cluster. The complexity still exists, but it's hidden, abstracted away, and replaced with a simplified interface for end users.
+     * Easy EKS hides it's complexity in /lib/ (cdk library), and /.flox/ (a recommended, yet optional method of automating dependencies with `flox activate`)
+     * Easy EKS presents a simplified workflow to end users:
+       * Edit /config/ (which is an intuitive and simplified end user interface inspired by kustomize and helm values)
+       * `cdk list`
+       * `cdk deploy dev1-eks`
+
+
 
 ### Accessible EKS
+| **Accessibility Concerns**                                                 | **The following Common EKS Barriers**                                                                                                                                                                                                                                                                                                                                                                                                    | **Are replaced with a streamlined happy path**                                                                                                                                                                                                                                                    |
+|----------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Learning how to deploy a Production Ready Cluster                          | Often takes `weeks` to learn the basics, `months` to become proficient.                                                                                                                                                                                                                                                                                                                                                                  | Often takes `hours` to learn the basics, `days` to become proficient.                                                                                                                                                                                                                             |
+| Installation Experience                                                    | It's like building a custom computer from parts, each potentially `needing research and troubleshooting`, then installing an OS.                                                                                                                                                                                                                                                                                                         | It's like installing an OS on a `preassembled` computer. (Still work, but significantly less)                                                                                                                                                                                                     |
+| Installation Docs                                                          | EKS and components need to be installed, often `over 10 installation docs`  are needed, and spread across AWS and multiple 3rd party repositories.                                                                                                                                                                                                                                                                                       | A bundled and automated installation allows for `more centralized installation docs`.                                                                                                                                                                                                             |
+| Prerequisite Knowledge                                                     | AWS's cdk based EKS Blueprints, can make things easier, but it `requires knowledge` of JavaScript, TypeScript, npm, and EKS Blueprints.                                                                                                                                                                                                                                                                                                  | Easy EKS is designed to prioritize FTUX (First Time User Experience), minimize cognitive complexity, be intuitive, and documented enough for those with `zero prior knowledge` to find it easy.                                                                                                   |
+| Successful adoption needs EKS specialists, which create staffing concerns. | It's not uncommon to dedicate at least 1 full-time engineer to managing "DevOps Yak Shaving" and "engineering toil heavy tasks" tasks associated with EKS. `Expensive Staff` Augmentation can set things up quick, Cheaper Engineers still end up being more expensive from needing more time or creating a patchwork that will need to be reworked. "Bus factor", job mobility, time off, and skillset bottlenecks are common concerns. | A standardized, easy to learn, free open source product allows staff to be more fungible. `Specialized Knowledge is still needed, but it's orders of magnitude less`, even a Jr Engineer could become proficient within a week, and wouldn't need to dedicate their time on low value toil tasks. |
 
-    * 
-      
-Be Quick to Learn, Easy to Use, with minimal prior knowledge:**
-  * Aims to be:
-    * Easy enough for cloud engineers, without specialized knowledge, to be able to:
-    * Learn, setup, and deploy a production ready eks cluster within a day.
-    * Gain working mastery of the a
-
-    * how to deploy within a day
-  
-  a non-experts to figure out how to deploy a
-
-
-  production production within a day, and a that a non-expertfor non-experts a team with little prior knowledge:
-
-to deploy a production ready eks cluster in a day.
-
-FTUX (First Time User Experience) and user onboarding
 
 
 
