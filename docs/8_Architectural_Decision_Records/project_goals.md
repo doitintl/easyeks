@@ -25,11 +25,11 @@
 * Be beginner friendly:
   * Detailed Code Comments:
     * Excessive Code Comments are bad when code is intended to be used by experienced developers.
-    * This is a different scenario of end users who may have little to no prior experience with
-      JS/TS, and already have a ton of work to do a things to learn.
+    * This is a different scenario, here end users may have little to no prior experience with
+      JS/TS, and already have a ton of work to do, and things to learn.
     * Solutions that only create more work or trade N problem(s) in exchange for P solution(s) should
       be questioned. This decision minimizes problems created (in the form of training/skill level).
-  * Avoid Fancy programming in favor of KIS(keep it simple), intuitive, readable, and code that
+  * Avoid Fancy programming in favor of KIS (keep it simple), intuitive, readable, and code that
     someone with little to no prior knowledge would find easy to read and understand, by the curious.
     There are times I know a fancy TypeScript way of shorterning the code, and purposefully don't do
     it, as I think a longer or alternative way would be easier for a beginner to read.

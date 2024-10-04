@@ -3,6 +3,7 @@ When it's time to make a docusaurus documentation webpage
 Top Menu will look like this in this order left to right.
 /Introduction/ <-- Also acts /, root, home page. (contents of README.md, will be moved here.) (when webpage exists, just point the readme here.)
 /Expectations/
+/Quickstart/
 /Prerequisites/
 /Basics/ <-- basic deployment to central region of ca-central-1
 /Advanced/ <-- explain how to change region from the default of ca-central-1, and IaC
