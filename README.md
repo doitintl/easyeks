@@ -60,21 +60,21 @@
     * It's designed to be intuitive, and even FTUX (first time user experience) and OUX (onboarding UX)
       are prioritized to make it easy to learn.
 * You can enjoy:
-  * Being able to deploy a production ready baseline in under a day.
-  * Not having to make choices or think through engineering toil:
-    * Instead of choices, where you're engineering brain stressed out over the best choice.
-    * You get an opinionated approach of choices that are best for most people.
-      (sane and well optimized defaults that can be overriden.)
-  * Being confident in adopting this opinionated approach, free of FOMO(fear of missing out):
-    * Easy EKS was designed by a platform engineer:
-      * With over 6 years of Kubernetes Consulting Experience
-
-
-* A standardized deployment of EKS, that aims to enable users to establish a production ready baseline in under a day.
-* An Opinionated Approach to EKS, that aims to make deploying and managing EKS clusters easier, it's based on:
-
-
-
+  * Being able to get meaningful work done quick:
+    * Learn the basics within a day.
+    * Deploy a cluster in under an hour, with a production ready baseline configuration.
+    * Develop working proficiency in under a week. 
+  * Not having to think through engineering toil:
+    * Instead of choices, that make engineer's stress over identifying the best chocie.
+    * You get an opinionated approach of wise decisions that are best for most people.  
+      (They're sane well optimized defaults that can be overriden if needed.)
+    * opinionated with decisions made = standardized
+    * standardization is a pre-requisite for end to end automation.
+  * Being confident in your choice to use Easy EKS:
+    * Easy EKS was designed and automated by a platform engineer, with over 6 years of kubernetes
+      consulting experience. Who has been a senior architect, builder, IaC coder, and automation
+      engineer of over 5 built from scratch kubernetes platforms.
+    * ADR's (Architectural Decision Records) are available to verify reasoning behind all choices.
 
 -------------------------------------------------------------------------------------------------------
 
