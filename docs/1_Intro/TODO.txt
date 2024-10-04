@@ -1,0 +1,10 @@
+When it's time to make a docusaurus documentation webpage
+
+Top Menu will look like this in this order left to right.
+/Introduction/ <-- Also acts /, root, home page. (contents of README.md, will be moved here.) (when webpage exists, just point the readme here.)
+/Expectations/
+/Prerequisites/
+/Basics/
+/Advanced/
+/Proficient/
+/ADRs/

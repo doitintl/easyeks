@@ -1,8 +1,10 @@
 # Easy EKS (Pre-Alpha)
 
 ## What problem does this solve?
-* Easy EKS is an answer to the problem of EKS, which is a great product, having a terrible out of the
-  box user experience.
+* EKS is a double-edged sword:
+  * Good: It simplifies the setup of a Kubernetes Cluster on AWS.
+  * Bad: It has a terrible out of the box user experience. 
+* Easy EKS is an solution to EKS's terrible out of the box user experience.
   * https://www.reddit.com/r/aws/comments/qpw36d/aws_eks_rant/
   * https://www.reddit.com/r/devops/comments/y5am95/why_is_eks_and_aws_in_general_so_much_more/
   * https://matduggan.com/aws-eks/
@@ -75,6 +77,8 @@
       consulting experience. Who has been a senior architect, builder, IaC coder, and automation
       engineer of over 5 built from scratch kubernetes platforms.
     * ADR's (Architectural Decision Records) are available to verify reasoning behind all choices.
+      * This isn't just a platform that claims to follow best practices.
+      * It's a platform that includes justifications of why it's practices are best practices.
 
 -------------------------------------------------------------------------------------------------------
 
