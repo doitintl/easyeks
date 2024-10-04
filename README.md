@@ -100,5 +100,4 @@
 -------------------------------------------------------------------------------------------------------
 
 ## How do I get started?
-[Check the docs page](/docs/README.md)
-
+[Check the docs page](/docs)

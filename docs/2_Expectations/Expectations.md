@@ -2,6 +2,20 @@
 
 add initial demo feedback.
 
+Expected end state 
+* if you use this product here's what you can expect it to do
+* what you can expect it not to do / what you'll have to do
+
+user expectations setting
+
+Onboarding expectations / How Onboarding Works
+* onboarding process in phases
+* recommended reading
+* o right I need to point out that people are expected to fork this repo.
+  I should also point out recommendations in terms of maintaince over time / consuming updates.
+  or mention that in proficient
+
+
 ## Overview of Approach (What to Expect)
 * End state of: N-sandbox, dev, stage, prod EKS clusters
   * Each cluster(environment) is optional
@@ -13,7 +27,7 @@ add initial demo feedback.
   * stage and prod are isolated in a "high side" AWS account. (Devs and Ops have access.)
   * Nth-sandbox and dev envs are isolated in a "low side" AWS account. (Only Ops has access.)
 
-### How Onboarding Works
+
 
 ### High level overview of usage steps
 1. Setup a workstation with AWS rights (your laptop, EC2 VM with IAM role you can ssh into)  
