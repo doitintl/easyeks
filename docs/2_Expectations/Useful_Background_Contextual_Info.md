@@ -25,7 +25,14 @@
 
 ### Purpose of files and folders worth knowing about or editing
 * **./.flox/**:  
-  (holds config of shared dev env, usually ignore unless you need to update dependency versions)
+  (holds config of shared dev env, usually ignore unless you need to update dependency versions)  
+  `flox activate`  
+   Flox will use nix packages to overlay(merge/override) pre-requisite dependencies
+   into your current working directory. (and append "flox [flox.dev]\n" to your $PS1 prompt var)  
+   So things like `npm --version` in the working directory and sub dirs, will likely show
+   a different value than if you ran the command in another location on your terminal.
+   It'll use versions of the cli tool supplied by nix pkgs, rather than what's installed on
+   your system.
 * **./bin/cdk-main.ts/**:  
   When you run `cdk *` command, this is the main entry point of the program.
   This is where you can define/declare N number of test, dev, stage, or prod clusters.
