@@ -29,7 +29,17 @@
 
 
 
-## AWS Cloud Shell Instructions
+## TO DO:
+* I need to rethink this from scratch. Cloud9 would be perfect but non-option :\
+* Next best thing is probably to either:
+  * use AWS CloudShell to bootstrap an EC2 VM.
+  * or make a custom docker image with the npm dependencies installed. 
+    (this would, introduce a need for a gitops pipeline to make it maintainable,
+    but might be worth looking into.)
+  * research if a better cloud9 alternative exists
+
+
+## AWS Cloud Shell Instructions (Don't work will replace)
 * https://ca-central-1.console.aws.amazon.com/cloudshell/home?region=ca-central-1#
 * Note!:
   * AWS Cloud Shell only offers 1GB of persistent storage in the home directory.
@@ -58,10 +68,17 @@ sudo su -
 cp -r /home/cloudshell-user/eks-cdk-quickstart /root
 cd /root/eks-cdk-quickstart
 npm install
-export PATH="$PATH:/usr/lib/node_modules/aws-cdk/bin"
-
+# ^-- installs dependencies
+# Note root user has misconfigured path & AWS CLI so switch back to cloudshell-user
+chown -R cloudshell-user:cloudshell-user /root/eks-cdk-quickstart
+su cloudshell-user
+cd /root/eks-cdk-quickstart
+# [cloudshell-user@ip-10-134-71-234 /root/esk-cdk-quickstart]
+export AWS_REGION=ca-central-1
 cdk list
 
+# ^-- doesn't work this is getting too hacky/too much roomt for error
+#     an inexperienced person would have trouble following.
 ```
 
 
