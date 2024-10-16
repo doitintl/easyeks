@@ -2,9 +2,16 @@
 
 ## What problem does this solve?
 * EKS is a double-edged sword:
-  * Good: It simplifies the setup of a Kubernetes Cluster on AWS.
-  * Bad: It has a terrible out of the box user experience. 
-* Easy EKS is an solution to EKS's terrible out of the box user experience.
+  * Good: 
+    * It simplifies the setup of a Kubernetes Cluster on AWS.
+    * It works great after it's set up.
+  * Bad: 
+    * Set up is left to end users who have a high risk of setting it up poorly, taking months, or
+      both.
+    * It has a terrible FTUX (first time user experience) and OOTB (out of the box) UX (user
+      experience).
+* Easy EKS is a solution to EKS's problems related to its slow and flawed set up process, FTUX, and
+  OOTB UX.
   * https://www.reddit.com/r/aws/comments/qpw36d/aws_eks_rant/
   * https://www.reddit.com/r/devops/comments/y5am95/why_is_eks_and_aws_in_general_so_much_more/
   * https://matduggan.com/aws-eks/
