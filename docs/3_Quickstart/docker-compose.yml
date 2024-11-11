@@ -1,0 +1,11 @@
+# USAGE:
+# docker-compose up --detach && docker exec -it cdk bash
+services:
+  cdk: #<-- arbitarily named docker container
+    container_name: cdk
+    build:
+      dockerfile: Dockerfile
+      context: .
+    volumes:
+    - $HOME/eks-cdk-quickstart:/home:rw
+    command: ["/usr/bin/sleep", "4h"]
