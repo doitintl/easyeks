@@ -6,3 +6,6 @@ RUN DEBIAN_FRONTEND=noninteractive TZ=Etc/UTC apt update -y && apt install -y \
     npm \
     awscli
 RUN npm update -g && npm install -g aws-cdk@2.147.3
+WORKDIR /root
+COPY ./eks-cdk-quickstart /root
+RUN npm install

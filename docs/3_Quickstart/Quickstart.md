@@ -1,54 +1,50 @@
-# Quick Method of Satisfying Prerequisites
-* This fast method is recommended for:
-  * Anyone who wants to try this out as fast as possible.
-  * Jr Engineers with little prior knowledge of shells, manually provisioning an ec2
-    instance, ssh, and private git repos.
-* It's not recommended for users planning to commit to long-term adoption of EasyEKS, 
-  as it minimizes prerequisites at the cost of benefits gained by implementing the
-  prerequisites.
-* Unfortunately aws got rid of Cloud9, which would have been perfect for this, and 
-  AWS's Cloud Shell is the closest equivalent.
+# Easy EKS Quickstart
+## Who is this for
+* All first time users, are recommended to initially start with this approach:
+  * This approach aims to be accessible to Jr Engineers:
+    * Only basic knowledge of docker, aws iam, and linux shell is needed.
+  * Even Senior Engineers can appreciate initially starting with this approach:
+    * The quickstart methodology:
+      * Aims to make Easy EKS's Workflow and Results:
+        * Easy to try out
+        * Quick to test
+      * By initially skipping and minimizing prerequisites.
+    * After having a chance to quickly try it out, get a feel for the process and
+      workflow, if you decide you like and want to adopt the approach.
+      Then you can advance to adoption onboarding where a
+      different methodlogy involving prerequisite steps is recommended, because it's
+      more optimized for long-term adoption. (Think of this as a "fast method", and
+      that as a "recommended method".)
 
+------------------------------------------------------------------------------------
 
+## Overview of the Approach
+* Background Context to understand why the approach is taken:
+  * AWS Cloud 9, would have been perfect for this, but AWS removed that service.
+  * AWS Cloud Shell, looks like it'd work, but can't for various reasons:
+    * Lacks rights and storage to install flox / Nix pgks
+    * Only offers 1GB storage, which is insufficient storage, to satisfy install of
+      dependencies using a script. This also prevents the use of large docker images.
+    * Ephemeral Storage with additional space exists, but too can't be used for
+      multiple reasons.
+  * Many other options are avoided, because they introduce many prerequisites.
+* Overview of the approach:
+  1. Assumed Prerequisites:  
+     1. You have docker installed.
+     2. You can access AWS CloudShell as an AWS Admin IAM user or assumed role.
+  2. Docker on local machine is used to produce a secure standardized environment.
+  3. AWS Cloud Shell is used to generate ephemeral IAM credentials, that can be copy
+     pasted into the docker container's environment variables.
 
-## AWS Cloud Shell Introduction
-* Notes: 
-  * AWS Cloud Shell doesn't support installing flox / Nix pgks, so scripting is used as an alternative.
-  * This assumes you have access to AWS Web Console and have your IAM user has admin rights
-  * This minimizes or avoids:
-    * setting up ssh and/or a shell environment
-      * browser based shell
-      * aws cli, npm, cdk, jq, and git are pre-installed
-      * aws iam integration is pre-configured
-    * setting up flox
-    * authenticating to a private repo (not true during alpha, but beta or 1.0 a public repo would allow this to be skipped.)
-* The AWS Cloud Shell methodology is meant to represent a "fast method" not a "correct method"
-  * So it's recommended to use it to get a feel for the process, but then go back and do things the nix pkgs way if you
-    start to seriously consider adopting Easy EKS for long term usage.
-* You should read the expectations doc before doing this (it explains why ca-central-1 is used)
+------------------------------------------------------------------------------------
 
+## Quickstart Steps:
+* You should read the expectations doc before doing this.  
+  (It explains why ca-central-1 is used initially.)
 
+* authenticating to a private repo (not true during alpha, but beta or 1.0 a public repo would allow this to be skipped.)
 
-## TO DO:
-* I need to rethink this from scratch. Cloud9 would be perfect but non-option :\
-* Next best thing is probably to either:
-  * use AWS CloudShell to bootstrap an EC2 VM.
-  * or make a custom docker image with the npm dependencies installed. 
-    (this would, introduce a need for a gitops pipeline to make it maintainable,
-    but might be worth looking into.)
-  * research if a better cloud9 alternative exists
-
-
-## AWS Cloud Shell Instructions (Don't work will replace)
 * https://ca-central-1.console.aws.amazon.com/cloudshell/home?region=ca-central-1#
-* Note!:
-  * AWS Cloud Shell only offers 1GB of persistent storage in the home directory.
-  * 1GB isn't sufficient free space for npm dependencies.
-  * AWS Cloud Shell has additional ephemeral (temporary storage) that we can use
-  * Just know that when using the AWS Cloud Shell quickstart method:
-    * The directory where you clone the repo into is important
-    * and you should expect the ephemeral storage to be lost / reset after 20 min of
-      inactivity.
 
 * Clone the repo
 ```shell
