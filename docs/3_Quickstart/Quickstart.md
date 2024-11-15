@@ -88,8 +88,24 @@
 * Visit AWS Cloud Shell
   https://ca-central-1.console.aws.amazon.com/cloudshell/home?region=ca-central-1#
 * `[cloudshell-user@ip-10-134-71-234 ~]`
-* Reminder: It's very insecure to copy paste random code on the internet into a terminal.
-* Read the following, then use github's copy button to help copy paste the following block of text into AWS CloudShell.
+* Security Notice:
+  * Hackers love engineers who copy paste random code from the internal into a terminal. 
+    (Same with curl http://be.careful.com/install.sh | bash)
+  * While convienent, this is a security bad practice that's a known threat vector, and
+    a dangerous habit to promote.
+  * Cloud IAM access has higher stakes than compromising your local machine, so this
+    is a good time to be extra vigilant!
+* Practice good cyber security hygiene by:
+  * Paying attention to date of last update/edit.  
+    * A common cognitive shortcut is to trust that someone in the open source community,
+      audited a bit of code and didn't see a need to create an git issue about security
+      concerns.
+    * Remember that logic isn't valid for recent edits. 
+    * Also, If you've personally audited in the past, you should re-audit when recent
+      edits occur.
+  * Reading the following code block.
+  * Take some time to review it for safety and understand it's intent.
+* Use Github's copy button to help copy paste the following block of text into AWS Cloud Shell.
 ```shell
 tee /home/cloudshell-user/.local/bin/gencreds  << 'EOF'
 #!/bin/bash
@@ -139,6 +155,8 @@ POLICYFILE
   aws iam attach-role-policy \
     --role-name $ROLE_NAME \
     --policy-arn arn:aws:iam::aws:policy/AdministratorAccess
+  echo "sleeping for 10 seconds to allow time for IAM role to provision and become ready for use."
+  sleep 10s
 fi
 
 echo "The following are ephemeral IAM admin credentials that will expire after 10 hours."
