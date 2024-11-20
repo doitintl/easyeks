@@ -7,13 +7,15 @@ FROM docker.io/node:20-bookworm-slim
 RUN DEBIAN_FRONTEND=noninteractive TZ=Etc/UTC apt update -y && apt install -y \
     jq \
     awscli
+ENV AWS_PAGER=""
+# ^-- fixes https://stackoverflow.com/questions/57953187/aws-cli-has-no-output
 
 WORKDIR /app
 # ^-- configure default working directory
 
 RUN groupadd user
-RUN useradd --gid user user
-# ^-- setup non-root user and group
+RUN useradd --gid user user --shell /bin/bash --create-home 
+# ^-- setup non-root user and group, with shell, and home dir: /home/user
 
 COPY cdk.json package.json package-lock.json tsconfig.json /app
 RUN npm install
@@ -21,6 +23,12 @@ ENV PATH="/app/node_modules/.bin:$PATH"
 # ^-- package.json & package-lock.json tell npm install what dependencies to install
 #     rebuild times are faster when rarely edited logic is put at the top
 #     PATH update adds cdk to the path, so it becomes a recognized command.
+
+RUN echo "update-notifier=false" | tee /home/user/.npmrc
+# ^-- Get's rid of an ignorable notice about available updates. 
+#     Pinned versions are better than latest for stablity.
+RUN echo 'export PS1="\[\e[38;5;226m\]\u\[\e[38;5;196m\]@\[\e[38;5;214m\]\h\e[38;5;196m\]:\[\e\[\e[38;5;14m\]\w \[\033[0m\]$ "' | tee -a /home/user/.bashrc
+# ^-- pretty prompt
 
 COPY ./bin /app/bin
 COPY ./lib /app/lib

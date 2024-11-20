@@ -159,12 +159,7 @@ npm --version
 * Bootstrap cdk
 ```shell
 export AWS_REGION=ca-central-1
-cdk bootstrap --region=ca-central-1
-# ^-- Note the region flag isnt required, itll default to your locally configured region
-#     Theres 2 advantages to explicitly specifying
-#     1. When working with a team, they cant see your locally configured region,
-#        so documenting in git improves reproducibility.
-#     2. It makes it intuitively obvious that cdk bootstrap is regionally scoped, not global.
+cdk bootstrap
 ```
 
 7. CDK Bootstrap and Deploy
