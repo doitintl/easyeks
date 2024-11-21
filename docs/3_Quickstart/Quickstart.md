@@ -63,6 +63,8 @@
   * Cloud IAM access has higher stakes than compromising your local machine, so this
     is a good time to be extra vigilant!
 * Practice good cyber security hygiene by:
+  * As a rule of thumb, this quickstart method should only be done in aws accounts,
+    that represent lower non-prod enviornments, or ideally a playground / sandbox account.
   * Paying attention to date of last update/edit.  
     * A common cognitive shortcut is to trust that someone in the open source community,
       audited a bit of code and didn't see a need to create an git issue about security
@@ -77,19 +79,23 @@
 ```shell
 tee /home/cloudshell-user/.local/bin/gencreds  << 'EOF'
 #!/bin/bash
-: Coding Logic: Imperative code is used to generate declarative results
+# Coding Logic: Imperative code is used to generate declarative results.
 USERINFO=$(aws sts get-caller-identity)
 ACCOUNT=$(echo $USERINFO | jq -r .Account)
 USER_ARN=$(echo $USERINFO | jq -r .Arn)
 USER_ID=$(echo $USER_ARN | cut -d ":" -f 6- | tr '/' '_')
-ROLE_NAME="$USER_ID"_local_docker_iam_admin
-CHECK_EXISTANCE=$(aws iam get-role --role-name $ROLE_NAME 2>&1)
 
 if [[ $USER_ID == 'root' ]]; then
   echo "A significant error has been detected. AWS root user can't be used to assume IAM roles."
-  echo "Login as an IAM user or role, and then retry this logic."
+  echo "Login as an IAM user or role, then retry this logic."
   echo "Detected USER_ID: $USER_ID"
 fi
+
+# The ROLE_NAME logic handles roles having a max length of 64 characters. It's basically
+# truncate if needed, then append. Ultimately _docker always ends up as the last 7 characters.
+ROLE_NAME=$(echo -n $USER_ID | cut -c1-57)_docker
+
+CHECK_EXISTANCE=$(aws iam get-role --role-name $ROLE_NAME 2>&1)
 
 if [[ $CHECK_EXISTANCE =~ 'The specified value for roleName is invalid' ]]; then
   echo "A significant error has occured, related to auto generation of role name."
@@ -99,7 +105,7 @@ if [[ $CHECK_EXISTANCE =~ 'The specified value for roleName is invalid' ]]; then
 fi
 
 if [[ $CHECK_EXISTANCE =~ 'NoSuchEntity' ]]; then
-  echo "User $USER_ID's local docker iam admin role for IaC Automation doesn't exist. It will be created.";
+  echo "User $USER_ID's local docker iam admin role for IaC Automation doesn't exist. It will be created."
 tee /tmp/assume-role-policy.json << POLICYFILE
 {
   "Version": "2012-10-17",
@@ -127,18 +133,23 @@ POLICYFILE
   sleep 10s
 fi
 
-echo "The following are ephemeral IAM admin credentials that will expire after 1-hour."
-echo "1-hour represents the max time allowed by this methodology, it's a hard limit imposed by AWS."
-echo "You can copy paste them into a interactive shell of a docker container running on your"
-echo "local machine, as an easy method of giving the local docker container AWS IAM Admin Access."
-echo "Note: The generated copypasteable creds, have an if statement."
-echo "It's purpose is to avoid annoyances, in the event you accidently paste the results into cloudshell."
-echo "IMPORTANT: It's only relatively safe to paste these into a trust worthy docker image running on your local machine."
-echo "IMPORTANT: If you accidently paste live credentials into a dangerous location, then immediately navigate to:"
-echo -e "AWS Web Console -> IAM -> Roles -> search "local_docker_iam_admin" -> Revoke sessions --> Revoke active sessions.\n\n"
+echo -e "
+The following are ephemeral IAM admin credentials that will expire after 1-hour.
+1-hour represents the max time allowed by this methodology, it's a hard limit imposed by AWS.
+You can copy paste them into a interactive shell of a docker container running on your
+local machine, as an easy method of giving the local docker container AWS IAM Admin Access.
+Note: The generated copypasteable creds, have an if statement, it's purpose is to
+      avoid annoyances, in the event you accidently paste the results into cloudshell.
+IMPORTANT: It's only relatively safe to paste these into a trust worthy docker image running
+           on your local machine.
+IMPORTANT: If you accidently paste live credentials into a dangerous location, 
+           then immediately navigate to:
+           AWS Web Console -> IAM -> Roles -> search 'docker' ->
+           Click ROLE_NAME = $ROLE_NAME
+           -> Revoke sessions -> Revoke active sessions.\n\n"
 
-
-STS_SESSION_NAME="$USER_ID"_$(date | tr ' :' '_')
+# NOTE: aws sts assume-role STS_SESSION_NAME variable has a acceptable character and max length constraints.
+STS_SESSION_NAME=$(echo -n "$USER_ID"_$(date | tr ' :' '_') | rev | cut -c 1-64 | rev)
 JSON_CREDS=$(aws sts assume-role --role-arn arn:aws:iam::$ACCOUNT:role/$ROLE_NAME --duration-seconds 3600 --role-session-name $STS_SESSION_NAME 2>/dev/null)
 ACCESS_KEY=$(echo $JSON_CREDS | jq -r .Credentials.AccessKeyId)
 SECRET_KEY=$(echo $JSON_CREDS | jq -r .Credentials.SecretAccessKey)
@@ -170,7 +181,7 @@ As a security best practice, when you're done (pasting into docker shell):
 3. Close the AWS Cloud Shell tab.
 """
 EOF
-sudo chmod +x /home/cloudshell-user/.local/bin/gencreds
+chmod +x /home/cloudshell-user/.local/bin/gencreds
 ```
 
 ### Step 3: Clone this Git Repo to your Local Machine
@@ -192,9 +203,9 @@ sudo chmod +x /home/cloudshell-user/.local/bin/gencreds
    echo $TOKEN_NAME
    echo $TOKEN_PASS
    ```
-4. Open a Unix Terminal, and copy paste a customized version of the above command
-   into your terminal. Verify that the echo $VAR, confirms your environment
-   variables are correctly set before moving on.
+4. Open a Unix Terminal, running on your local machine, copy paste a customized
+   version of the above command into your terminal. Verify that the echo $VAR,
+   confirms your environment variables are correctly set before moving on.
 5. Download this repo to your local machine  
    `[admin-user@local-machine:~]`  
    ```shell
