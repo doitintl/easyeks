@@ -227,14 +227,22 @@ chmod +x /home/cloudshell-user/.local/bin/gencreds
   docker run -it --hostname dockerized-cdk-runner local-image bash
   ```
 
-### Step 6: Run getcreds on AWS CloudShell, and copy paste creds into local Docker Shell
+### Step 6: Run getcreds on AWS CloudShell to provision ephemeral IAM credentials
 * Visit AWS Cloud Shell  
   https://ca-central-1.console.aws.amazon.com/cloudshell/home?region=ca-central-1#
-* Type `gencreds` to provision Ephemeral IAM Admin credentials that can then be
-  copy pasted into docker shell, to give the docker container IAM rights.
-* Close AWS Cloud Shell, and type `clear` into your docker terminal.  
-  (This is a good habit to make sure ephemeral credentials aren't leaked over a
-  screenshare or shoulder surf.)
+* Type `gencreds` which does 3 things:
+  1. Provisions Ephemeral IAM Admin credentials that can then be copy pasted into
+     docker shell, to give the docker container IAM rights.
+  2. Displays some usage notes like that the creds last for 1 hour, and security
+     best practices.
+  3. Displays output to be copy-pasted into local docker shell.
+
+### Step 7: Copy-paste the generated output into local Docker Shell
+* `gencreds` will have generated output to copy-paste. Paste it into docker shell.
+* It should also have told you good habits to follow to make sure ephemeral
+  credentials aren't leaked over a screenshare or shoulder surf, like:
+  * typing `clear` into docker terminal and aws cloud shell, and closing aws cloud
+    shell.
 
 ------------------------------------------------------------------------------------
 
