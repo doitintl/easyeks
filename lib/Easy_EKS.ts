@@ -45,9 +45,15 @@ export class Easy_EKS{
         dev_eks_config.apply_config(this.config,this.stack); 
     }
     deploy_eks_construct_into_this_objects_stack(){
-        ensure_existance_of_aliased_kms_key(this.config.kmsKeyAlias);
         const eksBlueprint = blueprints.EksBlueprint.builder();
-        //v--This refers to KmsKey used to encrypt kubernetes secrets stored in AWS Managed etcd hosted on EKS Control Plane
+        //logic to ensure the existance of kms key used to encrypt kube kubernetes secrets stored in AWS Managed etcd & csi ebs volumes.
+        ensure_existance_of_aliased_kms_key(this.config.kmsKeyAlias);
+        // This can be uncommented after the following is fixed https://github.com/aws/aws-cdk/issues/32368
+        // if (kms.Key.isLookupDummy(kms.Key.fromLookup(this.stack, "pre-existing-kms-key", { aliasName: this.config.kmsKeyAlias, returnDummyKeyOnMissing: true,  }))){
+        //     eksBlueprint.resourceProvider(blueprints.GlobalResources.KmsKey, new blueprints.CreateKmsKeyProvider(
+        //     this.config.kmsKeyAlias, {description: "Easy EKS generated kms key, used to encrypt etcd and ebs-csi-driver provisioned volumes"}
+        // ));}
+        // else { eksBlueprint.resourceProvider(blueprints.GlobalResources.KmsKey, new blueprints.LookupKmsKeyProvider(this.config.kmsKeyAlias)); }
         eksBlueprint.resourceProvider(blueprints.GlobalResources.KmsKey, new blueprints.LookupKmsKeyProvider(this.config.kmsKeyAlias));
         eksBlueprint.resourceProvider(blueprints.GlobalResources.Vpc, new blueprints.DirectVpcProvider(this.config.vpc));
         eksBlueprint.clusterProvider(generate_cluster_blueprint(this.config));
@@ -57,6 +63,7 @@ export class Easy_EKS{
             //                  ^... is JS array deconsturing operator which converts an array to a CSV list of parameters
         }
         const eks_blueprint_properties = convert_blueprintBuilder_to_blueprintProperties(this.config.id, eksBlueprint);
+
         const deploy_construct_into_stack = new blueprints.EksBlueprintConstruct(this.stack, eks_blueprint_properties);
         const ipv6_support_policy_statement = new iam.PolicyStatement({
             actions: ['ec2:AssignIpv6Addresses','ec2:UnassignIpv6Addresses'],
@@ -72,40 +79,24 @@ export class Easy_EKS{
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-export function ensure_existance_of_aliased_kms_key(kmsKeyAlias: string){
+function ensure_existance_of_aliased_kms_key(kmsKeyAlias: string){
     /*UX Improvement: By default EKS Blueprint will make new KMS key everytime you make a cluster.
     This logic checks for pre-existing keys, and prefers to reuse them. Else create if needed, reuse next time.
     The intent is to achieve the following EasyEKS default: (which is overrideable):
     * all lower envs share a kms key: "alias/eks/lower-envs" (alias/ will be added if not present.)
     * staging envs share a kms key: "alias/eks/stage"
     * prod envs share a kms key: "alias/eks/prod"
-    * */
-    // Use of shell works around https://github.com/aws/aws-cdk/issues/31574
-    // TO DO: 
-    // * never pass un-sanitized input / would need tight input sanitization. (works, helps avoid circular dependency complexity, yet breaks expectations)
-    // * or submit fix to upstream library (better long term option)
+    */
     let kms_key:kms.Key;   
     const cmd = `aws kms list-aliases | jq '.Aliases[] | select(.AliasName == "${kmsKeyAlias}") | .TargetKeyId'`
     const cmd_results = execSync(cmd).toString();
     if(cmd_results===""){ //if alias not found, then make a kms key with the alias
-        // kms_key = new kms.Key(stack, 'generated-kms-key', {
-        //     alias: config.kmsKeyAlias,
-        //     description: "Easy EKS generated kms key, used by EKS clusters and their ebs-csi-driver provisioned volumes",
-        //     keySpec: kms.KeySpec.SYMMETRIC_DEFAULT,
-        //     keyUsage: kms.KeyUsage.ENCRYPT_DECRYPT, 
-        // });
-        //darn... hard to implement without complex throw away logic, unless I also use aws cli to create it.
-        //This will buy time to have it work correctly today, while upstream gets fixed in the future.
-        const create_key_cmd = `aws kms create-key --description="Easy EKS generated kms key, used by EKS clusters and their ebs-csi-driver provisioned volumes"`
+        const create_key_cmd = `aws kms create-key --description="Easy EKS generated kms key, used to encrypt etcd and ebs-csi-driver provisioned volumes"`
         const results = JSON.parse( execSync(create_key_cmd).toString() );
         const key_id = results.KeyMetadata.KeyId;
         const add_alias_cmd = `aws kms create-alias --alias-name ${kmsKeyAlias} --target-key-id ${key_id}`;
         execSync(add_alias_cmd);
     }
-    // else{
-    //     kms_key = kms.Key.fromLookup(stack, "pre-existing-kms-key", { aliasName: config.kmsKeyAlias }) as kms.Key;
-    // }
-   //return kms_key;
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

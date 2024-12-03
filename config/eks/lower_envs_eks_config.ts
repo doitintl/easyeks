@@ -17,7 +17,9 @@ export function apply_config(config: Easy_EKS_Config_Data, stack: cdk.Stack){ //
     config.addAddOn( //https://github.com/aws-quickstart/cdk-eks-blueprints/blob/blueprints-1.15.1/lib/addons/karpenter/index.ts
         new blueprints.addons.KarpenterAddOn({
             version: "0.37.0", //https://github.com/aws/karpenter-provider-aws/releases
-            // newer versions 0.37.3 and 1.0.2 are currently broken due to lots of upstream integration bugs
+            // newer version: 1.1.0 works with kube 1.31 only if ec2nodeclassspec & nodepoolspec are commented
+            // so newer only partially works
+            // strategy: prioritize other issues, then this might fix itself by the time I get to it.
             // https://github.com/aws-quickstart/cdk-eks-blueprints/issues/1078
             namespace: "kube-system", //yet anther workaround for upstream bug... :\
             ec2NodeClassSpec: {
