@@ -35,5 +35,5 @@
     it, as I think a longer or alternative way would be easier for a beginner to read.
   * Abstract away complexity
 
-## Stretch Goals (potential future considerations)
-* pre-requisite provisioning, validation/testing, and integration.
+* High level goal of all EasyEKS ADRs is to implement an opinionated approach fully of features that
+  90% of EKS users would want or at least not mind having. 

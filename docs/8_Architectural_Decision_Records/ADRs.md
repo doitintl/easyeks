@@ -52,6 +52,26 @@
 
 ---------------------------------------------------------------------------------------------------------
 
+## Q2: Why CDK over Pulumi?
+* To summarize, for pragmatic reasons:
+  * From an idealistic / purely technological perspective I personally believe Pulumi is 2x better than
+    CDK. It'd probably be sufficiently better at:
+    * Imperatively ordered provisioning
+    * Robust input validation and IaC test suites
+    * Feedback loop / execution times if written in golang (CDK's golang annoyingly still needs node.js)
+  * AWS CDK's advantages, that made it win out:
+    * Technical advantage is Cloud Formation makes bootstrapping of IaC "state" easier
+    * CDK's community adoption is 10x bigger than Pulumi's
+      * Pulumi has some EKS projects but they always have 1-10 github stars
+    * CDK's commitment to long-term support is 10x better than Pulumi's
+      * [Pulumi's EKS projects keep getting 1-10 commits then abandoned.](https://github.com/pulumi/eks-blueprint)
+      * AWS's EKS Blueprints has been actively maintained for a few years, [it's at over 3k commits](https://github.com/aws-quickstart/cdk-eks-blueprints)
+  * https://lethain.com/magnitudes-of-exploration/  
+    ^-- This article is devops philosophy gold, and gives more insight on why I favor the 2 10x benefits
+    over the 1 2x.
+
+---------------------------------------------------------------------------------------------------------
+
 ## Why EasyEKS over CDK?
 
 We follow the "batteries included, but swappable" philosophy. (Quote stolen from Fck NAT)
