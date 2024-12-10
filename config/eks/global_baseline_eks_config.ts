@@ -17,7 +17,7 @@ export function apply_config(config: Easy_EKS_Config_Data, stack: cdk.Stack){ //
     //v--If you follow suggested order of application (global -> org -> env), then the set's functionally act as overrideable defaults.
     config.addAddOn( new blueprints.addons.KubeProxyAddOn() );
     config.addAddOn( new blueprints.addons.VpcCniAddOn({
-        version: "v1.18.3-eksbuild.3", //latest is valid for all kubernetes
+        version: "v1.19.0-eksbuild.1", //latest is valid for all kubernetes
         serviceAccountPolicies: [ iam.ManagedPolicy.fromAwsManagedPolicyName("AmazonEKS_CNI_Policy"),]
         //^-- Note Easy_EKS.ts also adds ipv6 support to this role
     }));
@@ -31,7 +31,7 @@ export function apply_config(config: Easy_EKS_Config_Data, stack: cdk.Stack){ //
     //v-- Below represents an optimized CoreDNS deployment, based on
     //    https://aws.amazon.com/blogs/containers/amazon-eks-add-ons-advanced-configuration/
     //    aws eks describe-addon-configuration --addon-name coredns --addon-version v1.11.1-eksbuild.11 --query configurationSchema --output text | jq .
-    config.addAddOn( new blueprints.addons.CoreDnsAddOn( "v1.11.3-eksbuild.1", { //<-- As of Sept 2024, "auto" (version) maps to older v1.11.1-eksbuild.8 that doesn't support autoscaling
+    config.addAddOn( new blueprints.addons.CoreDnsAddOn( "v1.11.3-eksbuild.2", { //<-- As of Sept 2024, "auto" (version) maps to older v1.11.1-eksbuild.8 that doesn't support autoscaling
       configurationValues: {
               "autoScaling": {
                 "enabled": true,
