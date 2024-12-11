@@ -13,10 +13,11 @@ export class Easy_EKS_Config_Data { //This object just holds config data.
     kubernetesVersion: KubernetesVersion;
     tags?: { [key: string]: string };
     ipMode: eks.IpFamily;
-    clusterAdminARNs?: string[];
+    clusterAdminAccessEksApiArns?: string[];
+    clusterViewerAccessAwsAuthConfigmapAccounts?: string[]; //only aws-auth configmap supports accounts
     clusterAddOns?: Map<string, blueprints.ClusterAddOn>;
     kmsKeyAlias: string; //kms key with this alias will be created or reused if pre-existing
-  
+    
   
   
     constructor(id_for_stack_and_eks: string){
@@ -54,10 +55,14 @@ export class Easy_EKS_Config_Data { //This object just holds config data.
         else{ this.tags = { ...this.tags, [key] : value }}
     }
     setIpMode(ipMode: eks.IpFamily){ this.ipMode = ipMode; }
-    addClusterAdminARN(arn:string){ 
-        if(this.clusterAdminARNs === undefined){ this.clusterAdminARNs = [arn] } //<--initialize if undfined
-        else{ this.clusterAdminARNs.push(arn); } //push means add to end of array
-    } 
+    addClusterAdminARN(arn:string){        //v--initialize if undefined
+        if(this.clusterAdminAccessEksApiArns === undefined){ this.clusterAdminAccessEksApiArns = [arn] } 
+        else{ this.clusterAdminAccessEksApiArns.push(arn); } //push means add to end of array
+    }
+    addClusterViewerAccount(account:string){        //v--initialize if undefined
+        if(this.clusterViewerAccessAwsAuthConfigmapAccounts === undefined){ this.clusterViewerAccessAwsAuthConfigmapAccounts = [account] } 
+        else{ this.clusterViewerAccessAwsAuthConfigmapAccounts.push(account); } //push means add to end of array
+    }
     addAddOn(addon: blueprints.ClusterAddOn){
         type AddOnObject = { props: { name: string }, coreAddOnProps: { addOnName: string} };
         let addOnName: string;
@@ -67,7 +72,7 @@ export class Easy_EKS_Config_Data { //This object just holds config data.
         if(case2){addOnName=case2};
     
         if(this.clusterAddOns === undefined){ 
-            this.clusterAddOns = new Map<string, blueprints.ClusterAddOn>(); //<-- initialize if undfined
+            this.clusterAddOns = new Map<string, blueprints.ClusterAddOn>(); //<-- initialize if undefined
             this.clusterAddOns.set(addOnName, addon); //<-- add Key Value Entry to HashMap
         }
         else{

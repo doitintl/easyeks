@@ -8,7 +8,6 @@ import * as kms from 'aws-cdk-lib/aws-kms';
 import * as blueprints from '@aws-quickstart/eks-blueprints'; 
 //          ^-- blueprints as in blueprint of a eks cluster defined as a declarative cloud formation stack
 import { Easy_EKS_Config_Data } from './Easy_EKS_Config_Data';
-import { partialEKSAccessEntry, GenericClusterProviderWithAccessEntrySupport } from './Modified_Cluster_Provider';
 //Config Library Imports:
 import * as global_baseline_eks_config from '../config/eks/global_baseline_eks_config';
 import * as my_orgs_baseline_eks_config from '../config/eks/my_orgs_baseline_eks_config';
@@ -18,7 +17,8 @@ import * as dev_eks_config from '../config/eks/dev_eks_config';
 import * as monitoring from './Frugal_GPL_Monitoring_Stack'; //TO DO
 import { execSync } from 'child_process'; //temporary work around for kms UX issue
 
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+///////////////////////////////////////////////////////////////////////////////////////////////////
 
 export class Easy_EKS{
 
@@ -77,7 +77,7 @@ export class Easy_EKS{
 
 }//end class of Easy_EKS
 
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////////////
 
 function ensure_existance_of_aliased_kms_key(kmsKeyAlias: string){
     /*UX Improvement: By default EKS Blueprint will make new KMS key everytime you make a cluster.
@@ -99,7 +99,7 @@ function ensure_existance_of_aliased_kms_key(kmsKeyAlias: string){
     }
 }
 
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////////////
 
 function convert_blueprintBuilder_to_blueprintProperties(id: string, blueprint_builder: blueprints.BlueprintBuilder){
     let partial_blueprint_properties:Partial<blueprints.EksBlueprintProps> = blueprint_builder.props; 
@@ -110,23 +110,57 @@ function convert_blueprintBuilder_to_blueprintProperties(id: string, blueprint_b
     return blueprint_properties;  
 }
 
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////////////
 
-function generate_cluster_blueprint( config: Easy_EKS_Config_Data){
-    const clusterAdmin: eks.AccessPolicy = eks.AccessPolicy.fromAccessPolicyName('AmazonEKSClusterAdminPolicy', {
-        accessScopeType: cdk.aws_eks.AccessScopeType.CLUSTER
-    });
-    let partialEKSAccessEntriesFromConfig: Array<partialEKSAccessEntry> = [];
-    if(config.clusterAdminARNs){
-        for (let index = 0; index < config.clusterAdminARNs.length; index++) {
-            partialEKSAccessEntriesFromConfig.push(new partialEKSAccessEntry(config.clusterAdminARNs[index], [clusterAdmin]));      
-        }
+interface EasyEksClusterProviderProps extends blueprints.GenericClusterProviderProps {
+    config: Easy_EKS_Config_Data;
+}
+
+class EasyEksClusterProvider extends blueprints.GenericClusterProvider { 
+    config: Easy_EKS_Config_Data;
+    constructor(props:EasyEksClusterProviderProps){
+        super(props);
+        this.config = props.config;
     }
+   
+    protected internalCreateCluster(stateStorage: Construct, stackID: string, clusterOptions: any): eks.Cluster {
+        const cluster = new eks.Cluster(stateStorage, stackID, clusterOptions);
 
-    const cluster_blueprint = new GenericClusterProviderWithAccessEntrySupport({
+        const clusterAdminAccessPolicy: eks.AccessPolicy = eks.AccessPolicy.fromAccessPolicyName('AmazonEKSClusterAdminPolicy', {
+            accessScopeType: eks.AccessScopeType.CLUSTER
+        });
+
+        if(this.config.clusterAdminAccessEksApiArns){ //<-- JS truthy statement to say if not empty do the following
+            for (let index = 0; index < this.config.clusterAdminAccessEksApiArns?.length; index++) {
+                new eks.AccessEntry( stateStorage, this.config.clusterAdminAccessEksApiArns[index], //<-- using ARN as a unique subStack id
+                {
+                    accessPolicies: [clusterAdminAccessPolicy],
+                    cluster: cluster,
+                    principal: this.config.clusterAdminAccessEksApiArns[index],
+                    accessEntryName: this.config.clusterAdminAccessEksApiArns[index]
+                });
+            }
+        }//end if
+
+        // const awsAuthConfigMap = new eks.AwsAuth(stateStorage, `${stackID}-aws-auth-cm`, {cluster: cluster}); 
+
+        // if(this.config.clusterViewerAccessAwsAuthConfigmapAccounts){ //<-- JS truthy statement to say if not empty do the following
+        //     for (let index = 0; index < this.config.clusterViewerAccessAwsAuthConfigmapAccounts?.length; index++) {
+        //         awsAuthConfigMap.addAccount(this.config.clusterViewerAccessAwsAuthConfigmapAccounts[index]);
+        //     }
+        // }//end if
+      
+      return cluster;    
+    }
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////
+
+function generate_cluster_blueprint(config: Easy_EKS_Config_Data){
+    const cluster_blueprint = new EasyEksClusterProvider({
+        config: config, //<-- passes easy eks config data
         tags: config.tags, //<-- attaches tags to EKS cluster in AWS Web Console
         authenticationMode: eks.AuthenticationMode.API_AND_CONFIG_MAP,
-        partialEKSAccessEntries: partialEKSAccessEntriesFromConfig,
         managedNodeGroups: [
             {
                 id: "ARM64-MNG",
@@ -151,3 +185,5 @@ function generate_cluster_blueprint( config: Easy_EKS_Config_Data){
     });
     return cluster_blueprint;
 }
+
+///////////////////////////////////////////////////////////////////////////////////////////////////

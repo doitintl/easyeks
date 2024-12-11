@@ -10,6 +10,7 @@ export function apply_config(config: Easy_EKS_Config_Data, stack: cdk.Stack){ //
     //config.setVpcById("vpc-0dbcacb511f9bac4e", config, stack); //Alternative pre-existing VPC deployment option
     //config.addClusterAdminARN(`arn:aws:iam::${process.env.CDK_DEFAULT_ACCOUNT!}:user/chrism`);
     //^--Note: identity referenced in ARN must exist or the deployment will fail
+    config.addClusterViewerAccount(process.env.CDK_DEFAULT_ACCOUNT!); //<--adds to aws-auth configmap, so all in account default to viewer access
 
     //v-- Karpenter addon needs to be configured after vpc is set. 
     //    (Remember cdk is imperative, as in step by step, so order of code execution matters)

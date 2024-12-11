@@ -10,14 +10,17 @@ export function apply_config(config: Easy_EKS_Config_Data, stack: cdk.Stack){ //
     //config.setVpcById("vpc-0dbcacb511f9bac4e", config, stack); //Alternative pre-existing VPC deployment option
     //config.addClusterAdminARN(`arn:aws:iam::${process.env.CDK_DEFAULT_ACCOUNT!}:user/chrism`);
     //^--Note: identity referenced in ARN must exist or the deployment will fail
+    config.addClusterViewerAccount(process.env.CDK_DEFAULT_ACCOUNT!); //<--adds to aws-auth configmap, so all in account default to viewer access
 
     //v-- Karpenter addon needs to be configured after vpc is set. 
-    //    (Remember cdk is imperative as in step by step, so order matters)
+    //    (Remember cdk is imperative, as in step by step, so order of code execution matters)
     //    Alternatively you could try ${stack.region}a, b, c, but that assumption doesn't work for all regions.
     config.addAddOn( //https://github.com/aws-quickstart/cdk-eks-blueprints/blob/blueprints-1.15.1/lib/addons/karpenter/index.ts
         new blueprints.addons.KarpenterAddOn({
             version: "0.37.0", //https://github.com/aws/karpenter-provider-aws/releases
-            // newer versions 0.37.3 and 1.0.2 are currently broken upstream
+            // newer version: 1.1.0 works with kube 1.31 only if ec2nodeclassspec & nodepoolspec are commented
+            // so newer only partially works
+            // strategy: prioritize other issues, then this might fix itself by the time I get to it.
             // https://github.com/aws-quickstart/cdk-eks-blueprints/issues/1078
             namespace: "kube-system", //yet anther workaround for upstream bug... :\
             ec2NodeClassSpec: {
@@ -48,7 +51,7 @@ export function apply_config(config: Easy_EKS_Config_Data, stack: cdk.Stack){ //
             podIdentity: true,
             values: { //https://github.com/aws/karpenter-provider-aws/tree/main/charts/karpenter#values
                 replicas: 2, //HA, because baseline MNG nodes are spot. 
-                //Note: good helm default will make the replicas spread across nodes.
+                //FYI: good helm default automatically make the replicas spread across nodes.
             }
         })
     );//end Karpenter AddOn
