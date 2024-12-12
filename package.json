@@ -21,7 +21,7 @@
   },
   "dependencies": {
     "@aws-quickstart/eks-blueprints": "^1.16.2",
-    "aws-cdk-lib": "^2.170.0",
+    "aws-cdk-lib": "^2.162.1",
     "cdk": "^2.159.1",
     "cdk-fck-nat": "^1.5.6",
     "constructs": "^10.0.0",
