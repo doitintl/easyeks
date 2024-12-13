@@ -142,13 +142,13 @@ class EasyEksClusterProvider extends blueprints.GenericClusterProvider {
             }
         }//end if
 
-        // const awsAuthConfigMap = new eks.AwsAuth(stateStorage, `${stackID}-aws-auth-cm`, {cluster: cluster}); 
+        const awsAuthConfigMap = new eks.AwsAuth(stateStorage, `${stackID}-aws-auth-cm`, {cluster: cluster}); 
 
-        // if(this.config.clusterViewerAccessAwsAuthConfigmapAccounts){ //<-- JS truthy statement to say if not empty do the following
-        //     for (let index = 0; index < this.config.clusterViewerAccessAwsAuthConfigmapAccounts?.length; index++) {
-        //         awsAuthConfigMap.addAccount(this.config.clusterViewerAccessAwsAuthConfigmapAccounts[index]);
-        //     }
-        // }//end if
+        if(this.config.clusterViewerAccessAwsAuthConfigmapAccounts){ //<-- JS truthy statement to say if not empty do the following
+            for (let index = 0; index < this.config.clusterViewerAccessAwsAuthConfigmapAccounts?.length; index++) {
+                awsAuthConfigMap.addAccount(this.config.clusterViewerAccessAwsAuthConfigmapAccounts[index]);
+            }
+        }//end if
       
       return cluster;    
     }

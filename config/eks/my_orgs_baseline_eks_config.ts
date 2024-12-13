@@ -15,6 +15,39 @@ export function apply_config(config: Easy_EKS_Config_Data, stack: cdk.Stack){ //
     //^-- NOTE: hashtag(#)   comma(,)   singlequote(')   doublequote(\")   parenthesis()   and more are not valid tag values
     //    https://docs.aws.amazon.com/codeguru/latest/bugbust-ug/limits-tags.html
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    config.addClusterViewerAccount(process.env.CDK_DEFAULT_ACCOUNT!);
+    /* Explanation of what this-^ does:
+    It adds current account to eks cluster's aws-auth configmap
+    kubectl get cm -n=kube-system aws-auth -o yaml | grep Accounts:
+      mapAccounts: '["111122223333"]'
+    This by itself does nothing, but it plus additional logic mimics a GKE viewer role like UX experience.
+    FAQ:
+    * Automatic viewer access sounds like Magic. Magic scares me, explain?
+      * Easy EKS uses 3 key bits of logic to pull it off:
+        1. A ClusterRole named easyeks-enhanced-viewer
+           * Defines the view only kube rbac rights
+        2. A ClusterRoleBinding named easyeks-all-authenticated-users-viewer
+           * maps the view role to the system:authenticated Group
+        3. Account Mapped in aws-auth configmap
+           * Makes members of the mapped aws account considered "authenticated" + all other explicit entries.
+      * Note GKE had a vulnerability (that doesn't seem to show in their CVE bulletin list?) related to
+        not properly scoping system:authenticated, such that the meaning of the word "authenticated" was too broad.
+        and that allowed cross account access to GKE clusters.
+      * EKS doesn't have the issue of overly broad interpretation of "authenticated"
+        * EKS's API (in the EKS Web GUI) only lets you specify 1 role / 1 user at a time.
+        * mapAccounts is the closest thing to a wildcard that exists, and it's scoped to explicit aws accounts.
+        * and it only grants viewer.
+      * in EasyEKS's opinionated approach this is an acceptable trade off / no big deal security wise, and
+        significantly improves UX. But you can disable the viewer access by default by commenting the above.
+    * What does viewer access allow? 
+      * kubectl cli read only (cluster wide kube rbac rights to get, list, watch, against most, but not all objects)
+      * EKS Web GUI read everything except kubernetes secrets
+    * What viewer access can't do: (purposeful so as to prevent privilege escalation)
+      * Can't view kubernetes secrets
+      * Can't create pods
+      * Can't kubectl exec -it into existing pods
+    */ 
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     config.setIpMode(eks.IpFamily.IP_V6); 
     //^--EasyEKS Recommended Default: is IP_V6
     /* Useful Notes:
