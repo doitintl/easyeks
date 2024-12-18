@@ -41,3 +41,7 @@
   * aws auth configmap's addAccount doesn't seem to do anything useful
   * going to look into a 3rd party tool next
     https://github.com/kubernetes-sigs/aws-iam-authenticator/blob/master/README.md#full-configuration-format
+* Came up with a solution:
+  * based on https://stackoverflow.com/questions/64644641/give-all-users-of-an-aws-account-access-to-an-eks-cluster/
+  * posted here https://stackoverflow.com/questions/79290040/gke-has-an-iam-roles-container-clusterviewer-how-can-i-duplicate-that-on-eks-r
+  * Baked it into the IaC

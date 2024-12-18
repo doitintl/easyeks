@@ -1,5 +1,5 @@
-# TO DO:
-# Hum... I should write a security notice
+# This is based on https://stackoverflow.com/questions/64644641/give-all-users-of-an-aws-account-access-to-an-eks-cluster
+# Hum... I should write a security notice when time to do polished docs
 # view should allow -o yaml
 # if someone's following bad practices and hard coding credentials in kube yaml,
 # rather than referencing a kube secret, then privilege escalation might be possible.
@@ -28,12 +28,13 @@ roleRef:
 # Note: The following are purposefully NOT allowed to prevent privilege escalation
 # view rights can't be used to:
 # - view secrets
+# - kubectl exec -it
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
   name: easyeks-enhanced-viewer
   labels:
-    rbac.authorization.k8s.io/aggregate-to-view: "true" #<-- this will merge into "view" clusterrole
+    rbac.authorization.k8s.io/aggregate-to-view: "true" #<-- this will get merged into the "view" clusterrole
 rules:
 - apiGroups: [""]
   verbs: ["get", "list", "watch"]
