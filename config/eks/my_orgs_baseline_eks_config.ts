@@ -15,7 +15,7 @@ export function apply_config(config: Easy_EKS_Config_Data, stack: cdk.Stack){ //
     //^-- NOTE: hashtag(#)   comma(,)   singlequote(')   doublequote(\")   parenthesis()   and more are not valid tag values
     //    https://docs.aws.amazon.com/codeguru/latest/bugbust-ug/limits-tags.html
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    config.addClusterViewerAccount(process.env.CDK_DEFAULT_ACCOUNT!);
+    config.addClusterViewerAccount(process.env.CDK_DEFAULT_ACCOUNT!); //<-- comment out to disable RO_viewer_by_default
     /* Explanation of what this-^ does:
     It adds current account to eks cluster's aws-auth configmap
     kubectl get cm -n=kube-system aws-auth -o yaml | grep Accounts:

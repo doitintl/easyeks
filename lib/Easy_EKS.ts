@@ -116,7 +116,8 @@ interface EasyEksClusterProviderProps extends blueprints.GenericClusterProviderP
     config: Easy_EKS_Config_Data;
 }
 
-class EasyEksClusterProvider extends blueprints.GenericClusterProvider { 
+class EasyEksClusterProvider extends blueprints.GenericClusterProvider {
+//https://aws-quickstart.github.io/cdk-eks-blueprints/api/interfaces/clusters.GenericClusterProviderProps.html
     config: Easy_EKS_Config_Data;
     constructor(props:EasyEksClusterProviderProps){
         super(props);
@@ -142,12 +143,13 @@ class EasyEksClusterProvider extends blueprints.GenericClusterProvider {
             }
         }//end if
 
-        const awsAuthConfigMap = new eks.AwsAuth(stateStorage, `${stackID}-aws-auth-cm`, {cluster: cluster}); 
-
         if(this.config.clusterViewerAccessAwsAuthConfigmapAccounts){ //<-- JS truthy statement to say if not empty do the following
+            const awsAuthConfigMap = new eks.AwsAuth(stateStorage, `${stackID}-aws-auth-cm`, {cluster: cluster}); 
             for (let index = 0; index < this.config.clusterViewerAccessAwsAuthConfigmapAccounts?.length; index++) {
                 awsAuthConfigMap.addAccount(this.config.clusterViewerAccessAwsAuthConfigmapAccounts[index]);
             }
+            cluster.addManifest('viewer_only_cluster_role_binding', viewer_only_crb);
+            cluster.addManifest('enhanced_viewer_cluster_role', enhanced_viewer_cr);
         }//end if
       
       return cluster;    
@@ -186,4 +188,193 @@ function generate_cluster_blueprint(config: Easy_EKS_Config_Data){
     return cluster_blueprint;
 }
 
+///////////////////////////////////////////////////////////////////////////////////////////////////
+//Viewer Only RBAC Access (Equivalent to whats in research folder)
+//Converted using https://onlineyamltools.com/convert-yaml-to-json
+const viewer_only_crb = {
+    "apiVersion": "rbac.authorization.k8s.io/v1",
+    "kind": "ClusterRoleBinding",
+    "metadata": {
+      "name": "easyeks-all-authenticated-users-viewer"
+    },
+    "subjects": [
+      {
+        "apiGroup": "rbac.authorization.k8s.io",
+        "kind": "Group",
+        "name": "system:authenticated"
+      }
+    ],
+    "roleRef": {
+      "apiGroup": "rbac.authorization.k8s.io",
+      "kind": "ClusterRole",
+      "name": "view"
+    }
+}
+
+const enhanced_viewer_cr = {
+    "apiVersion": "rbac.authorization.k8s.io/v1",
+    "kind": "ClusterRole",
+    "metadata": {
+      "name": "easyeks-enhanced-viewer",
+      "labels": {
+        "rbac.authorization.k8s.io/aggregate-to-view": "true"
+      }
+    },
+    "rules": [
+      {
+        "apiGroups": [
+          ""
+        ],
+        "verbs": [
+          "get",
+          "list",
+          "watch"
+        ],
+        "resources": [
+          "podtemplates",
+          "nodes",
+          "persistentvolumes"
+        ]
+      },
+      {
+        "apiGroups": [
+          "scheduling.k8s.io"
+        ],
+        "verbs": [
+          "get",
+          "list",
+          "watch"
+        ],
+        "resources": [
+          "priorityclasses"
+        ]
+      },
+      {
+        "apiGroups": [
+          "apiregistration.k8s.io"
+        ],
+        "verbs": [
+          "get",
+          "list",
+          "watch"
+        ],
+        "resources": [
+          "apiservices"
+        ]
+      },
+      {
+        "apiGroups": [
+          "coordination.k8s.io"
+        ],
+        "verbs": [
+          "get",
+          "list",
+          "watch"
+        ],
+        "resources": [
+          "leases"
+        ]
+      },
+      {
+        "apiGroups": [
+          "node.k8s.io"
+        ],
+        "verbs": [
+          "get",
+          "list",
+          "watch"
+        ],
+        "resources": [
+          "runtimeclasses"
+        ]
+      },
+      {
+        "apiGroups": [
+          "flowcontrol.apiserver.k8s.io"
+        ],
+        "verbs": [
+          "get",
+          "list",
+          "watch"
+        ],
+        "resources": [
+          "flowschemas",
+          "prioritylevelconfigurations"
+        ]
+      },
+      {
+        "apiGroups": [
+          "networking.k8s.io"
+        ],
+        "verbs": [
+          "get",
+          "list",
+          "watch"
+        ],
+        "resources": [
+          "ingressclasses"
+        ]
+      },
+      {
+        "apiGroups": [
+          "storage.k8s.io"
+        ],
+        "verbs": [
+          "get",
+          "list",
+          "watch"
+        ],
+        "resources": [
+          "storageclasses",
+          "volumeattachments",
+          "csidrivers",
+          "csinodes",
+          "csistoragecapacities"
+        ]
+      },
+      {
+        "apiGroups": [
+          "rbac.authorization.k8s.io"
+        ],
+        "verbs": [
+          "get",
+          "list",
+          "watch"
+        ],
+        "resources": [
+          "clusterroles",
+          "clusterrolebindings",
+          "roles",
+          "rolebindings"
+        ]
+      },
+      {
+        "apiGroups": [
+          "apiextensions.k8s.io"
+        ],
+        "verbs": [
+          "get",
+          "list",
+          "watch"
+        ],
+        "resources": [
+          "customresourcedefinitions"
+        ]
+      },
+      {
+        "apiGroups": [
+          "admissionregistration.k8s.io"
+        ],
+        "verbs": [
+          "get",
+          "list",
+          "watch"
+        ],
+        "resources": [
+          "mutatingwebhookconfigurations",
+          "validatingwebhookconfigurations"
+        ]
+      }
+    ]
+}
 ///////////////////////////////////////////////////////////////////////////////////////////////////

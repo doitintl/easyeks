@@ -5,7 +5,7 @@
 # rather than referencing a kube secret, then privilege escalation might be possible.
 # So this does represent removing a layer of defense in favor of UX.
 # That layer of defense is meant to protect against intuitively bad practice, so it's a reasonable trade off.
----
+###
 # Note: the built in "view" ClusterRole is insufficient, by itself
 # as it misses EKS CRs and newer kubernetes features.
 # Per https://kubernetes.io/docs/reference/access-authn-authz/rbac/#aggregated-clusterroles
