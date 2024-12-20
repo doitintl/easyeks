@@ -13,7 +13,7 @@ Cons:
 * You can often get 99%-99.95% uptime for much cheaper
 */
 
-/*WIP GOALs:
+/*WIP GOALs - option1:
 * I want to avoid HTTP ACME challenge in favor if DNS ACME challenge.
 * A customer will likely have a DNS registrar (completely random)
 * A customer will likely have a preferred Authoritative DNS Server (CloudFlare for Example)
@@ -36,30 +36,36 @@ Cons:
   grafana.dev.eks.easyeks.dev --> 127.0.0.1
 * Was able to verify it works instantly with:
   nslookup grafana.dev.eks.easyeks.dev 1.1.1.1
-  */
+
+Option 2:
+Internal LB, HTTP, and Port Forwarding Using AWS System Manager Session Manager (acting as an IAM Auth Proxy)
+*/
 
 import { Easy_EKS_Config_Data } from "./Easy_EKS_Config_Data";
 import { Construct } from "constructs";
 import * as route53 from 'aws-cdk-lib/aws-route53';
 import * as acm from 'aws-cdk-lib/aws-certificatemanager';
 import * as cdk from 'aws-cdk-lib';
+import { Easy_EKS } from "./Easy_EKS";
 
-export function deploy(stateStorage: Construct, config: Easy_EKS_Config_Data){
+export function deploy(stack: cdk.Stack, config: Easy_EKS_Config_Data){
 
-const stack = new cdk.Stack(stateStorage, config.stackId+"-monitoring-cert");
 
-const myHostedZone = new route53.HostedZone(stack, 'HostedZone', {
-  zoneName: 'eks.easyeks.dev',
-});
 
-const cert = new acm.Certificate(stack, 'Certificate', {
-  domainName: 'grafana.dev1.eks.easyeks.dev',
-  certificateName: 'grafana.dev1.eks.easyeks.dev', //Optionally provide an certificate name
-  validation: acm.CertificateValidation.fromDns(myHostedZone),
-  //Generates a CNAME in hosted zone & cert in ACM
-});
+//const stack = new cdk.Stack(stateStorage, config.id+"-monitoring-cert");
 
-//console.log("cert arn: " + cert.certificateArn);
+// const myHostedZone = new route53.HostedZone(stack, 'HostedZone', {
+//   zoneName: 'eks.easyeks.dev',
+// });
+
+// const cert = new acm.Certificate(stack, 'Certificate', {
+//   domainName: 'grafana.dev1.eks.easyeks.dev',
+//   certificateName: 'grafana.dev1.eks.easyeks.dev', //Optionally provide an certificate name
+//   validation: acm.CertificateValidation.fromDns(myHostedZone),
+//   //Generates a CNAME in hosted zone & cert in ACM
+// });
+
+
 
 }
 

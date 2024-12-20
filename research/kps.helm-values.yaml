@@ -6,19 +6,21 @@ grafana:
     enabled: true
     ingressClassName: alb #Ingress via AWS ALB is a Secure Managed Service Offering
     annotations:
-      alb.ingress.kubernetes.io/scheme: internet-facing
+      alb.ingress.kubernetes.io/scheme: internal
       alb.ingress.kubernetes.io/target-type: ip
-      alb.ingress.kubernetes.io/ssl-redirect: '443'
-      alb.ingress.kubernetes.io/group.name: primary-lb  #Use this to share ALB among multiple ingresses. #CostEffective
-      alb.ingress.kubernetes.io/load-balancer-name: dev1-eks  # give ALB a meaningfull name otherwise a random name is assigned by AWS.
-      alb.ingress.kubernetes.io/ssl-policy: "ELBSecurityPolicy-TLS13-1-2-FIPS-2023-04" #hardened by default https://docs.aws.amazon.com/elasticloadbalancing/latest/application/create-https-listener.html#describe-ssl-policies
-      alb.ingress.kubernetes.io/certificate-arn: "arn:aws:acm:ca-central-1:905418347382:certificate/9761a174-3f1b-4aa7-ad4f-fdbccae5b75c"
-      #^-- Get it by $ aws acm list-certificates 
-      alb.ingress.kubernetes.io/auth-type: none #none|oidc|cognito
-
-     
+      alb.ingress.kubernetes.io/group.name: internal-lb
+      ###
+      # alb.ingress.kubernetes.io/scheme: internet-facing
+      # alb.ingress.kubernetes.io/target-type: ip
+      # alb.ingress.kubernetes.io/ssl-redirect: '443'
+      # alb.ingress.kubernetes.io/group.name: primary-lb  #Use this to share ALB among multiple ingresses. #CostEffective
+      # alb.ingress.kubernetes.io/load-balancer-name: dev1-eks  # give ALB a meaningfull name otherwise a random name is assigned by AWS.
+      # alb.ingress.kubernetes.io/ssl-policy: "ELBSecurityPolicy-TLS13-1-2-FIPS-2023-04" #hardened by default https://docs.aws.amazon.com/elasticloadbalancing/latest/application/create-https-listener.html#describe-ssl-policies
+      # alb.ingress.kubernetes.io/certificate-arn: "arn:aws:acm:ca-central-1:905418347382:certificate/9761a174-3f1b-4aa7-ad4f-fdbccae5b75c"
+      # #^-- Get it by $ aws acm list-certificates 
+      # alb.ingress.kubernetes.io/auth-type: none #none|oidc|cognito
     hosts:
-    - grafana.dev1.eks.easyeks.dev
-    tls:
-    - hosts:
-      - grafana.dev1.eks.easyeks.dev
+    - grafana.dev1-eks.eks.easyeks.dev
+    # tls:
+    # - hosts:
+    #   - grafana.dev1-eks.eks.easyeks.dev

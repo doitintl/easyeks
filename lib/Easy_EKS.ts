@@ -7,15 +7,15 @@ import * as iam from 'aws-cdk-lib/aws-iam';
 import * as kms from 'aws-cdk-lib/aws-kms';
 import * as blueprints from '@aws-quickstart/eks-blueprints'; 
 //          ^-- blueprints as in blueprint of a eks cluster defined as a declarative cloud formation stack
-import { Easy_EKS_Config_Data } from './Easy_EKS_Config_Data';
+import { Easy_EKS_Config_Data, observabilityOptions } from './Easy_EKS_Config_Data';
 //Config Library Imports:
 import * as global_baseline_eks_config from '../config/eks/global_baseline_eks_config';
 import * as my_orgs_baseline_eks_config from '../config/eks/my_orgs_baseline_eks_config';
 import * as lower_envs_eks_config from '../config/eks/lower_envs_eks_config';
 import * as higher_envs_eks_config from '../config/eks/higher_envs_eks_config';
 import * as dev_eks_config from '../config/eks/dev_eks_config';
-import * as monitoring from './Frugal_GPL_Monitoring_Stack'; //TO DO
-import { execSync } from 'child_process'; //temporary work around for kms UX issue
+import * as observability from './Frugal_GPL_Observability_Stack';
+import { execSync } from 'child_process'; //temporary? work around for kms UX issue
 
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
@@ -73,6 +73,9 @@ export class Easy_EKS{
         const aws_vpc_cni_pod_role = this.stack.node.findChild(this.config.id).node.tryFindChild('aws-node-sa')?.node.tryFindChild('Role') as iam.Role;
         karpenter_node_role.addToPolicy(ipv6_support_policy_statement);
         aws_vpc_cni_pod_role.addToPolicy(ipv6_support_policy_statement);
+        // if(this.config.observabilityOption===observabilityOptions.Frugal_Grafana_Prometheus_Loki){
+        //     observability.deploy(this.stack, this.config);
+        // }
     }//end deploy_eks_construct_into_this_objects_stack()
 
 }//end class of Easy_EKS
@@ -148,8 +151,15 @@ class EasyEksClusterProvider extends blueprints.GenericClusterProvider {
             for (let index = 0; index < this.config.clusterViewerAccessAwsAuthConfigmapAccounts?.length; index++) {
                 awsAuthConfigMap.addAccount(this.config.clusterViewerAccessAwsAuthConfigmapAccounts[index]);
             }
-            cluster.addManifest('viewer_only_cluster_role_binding', viewer_only_crb);
-            cluster.addManifest('enhanced_viewer_cluster_role', enhanced_viewer_cr);
+            // cluster.addManifest('viewer_only_cluster_role_binding', viewer_only_crb);
+            // cluster.addManifest('enhanced_viewer_cluster_role', enhanced_viewer_cr);
+            // new eks.KubernetesManifest(stateStorage, 'ro-kubectl-rights', {
+            //     cluster,
+            //     manifest: [viewer_only_crb, enhanced_viewer_cr],
+            //     overwrite: true, //kubectl apply -f, instead of kubectl create
+            //     skipValidation: true, //adding since cluster.addManifest created issues. 
+            // }); //...still fails with different syntax that allows flags to be added. (TO DO: Fix after PTO)
+            // maybe there's an issue with order of operations? (it worked on an update to an existing stack, but failed on fresh deploy)
         }//end if
       
       return cluster;    

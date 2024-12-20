@@ -4,6 +4,11 @@ import * as ec2 from 'aws-cdk-lib/aws-ec2';
 import * as cdk from 'aws-cdk-lib';
 import * as eks from 'aws-cdk-lib/aws-eks';
 
+export enum observabilityOptions {
+    None,
+    Frugal_Grafana_Prometheus_Loki
+};
+
 export class Easy_EKS_Config_Data { //This object just holds config data.
     //Typescript(TS) readability notes
     //Config_Var: Data_Type
@@ -17,14 +22,16 @@ export class Easy_EKS_Config_Data { //This object just holds config data.
     clusterViewerAccessAwsAuthConfigmapAccounts?: string[]; //only aws-auth configmap supports accounts
     clusterAddOns?: Map<string, blueprints.ClusterAddOn>;
     kmsKeyAlias: string; //kms key with this alias will be created or reused if pre-existing
-    
+    observabilityOption: observabilityOptions;
   
+
   
     constructor(id_for_stack_and_eks: string){
         this.id = id_for_stack_and_eks; /*
         Constructor with minimal args is on purpose for desired UX of "builder pattern".
         The idea is to add partial configuration snippets over time/as multiple operations
         rather than populate a complete config all at once in one go.*/
+        this.observabilityOption = observabilityOptions.None;
     } 
   
   
@@ -94,6 +101,9 @@ export class Easy_EKS_Config_Data { //This object just holds config data.
         */
         if(kms_key_alias.startsWith('alias/')){ this.kmsKeyAlias = kms_key_alias; }
         else{ this.kmsKeyAlias = `alias/${kms_key_alias}`; }
+    }
+    setObservabilityToFrugalGrafanaPrometheusLoki(){
+        this.observabilityOption = observabilityOptions.Frugal_Grafana_Prometheus_Loki;
     }
 
 

@@ -15,7 +15,7 @@ export const defaultProps: blueprints.HelmAddOnProps & NodeLocalDNSCacheAddOnPro
   name: "node-local-dns-cache-addon", // Internal identifyer for our add-on
   namespace: "kube-system", // Namespace used to deploy the helm chart
   chart: "node-local-dns", // Name of the Chart to be deployed
-  version: "2.0.9", // version of the chart 
+  version: "2.0.14", // version of the chart 
   // Chart's version shouldn't need to be updated, but the following can be used to check for updates:
   // helm repo add deliveryhero https://charts.deliveryhero.io/
   // helm search repo deliveryhero | egrep "CHART|dns"

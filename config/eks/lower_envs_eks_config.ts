@@ -14,6 +14,8 @@ export function apply_config(config: Easy_EKS_Config_Data, stack: cdk.Stack){ //
     //         This allows you to create a explicit list of ARNS (representing IAM roles or users)
     //         That act as EKS Admins of all lower environments.
 
+    config.setObservabilityToFrugalGrafanaPrometheusLoki();
+
     //v-- Karpenter addon needs to be configured after vpc is set. 
     //    (Remember cdk is imperative, as in step by step, so order of code execution matters)
     //    Alternatively you could try ${stack.region}a, b, c, but that assumption doesn't work for all regions.
