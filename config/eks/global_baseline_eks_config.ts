@@ -2,7 +2,6 @@ import { Easy_EKS_Config_Data } from '../../lib/Easy_EKS_Config_Data';
 import * as cdk from 'aws-cdk-lib';
 import * as blueprints from '@aws-quickstart/eks-blueprints'
 import * as iam from 'aws-cdk-lib/aws-iam';
-import { NodeLocalDNSCacheAddOn } from '../../lib/Node_Local_DNS_Cache_AddOn';
 //Intended Use: 
 //A baseline config file (to be applied to all EasyEKS Clusters)
 //That 95% of global users will feel comfortable using with 0 changes, but can change.
@@ -87,5 +86,4 @@ export function apply_config(config: Easy_EKS_Config_Data, stack: cdk.Stack){ //
               }
       }//end CoreDNS configurationValues override
     }));//end CoreDNS AddOn
-    config.addAddOn( new NodeLocalDNSCacheAddOn( {} ) );
 }//end function

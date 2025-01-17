@@ -37,8 +37,8 @@ export class Easy_EKS{
     apply_my_orgs_baseline_eks_config(){ my_orgs_baseline_eks_config.apply_config(this.config,this.stack); }
     apply_lower_envs_eks_config(){ lower_envs_eks_config.apply_config(this.config,this.stack); }
     apply_higher_envs_eks_config(){ higher_envs_eks_config.apply_config(this.config,this.stack); }
-    apply_only_dev_eks_config(){ dev_eks_config.apply_config(this.config,this.stack); }
-    apply_dev_eks_config(){ //convenience method
+    apply_dev_eks_config(){ dev_eks_config.apply_config(this.config,this.stack); }
+    apply_dev_baseline_config(){ //convenience method
         global_baseline_eks_config.apply_config(this.config,this.stack);
         my_orgs_baseline_eks_config.apply_config(this.config,this.stack);
         lower_envs_eks_config.apply_config(this.config,this.stack);
@@ -63,7 +63,6 @@ export class Easy_EKS{
             //                  ^... is JS array deconsturing operator which converts an array to a CSV list of parameters
         }
         const eks_blueprint_properties = convert_blueprintBuilder_to_blueprintProperties(this.config.id, eksBlueprint);
-
         const deploy_construct_into_stack = new blueprints.EksBlueprintConstruct(this.stack, eks_blueprint_properties);
         const ipv6_support_policy_statement = new iam.PolicyStatement({
             actions: ['ec2:AssignIpv6Addresses','ec2:UnassignIpv6Addresses'],
@@ -147,12 +146,9 @@ class EasyEksClusterProvider extends blueprints.GenericClusterProvider {
         }//end if
 
         if(this.config.clusterViewerAccessAwsAuthConfigmapAccounts){ //<-- JS truthy statement to say if not empty do the following
-            const awsAuthConfigMap = new eks.AwsAuth(stateStorage, `${stackID}-aws-auth-cm`, {cluster: cluster}); 
             for (let index = 0; index < this.config.clusterViewerAccessAwsAuthConfigmapAccounts?.length; index++) {
-                awsAuthConfigMap.addAccount(this.config.clusterViewerAccessAwsAuthConfigmapAccounts[index]);
+                cluster.awsAuth.addAccount(this.config.clusterViewerAccessAwsAuthConfigmapAccounts[index]);
             }
-            // cluster.addManifest('viewer_only_cluster_role_binding', viewer_only_crb);
-            // cluster.addManifest('enhanced_viewer_cluster_role', enhanced_viewer_cr);
             // new eks.KubernetesManifest(stateStorage, 'ro-kubectl-rights', {
             //     cluster,
             //     manifest: [viewer_only_crb, enhanced_viewer_cr],
@@ -160,8 +156,12 @@ class EasyEksClusterProvider extends blueprints.GenericClusterProvider {
             //     skipValidation: true, //adding since cluster.addManifest created issues. 
             // }); //...still fails with different syntax that allows flags to be added. (TO DO: Fix after PTO)
             // maybe there's an issue with order of operations? (it worked on an update to an existing stack, but failed on fresh deploy)
+
+            // cluster.addManifest('viewer_only_cluster_role_binding', viewer_only_crb);
+            // cluster.addManifest('enhanced_viewer_cluster_role', enhanced_viewer_cr);
+            //^-- works when adding to pre-existing, fails on fresh deploy ()
+            //    ^-- further evidence that this is an order of operations type issue.
         }//end if
-      
       return cluster;    
     }
 }

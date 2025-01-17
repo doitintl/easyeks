@@ -5,8 +5,11 @@
     "ca-central-1d"
   ],
   "ami:account=905418347382:filters.image-type.0=machine:filters.name.0=fck-nat-al2023-*-arm64-ebs:filters.state.0=available:owners.0=568608671756:region=ca-central-1": "ami-045d3a84706b8feeb",
+  "key-provider:account=905418347382:aliasName=alias/eks/lower-envs:region=ca-central-1": {
+    "keyId": "2c710e12-cad3-42f5-a92f-e7d7980aebea"
+  },
   "vpc-provider:account=905418347382:filter.isDefault=false:filter.tag:Name=lower-envs-vpc:region=ca-central-1:returnAsymmetricSubnets=true": {
-    "vpcId": "vpc-0f0d07f659f6cb4c4",
+    "vpcId": "vpc-0a203c7614efcc2d5",
     "vpcCidrBlock": "10.99.0.0/16",
     "ownerAccountId": "905418347382",
     "availabilityZones": [],
@@ -16,22 +19,22 @@
         "type": "Public",
         "subnets": [
           {
-            "subnetId": "subnet-0803fc47c0eb29bba",
+            "subnetId": "subnet-0817c20d4a28aaac8",
             "cidr": "10.99.0.0/23",
             "availabilityZone": "ca-central-1a",
-            "routeTableId": "rtb-0dc91ae22542e704e"
+            "routeTableId": "rtb-06ab7d9241509d26f"
           },
           {
-            "subnetId": "subnet-08dc75a20d2b28767",
+            "subnetId": "subnet-0615a34100954d0fb",
             "cidr": "10.99.2.0/23",
             "availabilityZone": "ca-central-1b",
-            "routeTableId": "rtb-05fea9a951fb6d584"
+            "routeTableId": "rtb-0f4692bffc1e7d45b"
           },
           {
-            "subnetId": "subnet-0f0bac0bda70e6797",
+            "subnetId": "subnet-00be8f4852188a13c",
             "cidr": "10.99.4.0/23",
             "availabilityZone": "ca-central-1d",
-            "routeTableId": "rtb-0b5fb6d220f84dd33"
+            "routeTableId": "rtb-062f102fd5d98f26f"
           }
         ]
       },
@@ -40,28 +43,25 @@
         "type": "Private",
         "subnets": [
           {
-            "subnetId": "subnet-0d143552e4282d70d",
+            "subnetId": "subnet-05b6f294f924d9614",
             "cidr": "10.99.32.0/19",
             "availabilityZone": "ca-central-1a",
-            "routeTableId": "rtb-0e6f217042a0edff7"
+            "routeTableId": "rtb-0c48dce61bef75845"
           },
           {
-            "subnetId": "subnet-0ec78a7a62bb5ee53",
+            "subnetId": "subnet-0673ef05f316b5e2e",
             "cidr": "10.99.64.0/19",
             "availabilityZone": "ca-central-1b",
-            "routeTableId": "rtb-0b64d189d9451460d"
+            "routeTableId": "rtb-06f49bf690b1a3f6d"
           },
           {
-            "subnetId": "subnet-098e2bd606a023466",
+            "subnetId": "subnet-03c8b725261b41341",
             "cidr": "10.99.96.0/19",
             "availabilityZone": "ca-central-1d",
-            "routeTableId": "rtb-0676d7ae96ef85d88"
+            "routeTableId": "rtb-01a775600fa20cfb0"
           }
         ]
       }
     ]
-  },
-  "key-provider:account=905418347382:aliasName=alias/eks/lower-envs:region=ca-central-1": {
-    "keyId": "2c710e12-cad3-42f5-a92f-e7d7980aebea"
   }
 }
