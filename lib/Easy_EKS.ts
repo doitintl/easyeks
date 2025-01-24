@@ -30,7 +30,7 @@ export class Easy_EKS{
     constructor(storage_for_stacks_state: Construct, id_for_stack_and_eks_cluster: string, stack_config: cdk.StackProps) {
         this.stack = new cdk.Stack(storage_for_stacks_state, id_for_stack_and_eks_cluster, stack_config);
         this.config = new Easy_EKS_Config_Data(id_for_stack_and_eks_cluster);
-    }//end constructor of Opinionated_VPC
+    }//end constructor of Easy_EKS
 
     //Class Functions:
     apply_global_baseline_eks_config(){ global_baseline_eks_config.apply_config(this.config,this.stack); }
