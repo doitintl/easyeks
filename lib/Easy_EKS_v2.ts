@@ -144,11 +144,62 @@ export class Easy_EKS_v2{ //purposefully don't extend stack, to implement builde
             addonName: 'kube-proxy',
             addonVersion: 'v1.31.3-eksbuild.2',
         });
-        new eks.Addon(this.stack, 'coredns', {
-            cluster,
+        new eks.CfnAddon(this.stack, 'coredns', {
+            clusterName: cluster.clusterName,
             addonName: 'coredns',
             addonVersion: 'v1.11.4-eksbuild.2',
-            
+            configurationValues: `{
+                "autoScaling": {
+                  "enabled": true,
+                  "minReplicas": 2,
+                  "maxReplicas": 1000
+                },
+                "affinity": {
+                  "nodeAffinity": {
+                    "requiredDuringSchedulingIgnoredDuringExecution": {
+                      "nodeSelectorTerms": [
+                        {
+                          "matchExpressions": [
+                            {
+                              "key": "kubernetes.io/os",
+                              "operator": "In",
+                              "values": [
+                                "linux"
+                              ]
+                            },
+                            {
+                              "key": "kubernetes.io/arch",
+                              "operator": "In",
+                              "values": [
+                                "amd64",
+                                "arm64"
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  },
+                  "podAntiAffinity": {
+                    "requiredDuringSchedulingIgnoredDuringExecution": [
+                      {
+                        "labelSelector": {
+                          "matchExpressions": [
+                            {
+                              "key": "k8s-app",
+                              "operator": "In",
+                              "values": [
+                                "kube-dns"
+                              ]
+                            }
+                          ]
+                        },
+                        "topologyKey": "kubernetes.io/hostname"
+                      }
+                    ]
+                  }
+                }
+            }`, //end CoreDNS configurationValues override
         });
         new eks.Addon(this.stack, 'vpc-cni', {
             cluster,
@@ -168,11 +219,63 @@ export class Easy_EKS_v2{ //purposefully don't extend stack, to implement builde
             addonVersion: 'v8.1.0-eksbuild.2' //v--query for latest
             // aws eks describe-addon-versions --kubernetes-version=1.31 --addon-name=snapshot-controller --query='addons[].addonVersions[].addonVersion' | jq '.[0]'
         });
-        new eks.Addon(this.stack, 'metrics-server', {
-            cluster,
+        new eks.CfnAddon(this.stack, 'metrics-server', {
+            clusterName: cluster.clusterName,
             addonName: 'metrics-server',
-            addonVersion: 'v0.7.2-eksbuild.1' //v--query for latest
+            addonVersion: 'v0.7.2-eksbuild.1', //v--query for latest
             // aws eks describe-addon-versions --kubernetes-version=1.31 --addon-name=metrics-server --query='addons[].addonVersions[].addonVersion' | jq '.[0]'
+            resolveConflicts: 'OVERWRITE',
+            configurationValues: `{
+                "replicas": 2,
+                "addonResizer": {
+                  "enabled": true,
+                },
+                "affinity": {
+                  "nodeAffinity": {
+                    "requiredDuringSchedulingIgnoredDuringExecution": {
+                      "nodeSelectorTerms": [
+                        {
+                          "matchExpressions": [
+                            {
+                              "key": "kubernetes.io/os",
+                              "operator": "In",
+                              "values": [
+                                "linux"
+                              ]
+                            },
+                            {
+                              "key": "kubernetes.io/arch",
+                              "operator": "In",
+                              "values": [
+                                "amd64",
+                                "arm64"
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  },
+                  "podAntiAffinity": {
+                    "requiredDuringSchedulingIgnoredDuringExecution": [
+                      {
+                        "labelSelector": {
+                          "matchExpressions": [
+                            {
+                              "key": "k8s-app",
+                              "operator": "In",
+                              "values": [
+                                "metrics-server"
+                              ]
+                            }
+                          ]
+                        },
+                        "topologyKey": "kubernetes.io/hostname"
+                      }
+                    ]
+                  }
+                }
+            }`, //end metrics-server configurationValues override
         });
         // The eks-pod-identity-agent Add-on is purposefully commented out due to a CDK bug https://github.com/aws/aws-cdk/issues/32580
         // Another call triggers it's installation, and the cdk bug complains about it already being present.
@@ -221,7 +324,18 @@ export class Easy_EKS_v2{ //purposefully don't extend stack, to implement builde
             },
         });
 
-
+        // Install Node Local DNS Cache
+        const nodeLocalDNSCache = cluster.addHelmChart('NodeLocalDNSCache', {
+            chart: "node-local-dns", // Name of the Chart to be deployed
+            release: "node-local-dns-cache", // Name for our chart in Kubernetes (helm list -A)
+            repository: "oci://ghcr.io/deliveryhero/helm-charts/node-local-dns",  // HTTPS address of the helm chart (associated with helm repo add command)
+            namespace: "kube-system",
+            version: "2.1.4", // version of the helm chart, based on the following command
+            // curl https://raw.githubusercontent.com/deliveryhero/helm-charts/refs/heads/master/stable/node-local-dns/Chart.yaml | grep version: | cut -d ':' -f 2
+            wait: false,
+            values: { //<-- helm chart values per https://github.com/deliveryhero/helm-charts/blob/master/stable/node-local-dns/values.yaml
+            },
+        });
         
         // new eks.AccessEntry(this.stack, assumableEKSAdminAccessRole.roleArn, //<-- using ARN as a unique subStack id
         //     { 
