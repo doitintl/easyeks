@@ -122,7 +122,8 @@ export class Easy_EKS_v2{ //purposefully don't extend stack, to implement builde
         //     this.config.kmsKeyAlias, {description: "Easy EKS generated kms key, used to encrypt etcd and ebs-csi-driver provisioned volumes"}
         // ));}
         // else { eksBlueprint.resourceProvider(blueprints.GlobalResources.KmsKey, new blueprints.LookupKmsKeyProvider(this.config.kmsKeyAlias)); }
-        //const kms_key = kms.Key.fromLookup(this.stack, 'pre-existing-kms-key', { aliasName: this.config.kmsKeyAlias });
+        ensure_existance_of_aliased_kms_key(this.config.kmsKeyAlias);
+        const kms_key = kms.Key.fromLookup(this.stack, 'pre-existing-kms-key', { aliasName: this.config.kmsKeyAlias });
          
         this.cluster = new eks.Cluster(this.stack, this.config.id, {
             clusterName: this.config.id,
@@ -135,7 +136,7 @@ export class Easy_EKS_v2{ //purposefully don't extend stack, to implement builde
             tags: this.config.tags,
             authenticationMode: eks.AuthenticationMode.API_AND_CONFIG_MAP,
             mastersRole: assumableEKSAdminAccessRole, //<-- adds aws eks update-kubeconfig output
-            //secretsEncryptionKey: kms_key,
+            secretsEncryptionKey: kms_key,
             });
         this.cluster.addNodegroupCapacity(`default_MNG`, default_MNG);
         let cluster = this.cluster;
@@ -428,7 +429,7 @@ export class Easy_EKS_v2{ //purposefully don't extend stack, to implement builde
             "apiVersion": "karpenter.sh/v1",
             "kind": "NodePool",
             "metadata": {
-              "name": "al2023-spot"
+              "name": "karpenter-al2023-spot" //karpenter in name b/c it shows up in Managed by column of AWS Web Console GUI
             },
             "spec": {
               "weight": 100, //<-- Note highest weight = default
@@ -485,7 +486,7 @@ export class Easy_EKS_v2{ //purposefully don't extend stack, to implement builde
             "apiVersion": "karpenter.sh/v1",
             "kind": "NodePool",
             "metadata": {
-              "name": 'al2023-on-demand'
+              "name": 'karpenter-al2023-on-demand' //karpenter in name b/c it shows up in Managed by column of AWS Web Console GUI
             },
             "spec": {
               "weight": 50, //<-- Note highest weight = default
@@ -738,7 +739,56 @@ const enhanced_viewer_cr = {
           "mutatingwebhookconfigurations",
           "validatingwebhookconfigurations"
         ]
-      }
+      },
+      {
+        "apiGroups": [
+          "karpenter.sh"
+        ],
+        "verbs": [
+          "get",
+          "list",
+          "watch"
+        ],
+        "resources": [
+          "nodepools",
+          "nodeclaims"
+        ]
+      },
+      {
+        "apiGroups": [
+          "karpenter.k8s.aws"
+        ],
+        "verbs": [
+          "get",
+          "list",
+          "watch"
+        ],
+        "resources": [
+          "ec2nodeclasses"
+        ]
+      },
     ]
 }
+///////////////////////////////////////////////////////////////////////////////////////////////////
+
+function ensure_existance_of_aliased_kms_key(kmsKeyAlias: string){
+    /*UX Improvement: By default EKS Blueprint will make new KMS key everytime you make a cluster.
+    This logic checks for pre-existing keys, and prefers to reuse them. Else create if needed, reuse next time.
+    The intent is to achieve the following EasyEKS default: (which is overrideable):
+    * all lower envs share a kms key: "alias/eks/lower-envs" (alias/ will be added if not present.)
+    * staging envs share a kms key: "alias/eks/stage"
+    * prod envs share a kms key: "alias/eks/prod"
+    */
+    let kms_key:kms.Key;   
+    const cmd = `aws kms list-aliases | jq '.Aliases[] | select(.AliasName == "${kmsKeyAlias}") | .TargetKeyId'`
+    const cmd_results = execSync(cmd).toString();
+    if(cmd_results===""){ //if alias not found, then make a kms key with the alias
+        const create_key_cmd = `aws kms create-key --description="Easy EKS generated kms key, used to encrypt etcd and ebs-csi-driver provisioned volumes"`
+        const results = JSON.parse( execSync(create_key_cmd).toString() );
+        const key_id = results.KeyMetadata.KeyId;
+        const add_alias_cmd = `aws kms create-alias --alias-name ${kmsKeyAlias} --target-key-id ${key_id}`;
+        execSync(add_alias_cmd);
+    }
+}
+
 ///////////////////////////////////////////////////////////////////////////////////////////////////
