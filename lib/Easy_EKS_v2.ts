@@ -382,6 +382,7 @@ export class Easy_EKS_v2{ //purposefully don't extend stack, to implement builde
             values: { //<-- helm chart values per https://github.com/deliveryhero/helm-charts/blob/master/stable/node-local-dns/values.yaml
             },
         });
+        nodeLocalDNSCache.node.addDependency(cluster.awsAuth);
 
         // Install Karpenter.sh
         const karpenter = new Karpenter(this.stack, 'Karpenter', {
@@ -393,7 +394,7 @@ export class Easy_EKS_v2{ //purposefully don't extend stack, to implement builde
                 replicas: 2,
             },
         }); 
-
+        karpenter.node.addDependency(cluster.awsAuth);
 
         //Karpenter Custom Resources based on https://karpenter.sh/docs/getting-started/getting-started-with-karpenter/
         //Converted using https://onlineyamltools.com/convert-yaml-to-json
@@ -537,9 +538,12 @@ export class Easy_EKS_v2{ //purposefully don't extend stack, to implement builde
               }
             }
         };//end karpenter_al2023_on_demand_NodePool
-        cluster.addManifest('karpenter_al2023_EC2NodeClass', karpenter_al2023_EC2NodeClass);
-        cluster.addManifest('karpenter_al2023_spot_NodePool', karpenter_al2023_spot_NodePool);
-        cluster.addManifest('karpenter_al2023_on_demand_NodePool', karpenter_al2023_on_demand_NodePool);
+        const apply_karpenter1 = cluster.addManifest('karpenter_al2023_EC2NodeClass', karpenter_al2023_EC2NodeClass);
+        const apply_karpenter2 = cluster.addManifest('karpenter_al2023_spot_NodePool', karpenter_al2023_spot_NodePool);
+        const apply_karpenter3 = cluster.addManifest('karpenter_al2023_on_demand_NodePool', karpenter_al2023_on_demand_NodePool);
+        apply_karpenter1.node.addDependency(karpenter);
+        apply_karpenter2.node.addDependency(karpenter);
+        apply_karpenter3.node.addDependency(karpenter);
 
     }//end deploy_cluster()
 
