@@ -85,18 +85,18 @@ export class Easy_EKS_v2{ //purposefully don't extend stack, to implement builde
             deviceName: '/dev/xvda', //Root device name
             volume: ec2.BlockDeviceVolume.ebs(20, { volumeType: ec2.EbsDeviceVolumeType.GP3 }), //<--20GB volume size
         }
-        const Default_MNG_LT = new ec2.LaunchTemplate(this.stack, 'ARM64-AL2023-spot_MNG_LT', {
+        const Baseline_MNG_LT = new ec2.LaunchTemplate(this.stack, 'ARM64-AL2023-spot_MNG_LT', {
             launchTemplateName: `${this.config.id}/baseline-MNG/ARM64-AL2023-spot`, //NOTE: CDK creates 2 LT's for some reason 2nd is eks-*
             blockDevices: [blockDevice],
         });
-        cdk.Tags.of(Default_MNG_LT).add("Name", `${this.config.id}/baseline-MNG/ARM64-AL2023-spot`);
+        cdk.Tags.of(Baseline_MNG_LT).add("Name", `${this.config.id}/baseline-MNG/ARM64-AL2023-spot`);
         const tags = Object.entries(this.config.tags ?? {});
-        tags.forEach(([key, value]) => cdk.Tags.of(Default_MNG_LT).add(key,value));
-        const default_LT_Spec: eks.LaunchTemplateSpec = {
-                id: Default_MNG_LT.launchTemplateId!,
-                version: Default_MNG_LT.latestVersionNumber,
+        tags.forEach(([key, value]) => cdk.Tags.of(Baseline_MNG_LT).add(key,value));
+        const baseline_LT_Spec: eks.LaunchTemplateSpec = {
+                id: Baseline_MNG_LT.launchTemplateId!,
+                version: Baseline_MNG_LT.latestVersionNumber,
         };
-        const default_MNG: eks.NodegroupOptions = {
+        const baseline_MNG: eks.NodegroupOptions = {
             subnets: { subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS },
             amiType: eks.NodegroupAmiType.AL2023_ARM_64_STANDARD,
             instanceTypes: [new ec2.InstanceType('t4g.small')], //t4g.small = 2cpu, 2gb ram, 11pod max
@@ -105,7 +105,7 @@ export class Easy_EKS_v2{ //purposefully don't extend stack, to implement builde
             minSize: 0,
             maxSize: 50,
             nodeRole: EKS_Node_Role,
-            launchTemplateSpec: default_LT_Spec, //<-- necessary to add tags to EC2 instances
+            launchTemplateSpec: baseline_LT_Spec, //<-- necessary to add tags to EC2 instances
         };
 
         const clusterAdminAccessPolicy: eks.AccessPolicy = eks.AccessPolicy.fromAccessPolicyName('AmazonEKSClusterAdminPolicy', {
@@ -138,7 +138,7 @@ export class Easy_EKS_v2{ //purposefully don't extend stack, to implement builde
             mastersRole: assumableEKSAdminAccessRole, //<-- adds aws eks update-kubeconfig output
             secretsEncryptionKey: kms_key,
             });
-        this.cluster.addNodegroupCapacity(`default_MNG`, default_MNG);
+        this.cluster.addNodegroupCapacity(`baseline_MNG`, baseline_MNG);
         let cluster = this.cluster;
 
         // Configure Limited Viewer Only Access by default:
