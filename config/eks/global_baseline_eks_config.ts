@@ -8,11 +8,20 @@ import * as iam from 'aws-cdk-lib/aws-iam';
 
 export function apply_config(config: Easy_EKS_Config_Data, stack: cdk.Stack){ //config: is of type Easy_EKS_Config_Data
     config.addTag("AWS Tag Allowed Characters", "letters numbers + - = . _ : / @ WebSiteLinks");
-    config.addTag("AWS Tag Forbidden Character", "Hashtag Comma SingleQuote DoubleQuote Parenthesis QuestionMark Asterisk Ampersand https://docs.aws.amazon.com/codeguru/latest/bugbust-ug/limits-tags.html");
+    config.addTag("AWS Tag Forbidden Characters", "Hashtag Comma SingleQuote DoubleQuote Parenthesis QuestionMark Asterisk Ampersand https://docs.aws.amazon.com/codeguru/latest/bugbust-ug/limits-tags.html");
     config.addTag("IaC Tooling used for Provisioning and Management of this EKS Cluster", "cdk: a CLI tool that stands for AWS Cloud Development Kit.");
     config.addTag("Upstream Methodology Docs", "https://github.com/doitintl/eks-cdk-quickstart");
     //^-- NOTE: hashtag(#)   comma(,)   singlequote(')   doublequote(\")   parenthesis()   and more are not valid tag values
     //    https://docs.aws.amazon.com/codeguru/latest/bugbust-ug/limits-tags.html
+    /*Note it's possible when updating tags, that you could see 
+    An error like AWS::EKS::Nodegroup "Update is not supported for the following properties"
+    If that happens temporarily edit the following line in Easy_EKS.ts
+    this.cluster.addNodegroupCapacity(`default_MNG`, default_MNG);
+    to
+    this.cluster.addNodegroupCapacity(`default_MNG-1`, default_MNG);
+    redeploy and it'll go through
+    then rename it back
+    */
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     //v--If you follow suggested order of application (global -> org -> env), then the set's functionally act as overrideable defaults.

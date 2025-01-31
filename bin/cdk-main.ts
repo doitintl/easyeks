@@ -153,6 +153,9 @@ const dev2 = new Easy_EKS_v2(reference_to_cdk_bootstrapped_cf_for_storing_state_
 dev2.apply_dev_baseline_config();
 dev2.deploy_eks_construct_into_this_objects_stack();
 
+const dev3 = new Easy_EKS_v2(reference_to_cdk_bootstrapped_cf_for_storing_state_of_stacks, 'dev3', low_co2_AMER_stack_config);
+dev3.apply_dev_baseline_config();
+dev3.deploy_eks_construct_into_this_objects_stack();
 //^-- deployment time of ~15m (active dev)
 ///////////////////////////////////////////////////////////////////////////////////////////
 

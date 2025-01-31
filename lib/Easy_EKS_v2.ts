@@ -26,6 +26,7 @@ import * as observability from './Frugal_GPL_Observability_Stack';
 import { execSync } from 'child_process'; //temporary? work around for kms UX issue
 import { KubectlV31Layer } from '@aws-cdk/lambda-layer-kubectl-v31';
 import request from 'sync-request-curl'; //npm install sync-request-curl (cdk requires sync functions, async not allowed)
+import { Karpenter } from 'cdk-eks-karpenter' //npm install cdk-eks-karpenter 
 
 export class Easy_EKS_v2{ //purposefully don't extend stack, to implement builder pattern and give more flexibility for imperative logic.
 
@@ -64,8 +65,8 @@ export class Easy_EKS_v2{ //purposefully don't extend stack, to implement builde
             })],
         });
 
-        const default_MNG_role = new iam.Role(this.stack, `Default_MNG_Role`, {
-            roleName: `${this.config.id}_Default_EKS_MNG_Role`,
+        const EKS_Node_Role = new iam.Role(this.stack, `EKS_Node_Role`, {
+            roleName: `${this.config.id}_EKS_Node_Role`,
             assumedBy: new iam.ServicePrincipal('ec2.amazonaws.com'),
             managedPolicies: [
               iam.ManagedPolicy.fromAwsManagedPolicyName('AmazonEKSWorkerNodePolicy'),
@@ -80,17 +81,15 @@ export class Easy_EKS_v2{ //purposefully don't extend stack, to implement builde
             },
           });
 
-        
-
         const blockDevice: ec2.BlockDevice = {
             deviceName: '/dev/xvda', //Root device name
             volume: ec2.BlockDeviceVolume.ebs(20, { volumeType: ec2.EbsDeviceVolumeType.GP3 }), //<--20GB volume size
         }
-        const Default_MNG_LT = new ec2.LaunchTemplate(this.stack, 'Default_MNG_LT', {
-            launchTemplateName: `${this.config.id}/baseline-MNG/ARM64-spot`, //NOTE: CDK creates 2 LT's for some reason 2nd is eks-*
+        const Default_MNG_LT = new ec2.LaunchTemplate(this.stack, 'ARM64-AL2023-spot_MNG_LT', {
+            launchTemplateName: `${this.config.id}/baseline-MNG/ARM64-AL2023-spot`, //NOTE: CDK creates 2 LT's for some reason 2nd is eks-*
             blockDevices: [blockDevice],
         });
-        cdk.Tags.of(Default_MNG_LT).add("Name", `${this.config.id}/baseline-MNG/ARM64-spot`);
+        cdk.Tags.of(Default_MNG_LT).add("Name", `${this.config.id}/baseline-MNG/ARM64-AL2023-spot`);
         const tags = Object.entries(this.config.tags ?? {});
         tags.forEach(([key, value]) => cdk.Tags.of(Default_MNG_LT).add(key,value));
         const default_LT_Spec: eks.LaunchTemplateSpec = {
@@ -105,7 +104,7 @@ export class Easy_EKS_v2{ //purposefully don't extend stack, to implement builde
             desiredSize: 2,
             minSize: 0,
             maxSize: 50,
-            nodeRole: default_MNG_role,
+            nodeRole: EKS_Node_Role,
             launchTemplateSpec: default_LT_Spec, //<-- necessary to add tags to EC2 instances
         };
 
@@ -118,6 +117,13 @@ export class Easy_EKS_v2{ //purposefully don't extend stack, to implement builde
                                                    // so assumable by any principle/identity in the account.
         });
 
+        // if (kms.Key.isLookupDummy(kms.Key.fromLookup(this.stack, "pre-existing-kms-key", { aliasName: this.config.kmsKeyAlias, returnDummyKeyOnMissing: true,  }))){
+        //     eksBlueprint.resourceProvider(blueprints.GlobalResources.KmsKey, new blueprints.CreateKmsKeyProvider(
+        //     this.config.kmsKeyAlias, {description: "Easy EKS generated kms key, used to encrypt etcd and ebs-csi-driver provisioned volumes"}
+        // ));}
+        // else { eksBlueprint.resourceProvider(blueprints.GlobalResources.KmsKey, new blueprints.LookupKmsKeyProvider(this.config.kmsKeyAlias)); }
+        //const kms_key = kms.Key.fromLookup(this.stack, 'pre-existing-kms-key', { aliasName: this.config.kmsKeyAlias });
+         
         this.cluster = new eks.Cluster(this.stack, this.config.id, {
             clusterName: this.config.id,
             version: eks.KubernetesVersion.V1_31,
@@ -129,10 +135,36 @@ export class Easy_EKS_v2{ //purposefully don't extend stack, to implement builde
             tags: this.config.tags,
             authenticationMode: eks.AuthenticationMode.API_AND_CONFIG_MAP,
             mastersRole: assumableEKSAdminAccessRole, //<-- adds aws eks update-kubeconfig output
+            //secretsEncryptionKey: kms_key,
             });
-
-        this.cluster.addNodegroupCapacity('ARM64-MNG', default_MNG);
+        this.cluster.addNodegroupCapacity(`default_MNG`, default_MNG);
         let cluster = this.cluster;
+
+        // Configure Limited Viewer Only Access by default:
+        if(this.config.clusterViewerAccessAwsAuthConfigmapAccounts){ //<-- JS truthy statement to say if not empty do the following
+            for (let index = 0; index < this.config.clusterViewerAccessAwsAuthConfigmapAccounts?.length; index++) {
+                cluster.awsAuth.addAccount(this.config.clusterViewerAccessAwsAuthConfigmapAccounts[index]);
+            }
+            cluster.addManifest('viewer_only_cluster_role_binding', viewer_only_crb);
+            cluster.addManifest('enhanced_viewer_cluster_role', enhanced_viewer_cr);
+        }
+
+        // Configure Cluster Admins via IaC:
+        if(this.config.clusterAdminAccessEksApiArns){ //<-- JS truthy statement to say if not empty do the following
+            for (let index = 0; index < this.config.clusterAdminAccessEksApiArns?.length; index++) {
+                new eks.AccessEntry( this.stack, this.config.clusterAdminAccessEksApiArns[index], //<-- using ARN as a unique subStack id
+                {
+                    accessPolicies: [clusterAdminAccessPolicy],
+                    cluster: cluster,
+                    principal: this.config.clusterAdminAccessEksApiArns[index],
+                    accessEntryName: this.config.clusterAdminAccessEksApiArns[index]
+                });
+            }
+        }//end if
+
+
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
         /*To see official names of all eks add-ons:
         aws eks describe-addon-versions  \
         --kubernetes-version=1.31 \
@@ -277,6 +309,16 @@ export class Easy_EKS_v2{ //purposefully don't extend stack, to implement builde
                 }
             }`, //end metrics-server configurationValues override
         });
+        // new eks.CfnAddon(this.stack, 'eks-node-monitoring-agent', {
+        //     clusterName: cluster.clusterName,
+        //     addonName: 'eks-node-monitoring-agent',
+        //     addonVersion: 'v1.0.1-eksbuild.2', //v--query for latest
+        //     // aws eks describe-addon-versions --kubernetes-version=1.31 --addon-name=eks-node-monitoring-agent --query='addons[].addonVersions[].addonVersion' | jq '.[0]'
+        // });
+        // ^-- TO DO: debug, ds pods crash loop with 'failed to start metrics server: failed to create listener: listen tcp :8080: bind: address already in use'
+        // OR wait for https://github.com/aws/containers-roadmap/issues/2521
+        // Could workaround it with static manifest until the add-on is updated.
+
         // The eks-pod-identity-agent Add-on is purposefully commented out due to a CDK bug https://github.com/aws/aws-cdk/issues/32580
         // Another call triggers it's installation, and the cdk bug complains about it already being present.
         // new eks.Addon(this.stack, 'eks-pod-identity-agent', {
@@ -311,7 +353,8 @@ export class Easy_EKS_v2{ //purposefully don't extend stack, to implement builde
             release: 'aws-load-balancer-controller',
             version: '1.11.0', //<-- helm chart version based on the following command
             // curl https://raw.githubusercontent.com/kubernetes-sigs/aws-load-balancer-controller/refs/tags/v2.11.0/helm/aws-load-balancer-controller/Chart.yaml | grep version: | cut -d ':' -f 2
-            wait: false,
+            wait: true,
+            timeout: cdk.Duration.minutes(15),
             values: { //<-- helm chart values per https://github.com/kubernetes-sigs/aws-load-balancer-controller/blob/v2.11.0/helm/aws-load-balancer-controller/values.yaml
                 clusterName: cluster.clusterName,
                 vpcId: this.config.vpc.vpcId,
@@ -323,6 +366,9 @@ export class Easy_EKS_v2{ //purposefully don't extend stack, to implement builde
                 },
             },
         });
+        // The following help prevent timeout of install during initial cluster deployment
+        awsLoadBalancerController.node.addDependency(cluster.awsAuth);
+        awsLoadBalancerController.node.addDependency(ALBC_Kube_SA);
 
         // Install Node Local DNS Cache
         const nodeLocalDNSCache = cluster.addHelmChart('NodeLocalDNSCache', {
@@ -336,19 +382,359 @@ export class Easy_EKS_v2{ //purposefully don't extend stack, to implement builde
             values: { //<-- helm chart values per https://github.com/deliveryhero/helm-charts/blob/master/stable/node-local-dns/values.yaml
             },
         });
-        
-        // new eks.AccessEntry(this.stack, assumableEKSAdminAccessRole.roleArn, //<-- using ARN as a unique subStack id
-        //     { 
-        //         accessPolicies: [clusterAdminAccessPolicy],
-        //         cluster: this.cluster,
-        //         principal: assumableEKSAdminAccessRole.roleArn,
-        //         accessEntryName: 'assumableEKSAdminAccessRole'
-        //     });
-        // new cdk.CfnOutput(this.stack, 'easyKubectlAccessCommand', {
-        //     value: `aws eks update-kubeconfig --name ${this.config.id} --region ${this.stack.region} --role-arn test` //${this.cluster.adminRole.roleArn}`
-        //     });
+
+        // Install Karpenter.sh
+        const karpenter = new Karpenter(this.stack, 'Karpenter', {
+            cluster: cluster,
+            namespace: 'kube-system',
+            version: '1.2.0', //https://gallery.ecr.aws/karpenter/karpenter
+            nodeRole: EKS_Node_Role, //custom NodeRole to pass to Karpenter Nodes
+            helmExtraValues: { //https://github.com/aws/karpenter-provider-aws/blob/v1.2.0/charts/karpenter/values.yaml
+                replicas: 2,
+            },
+        }); 
+
+
+        //Karpenter Custom Resources based on https://karpenter.sh/docs/getting-started/getting-started-with-karpenter/
+        //Converted using https://onlineyamltools.com/convert-yaml-to-json
+        const karpenter_al2023_EC2NodeClass = {
+            "apiVersion": "karpenter.k8s.aws/v1",
+            "kind": "EC2NodeClass",
+            "metadata": {
+              "name": "al2023"
+            },
+            "spec": {
+              "amiFamily": "AL2023",
+              "role": `${EKS_Node_Role.roleName}`,
+              "subnetSelectorTerms": [
+                { "id": `${this.config.vpc.privateSubnets[0].subnetId}` },
+                { "id": `${this.config.vpc.privateSubnets[1].subnetId}` },
+                { "id": `${this.config.vpc.privateSubnets[2].subnetId}` },
+              ],
+              "securityGroupSelectorTerms": [ { "tags": { "aws:eks:cluster-name": `${this.cluster.clusterName}` } } ],
+              "amiSelectorTerms": [
+                { "alias": "al2023@v20250123" },
+                //Date came from:
+                //aws ssm get-parameter --name /aws/service/eks/optimized-ami/1.31/amazon-linux-2023/x86_64/standard/recommended/image_name --region ca-central-1 --query "Parameter.Value" --output text
+                //amazon-eks-node-al2023-x86_64-standard-1.31-v20250123
+              ],
+              "tags": {//ARM64-AL2023-spot
+                "Name": `${this.cluster.clusterName}/karpenter/AL2023-spot`,
+              }
+            }
+        };
+        const karpenter_al2023_spot_NodePool = {
+            "apiVersion": "karpenter.sh/v1",
+            "kind": "NodePool",
+            "metadata": {
+              "name": "al2023-spot"
+            },
+            "spec": {
+              "weight": 100, //<-- Note highest weight = default
+              "template": {
+                "metadata": {
+                  "labels": { //Kubernetes Label attached to EKS Node
+                    "Name": 'al2023-spot',
+                  }
+                },
+                "spec": {
+                  "nodeClassRef": {
+                    "group": "karpenter.k8s.aws",
+                    "kind": "EC2NodeClass",
+                    "name": "al2023"
+                  },
+                  "requirements": [
+                    {
+                      "key": "karpenter.k8s.aws/instance-category",
+                      "operator": "In",
+                      "values": [ "t", "c", "m", "r", ]
+                    },
+                    {
+                      "key": "kubernetes.io/arch",
+                      "operator": "In",
+                      "values": [
+                        "amd64",
+                        "arm64"
+                      ]
+                    },
+                    {
+                      "key": "kubernetes.io/os",
+                      "operator": "In",
+                      "values": [ "linux" ]
+                    },
+                    {
+                      "key": "karpenter.sh/capacity-type",
+                      "operator": "In",
+                      "values": [ "spot" ]
+                    }
+                  ],
+                  "expireAfter": "720h"
+                }
+              },
+              "limits": {
+                "cpu": 1000
+              },
+              "disruption": {
+                "consolidationPolicy": "WhenEmptyOrUnderutilized",
+                "consolidateAfter": "1m"
+              }
+            }
+        };//end karpenter_al2023_spot_NodePool
+        const karpenter_al2023_on_demand_NodePool = {
+            "apiVersion": "karpenter.sh/v1",
+            "kind": "NodePool",
+            "metadata": {
+              "name": 'al2023-on-demand'
+            },
+            "spec": {
+              "weight": 50, //<-- Note highest weight = default
+              "template": {
+                "metadata": {
+                  "labels": { //Kubernetes Label attached to EKS Node
+                    "Name": 'al2023-on-demand'
+                  }
+                },
+                "spec": {
+                  "nodeClassRef": {
+                    "group": "karpenter.k8s.aws",
+                    "kind": "EC2NodeClass",
+                    "name": "al2023"
+                  },
+                  "requirements": [
+                    {
+                      "key": "karpenter.k8s.aws/instance-category",
+                      "operator": "In",
+                      "values": [ "t", "c", "m", "r", ]
+                    },
+                    {
+                      "key": "kubernetes.io/arch",
+                      "operator": "In",
+                      "values": [
+                        "amd64",
+                        "arm64"
+                      ]
+                    },
+                    {
+                      "key": "kubernetes.io/os",
+                      "operator": "In",
+                      "values": [ "linux" ]
+                    },
+                    {
+                      "key": "karpenter.sh/capacity-type",
+                      "operator": "In",
+                      "values": [ "on-demand" ]
+                    }
+                  ],
+                  "expireAfter": "720h"
+                }
+              },
+              "limits": {
+                "cpu": 1000
+              },
+              "disruption": {
+                "consolidationPolicy": "WhenEmptyOrUnderutilized",
+                "consolidateAfter": "1m"
+              }
+            }
+        };//end karpenter_al2023_on_demand_NodePool
+        cluster.addManifest('karpenter_al2023_EC2NodeClass', karpenter_al2023_EC2NodeClass);
+        cluster.addManifest('karpenter_al2023_spot_NodePool', karpenter_al2023_spot_NodePool);
+        cluster.addManifest('karpenter_al2023_on_demand_NodePool', karpenter_al2023_on_demand_NodePool);
+
     }//end deploy_cluster()
+
 
 }//end Easy_EKS_v2
 
 
+
+///////////////////////////////////////////////////////////////////////////////////////////////////
+//Viewer Only RBAC Access (Equivalent to whats in research folder)
+//Converted using https://onlineyamltools.com/convert-yaml-to-json
+const viewer_only_crb = {
+    "apiVersion": "rbac.authorization.k8s.io/v1",
+    "kind": "ClusterRoleBinding",
+    "metadata": {
+      "name": "easyeks-all-authenticated-users-viewer"
+    },
+    "subjects": [
+      {
+        "apiGroup": "rbac.authorization.k8s.io",
+        "kind": "Group",
+        "name": "system:authenticated"
+      }
+    ],
+    "roleRef": {
+      "apiGroup": "rbac.authorization.k8s.io",
+      "kind": "ClusterRole",
+      "name": "view"
+    }
+}
+
+const enhanced_viewer_cr = {
+    "apiVersion": "rbac.authorization.k8s.io/v1",
+    "kind": "ClusterRole",
+    "metadata": {
+      "name": "easyeks-enhanced-viewer",
+      "labels": {
+        "rbac.authorization.k8s.io/aggregate-to-view": "true"
+      }
+    },
+    "rules": [
+      {
+        "apiGroups": [
+          ""
+        ],
+        "verbs": [
+          "get",
+          "list",
+          "watch"
+        ],
+        "resources": [
+          "podtemplates",
+          "nodes",
+          "persistentvolumes"
+        ]
+      },
+      {
+        "apiGroups": [
+          "scheduling.k8s.io"
+        ],
+        "verbs": [
+          "get",
+          "list",
+          "watch"
+        ],
+        "resources": [
+          "priorityclasses"
+        ]
+      },
+      {
+        "apiGroups": [
+          "apiregistration.k8s.io"
+        ],
+        "verbs": [
+          "get",
+          "list",
+          "watch"
+        ],
+        "resources": [
+          "apiservices"
+        ]
+      },
+      {
+        "apiGroups": [
+          "coordination.k8s.io"
+        ],
+        "verbs": [
+          "get",
+          "list",
+          "watch"
+        ],
+        "resources": [
+          "leases"
+        ]
+      },
+      {
+        "apiGroups": [
+          "node.k8s.io"
+        ],
+        "verbs": [
+          "get",
+          "list",
+          "watch"
+        ],
+        "resources": [
+          "runtimeclasses"
+        ]
+      },
+      {
+        "apiGroups": [
+          "flowcontrol.apiserver.k8s.io"
+        ],
+        "verbs": [
+          "get",
+          "list",
+          "watch"
+        ],
+        "resources": [
+          "flowschemas",
+          "prioritylevelconfigurations"
+        ]
+      },
+      {
+        "apiGroups": [
+          "networking.k8s.io"
+        ],
+        "verbs": [
+          "get",
+          "list",
+          "watch"
+        ],
+        "resources": [
+          "ingressclasses"
+        ]
+      },
+      {
+        "apiGroups": [
+          "storage.k8s.io"
+        ],
+        "verbs": [
+          "get",
+          "list",
+          "watch"
+        ],
+        "resources": [
+          "storageclasses",
+          "volumeattachments",
+          "csidrivers",
+          "csinodes",
+          "csistoragecapacities"
+        ]
+      },
+      {
+        "apiGroups": [
+          "rbac.authorization.k8s.io"
+        ],
+        "verbs": [
+          "get",
+          "list",
+          "watch"
+        ],
+        "resources": [
+          "clusterroles",
+          "clusterrolebindings",
+          "roles",
+          "rolebindings"
+        ]
+      },
+      {
+        "apiGroups": [
+          "apiextensions.k8s.io"
+        ],
+        "verbs": [
+          "get",
+          "list",
+          "watch"
+        ],
+        "resources": [
+          "customresourcedefinitions"
+        ]
+      },
+      {
+        "apiGroups": [
+          "admissionregistration.k8s.io"
+        ],
+        "verbs": [
+          "get",
+          "list",
+          "watch"
+        ],
+        "resources": [
+          "mutatingwebhookconfigurations",
+          "validatingwebhookconfigurations"
+        ]
+      }
+    ]
+}
+///////////////////////////////////////////////////////////////////////////////////////////////////
