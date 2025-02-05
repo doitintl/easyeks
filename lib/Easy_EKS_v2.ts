@@ -66,7 +66,7 @@ export class Easy_EKS_v2{ //purposefully don't extend stack, to implement builde
         });
 
         const EKS_Node_Role = new iam.Role(this.stack, `EKS_Node_Role`, {
-            roleName: `${this.config.id}_EKS_Node_Role`,
+            //roleName: //cdk isn't great about cleaning up resources, so leting it generate name is more reliable
             assumedBy: new iam.ServicePrincipal('ec2.amazonaws.com'),
             managedPolicies: [
               iam.ManagedPolicy.fromAwsManagedPolicyName('AmazonEKSWorkerNodePolicy'),
