@@ -394,7 +394,7 @@ export class Easy_EKS_v2{ //purposefully don't extend stack, to implement builde
             helmExtraValues: { //https://github.com/aws/karpenter-provider-aws/blob/v1.2.0/charts/karpenter/values.yaml
                 replicas: 2,
             },
-        }); 
+        });
         karpenter.node.addDependency(cluster.awsAuth);
 
         //Karpenter Custom Resources based on https://karpenter.sh/docs/getting-started/getting-started-with-karpenter/
