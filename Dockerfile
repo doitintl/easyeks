@@ -5,8 +5,10 @@ FROM docker.io/node:20-bookworm-slim
 #     20: nodejs v20 (the long term support version)
 
 RUN DEBIAN_FRONTEND=noninteractive TZ=Etc/UTC apt update -y && apt install -y \
-    jq \
-    awscli
+    jq awscli \
+    python3 libcurl4-openssl-dev build-essential git
+# ^-- jq awscli represent EasyEKS dependencies.
+#     python3, etc. fix a debian specific dependency issue related to npm install sync-request-curl
 ENV AWS_PAGER=""
 # ^-- fixes https://stackoverflow.com/questions/57953187/aws-cli-has-no-output
 
