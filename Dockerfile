@@ -1,8 +1,8 @@
-FROM docker.io/node:20-bookworm-slim
+FROM docker.io/node:22-bookworm-slim
 # ^-- Dockerhub sourced base image is:
 #     slim: size optimized
 #     bookworm: debian 12 (current stable)
-#     20: nodejs v20 (the long term support version)
+#     22: nodejs v22 (the long term support version as of Nov 2024)
 
 RUN DEBIAN_FRONTEND=noninteractive TZ=Etc/UTC apt update -y && apt install -y \
     jq awscli \
