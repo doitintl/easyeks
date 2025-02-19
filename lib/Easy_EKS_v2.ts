@@ -399,32 +399,6 @@ export class Easy_EKS_v2{ //purposefully don't extend stack, to implement builde
 
         //Karpenter Custom Resources based on https://karpenter.sh/docs/getting-started/getting-started-with-karpenter/
         //Converted using https://onlineyamltools.com/convert-yaml-to-json
-        const karpenter_al2023_EC2NodeClass = {
-            "apiVersion": "karpenter.k8s.aws/v1",
-            "kind": "EC2NodeClass",
-            "metadata": {
-              "name": "al2023"
-            },
-            "spec": {
-              "amiFamily": "AL2023",
-              "role": `${EKS_Node_Role.roleName}`,
-              "subnetSelectorTerms": [
-                { "id": `${this.config.vpc.privateSubnets[0].subnetId}` },
-                { "id": `${this.config.vpc.privateSubnets[1].subnetId}` },
-                { "id": `${this.config.vpc.privateSubnets[2].subnetId}` },
-              ],
-              "securityGroupSelectorTerms": [ { "tags": { "aws:eks:cluster-name": `${this.cluster.clusterName}` } } ],
-              "amiSelectorTerms": [
-                { "alias": "al2023@v20250123" },
-                //Date came from:
-                //aws ssm get-parameter --name /aws/service/eks/optimized-ami/1.31/amazon-linux-2023/x86_64/standard/recommended/image_name --region ca-central-1 --query "Parameter.Value" --output text
-                //amazon-eks-node-al2023-x86_64-standard-1.31-v20250123
-              ],
-              "tags": {//ARM64-AL2023-spot
-                "Name": `${this.cluster.clusterName}/karpenter/AL2023-spot`,
-              }
-            }
-        };
         const karpenter_al2023_spot_NodePool = {
             "apiVersion": "karpenter.sh/v1",
             "kind": "NodePool",
@@ -539,6 +513,38 @@ export class Easy_EKS_v2{ //purposefully don't extend stack, to implement builde
               }
             }
         };//end karpenter_al2023_on_demand_NodePool
+        let subnetSelectorTerms: Array<{[key:string]: string}> = [];
+        for(let i=0; i<3; i++){ 
+          subnetSelectorTerms.push( {"id": `${this.config.vpc.privateSubnets[i]?.subnetId}`} );
+        };
+        //^-- The above oddness is equivalent to this-v, but is resilient against a variable number of subnets:
+        //       "subnetSelectorTerms": [
+        //         { "id": `${this.config.vpc.privateSubnets[0]?.subnetId}` },
+        //         { "id": `${this.config.vpc.privateSubnets[1]?.subnetId}` },
+        //         { "id": `${this.config.vpc.privateSubnets[2]?.subnetId}` },
+        //       ],
+        const karpenter_al2023_EC2NodeClass = {
+          "apiVersion": "karpenter.k8s.aws/v1",
+          "kind": "EC2NodeClass",
+          "metadata": {
+            "name": "al2023"
+          },
+          "spec": {
+            "amiFamily": "AL2023",
+            "role": `${EKS_Node_Role.roleName}`,
+            "subnetSelectorTerms": subnetSelectorTerms,
+            "securityGroupSelectorTerms": [ { "tags": { "aws:eks:cluster-name": `${this.cluster.clusterName}` } } ],
+            "amiSelectorTerms": [
+              { "alias": "al2023@v20250123" },
+              //Date came from:
+              //aws ssm get-parameter --name /aws/service/eks/optimized-ami/1.31/amazon-linux-2023/x86_64/standard/recommended/image_name --region ca-central-1 --query "Parameter.Value" --output text
+              //amazon-eks-node-al2023-x86_64-standard-1.31-v20250123
+            ],
+            "tags": {//ARM64-AL2023-spot
+              "Name": `${this.cluster.clusterName}/karpenter/AL2023-spot`,
+            }
+          }
+        };
         const apply_karpenter1 = cluster.addManifest('karpenter_al2023_EC2NodeClass', karpenter_al2023_EC2NodeClass);
         const apply_karpenter2 = cluster.addManifest('karpenter_al2023_spot_NodePool', karpenter_al2023_spot_NodePool);
         const apply_karpenter3 = cluster.addManifest('karpenter_al2023_on_demand_NodePool', karpenter_al2023_on_demand_NodePool);

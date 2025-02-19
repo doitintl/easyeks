@@ -275,7 +275,7 @@ export AWS_REGION="ca-central-1"
 time cdk list
 cdk deploy lower-envs-vpc
 ```
-* Note: cdk list won't be instant, for me it took about 5 seconds.
+* Note: cdk list won't be instant, for me it took about 7 seconds.
 * Also you'll notice a prompt 'Do you wish to deploy these changes (y/n)?'
 * ETA on VPC deployment = 3.5 minutes
 
