@@ -54,7 +54,6 @@ export class Easy_EKS_v2{ //purposefully don't extend stack, to implement builde
         dev_eks_config.apply_config(this.config,this.stack); 
     }
     deploy_eks_construct_into_this_objects_stack(){
-
         const ipv6_support_iam_policy = new iam.PolicyDocument({
             statements: [new iam.PolicyStatement({
             resources: ['arn:aws:ec2:*:*:network-interface/*'],
@@ -64,7 +63,6 @@ export class Easy_EKS_v2{ //purposefully don't extend stack, to implement builde
             ],
             })],
         });
-
         const EKS_Node_Role = new iam.Role(this.stack, `EKS_Node_Role`, {
             //roleName: //cdk isn't great about cleaning up resources, so leting it generate name is more reliable
             assumedBy: new iam.ServicePrincipal('ec2.amazonaws.com'),
@@ -81,27 +79,31 @@ export class Easy_EKS_v2{ //purposefully don't extend stack, to implement builde
             },
           });
 
-        const blockDevice: ec2.BlockDevice = {
+        const Baseline_MNG_Disk: ec2.BlockDevice = {
             deviceName: '/dev/xvda', //Root device name
             volume: ec2.BlockDeviceVolume.ebs(20, { volumeType: ec2.EbsDeviceVolumeType.GP3 }), //<--20GB volume size
         }
-        const Baseline_MNG_LT = new ec2.LaunchTemplate(this.stack, 'ARM64-AL2023-spot_MNG_LT', {
-            launchTemplateName: `${this.config.id}/baseline-MNG/ARM64-AL2023-spot`, //NOTE: CDK creates 2 LT's for some reason 2nd is eks-*
-            blockDevices: [blockDevice],
+        let baseline_node_type:string;
+            if(this.config.baselineNodesType === eks.CapacityType.SPOT){ baseline_node_type = "spot"; }
+            else { baseline_node_type = "on-demand"; }
+        const Baseline_MNG_LT = new ec2.LaunchTemplate(this.stack, `ARM64-Bottlerocket-${baseline_node_type}_MNG_LT`, {
+            launchTemplateName: `${this.config.id}/baseline-MNG/ARM64-Bottlerocket-${baseline_node_type}`, //NOTE: CDK creates 2 LT's for some reason 2nd is eks-*
+            blockDevices: [Baseline_MNG_Disk],
         });
-        cdk.Tags.of(Baseline_MNG_LT).add("Name", `${this.config.id}/baseline-MNG/ARM64-AL2023-spot`);
+        cdk.Tags.of(Baseline_MNG_LT).add("Name", `${this.config.id}/baseline-MNG/ARM64-Bottlerocket-${baseline_node_type}`);
         const tags = Object.entries(this.config.tags ?? {});
         tags.forEach(([key, value]) => cdk.Tags.of(Baseline_MNG_LT).add(key,value));
         const baseline_LT_Spec: eks.LaunchTemplateSpec = {
-                id: Baseline_MNG_LT.launchTemplateId!,
-                version: Baseline_MNG_LT.latestVersionNumber,
+            id: Baseline_MNG_LT.launchTemplateId!,
+            version: Baseline_MNG_LT.latestVersionNumber,
         };
+
         const baseline_MNG: eks.NodegroupOptions = {
             subnets: { subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS },
-            amiType: eks.NodegroupAmiType.AL2023_ARM_64_STANDARD,
+            amiType: eks.NodegroupAmiType.BOTTLEROCKET_ARM_64,
             instanceTypes: [new ec2.InstanceType('t4g.small')], //t4g.small = 2cpu, 2gb ram, 11pod max
             capacityType: eks.CapacityType.SPOT,
-            desiredSize: 2,
+            desiredSize: this.config.baselineNodesNumber,
             minSize: 0,
             maxSize: 50,
             nodeRole: EKS_Node_Role,
@@ -111,6 +113,7 @@ export class Easy_EKS_v2{ //purposefully don't extend stack, to implement builde
         const clusterAdminAccessPolicy: eks.AccessPolicy = eks.AccessPolicy.fromAccessPolicyName('AmazonEKSClusterAdminPolicy', {
             accessScopeType: eks.AccessScopeType.CLUSTER
         });
+
         //UX convienence similar to EKS Blueprints
         const assumableEKSAdminAccessRole = new iam.Role(this.stack, 'assumableEKSAdminAccessRole', {
         assumedBy: new iam.AccountRootPrincipal(), //<-- root as is root of the account,
@@ -130,7 +133,7 @@ export class Easy_EKS_v2{ //purposefully don't extend stack, to implement builde
             version: eks.KubernetesVersion.V1_31,
             kubectlLayer: new KubectlV31Layer(this.stack, 'kubectl'),
             vpc: this.config.vpc,
-            ipFamily: eks.IpFamily.IP_V6,
+            ipFamily: this.config.ipMode,
             vpcSubnets: [{ subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS }],
             defaultCapacity: 0,
             tags: this.config.tags,
@@ -399,25 +402,25 @@ export class Easy_EKS_v2{ //purposefully don't extend stack, to implement builde
 
         //Karpenter Custom Resources based on https://karpenter.sh/docs/getting-started/getting-started-with-karpenter/
         //Converted using https://onlineyamltools.com/convert-yaml-to-json
-        const karpenter_al2023_spot_NodePool = {
+        const karpenter_bottlerocket_spot_NodePool = {
             "apiVersion": "karpenter.sh/v1",
             "kind": "NodePool",
             "metadata": {
-              "name": "karpenter-al2023-spot" //karpenter in name b/c it shows up in Managed by column of AWS Web Console GUI
+              "name": "karpenter-bottlerocket-spot" //karpenter in name b/c it shows up in Managed by column of AWS Web Console GUI
             },
             "spec": {
               "weight": 100, //<-- Note highest weight = default
               "template": {
                 "metadata": {
                   "labels": { //Kubernetes Label attached to EKS Node
-                    "Name": 'al2023-spot',
+                    "Name": 'bottlerocket-spot',
                   }
                 },
                 "spec": {
                   "nodeClassRef": {
                     "group": "karpenter.k8s.aws",
                     "kind": "EC2NodeClass",
-                    "name": "al2023"
+                    "name": "bottlerocket"
                   },
                   "requirements": [
                     {
@@ -455,26 +458,26 @@ export class Easy_EKS_v2{ //purposefully don't extend stack, to implement builde
                 "consolidateAfter": "1m"
               }
             }
-        };//end karpenter_al2023_spot_NodePool
-        const karpenter_al2023_on_demand_NodePool = {
+        };//end karpenter_bottlerocket_spot_NodePool
+        const karpenter_bottlerocket_on_demand_NodePool = {
             "apiVersion": "karpenter.sh/v1",
             "kind": "NodePool",
             "metadata": {
-              "name": 'karpenter-al2023-on-demand' //karpenter in name b/c it shows up in Managed by column of AWS Web Console GUI
+              "name": 'karpenter-bottlerocket-on-demand' //karpenter in name b/c it shows up in Managed by column of AWS Web Console GUI
             },
             "spec": {
               "weight": 50, //<-- Note highest weight = default
               "template": {
                 "metadata": {
                   "labels": { //Kubernetes Label attached to EKS Node
-                    "Name": 'al2023-on-demand'
+                    "Name": 'bottlerocket-on-demand'
                   }
                 },
                 "spec": {
                   "nodeClassRef": {
                     "group": "karpenter.k8s.aws",
                     "kind": "EC2NodeClass",
-                    "name": "al2023"
+                    "name": "bottlerocket"
                   },
                   "requirements": [
                     {
@@ -512,7 +515,7 @@ export class Easy_EKS_v2{ //purposefully don't extend stack, to implement builde
                 "consolidateAfter": "1m"
               }
             }
-        };//end karpenter_al2023_on_demand_NodePool
+        };//end karpenter_bottlerocket_on_demand_NodePool
         let subnetSelectorTerms: Array<{[key:string]: string}> = [];
         for(let i=0; i<3; i++){ 
           subnetSelectorTerms.push( {"id": `${this.config.vpc.privateSubnets[i]?.subnetId}`} );
@@ -523,37 +526,38 @@ export class Easy_EKS_v2{ //purposefully don't extend stack, to implement builde
         //         { "id": `${this.config.vpc.privateSubnets[1]?.subnetId}` },
         //         { "id": `${this.config.vpc.privateSubnets[2]?.subnetId}` },
         //       ],
-        const karpenter_al2023_EC2NodeClass = {
+        const karpenter_bottlerocket_EC2NodeClass = {
           "apiVersion": "karpenter.k8s.aws/v1",
           "kind": "EC2NodeClass",
           "metadata": {
-            "name": "al2023"
+            "name": "bottlerocket"
           },
           "spec": {
-            "amiFamily": "AL2023",
+            "amiFamily": "bottlerocket",
             "role": `${EKS_Node_Role.roleName}`,
             "subnetSelectorTerms": subnetSelectorTerms,
             "securityGroupSelectorTerms": [ { "tags": { "aws:eks:cluster-name": `${this.cluster.clusterName}` } } ],
             "amiSelectorTerms": [
-              { "alias": "al2023@v20250123" },
+              { "alias": "bottlerocket@v1.31.6" },
+              //Bottlerocket is easier than AL2023 & more secure by default, but if need AL2023:
+              //AL2023's Alias = "al2023@v20250123"
               //Date came from:
               //aws ssm get-parameter --name /aws/service/eks/optimized-ami/1.31/amazon-linux-2023/x86_64/standard/recommended/image_name --region ca-central-1 --query "Parameter.Value" --output text
               //amazon-eks-node-al2023-x86_64-standard-1.31-v20250123
             ],
-            "tags": {//ARM64-AL2023-spot
-              "Name": `${this.cluster.clusterName}/karpenter/AL2023-spot`,
+            "tags": {//ARM64-bottlerocket-spot
+              "Name": `${this.cluster.clusterName}/karpenter/bottlerocket-spot`,
             }
           }
         };
-        const apply_karpenter1 = cluster.addManifest('karpenter_al2023_EC2NodeClass', karpenter_al2023_EC2NodeClass);
-        const apply_karpenter2 = cluster.addManifest('karpenter_al2023_spot_NodePool', karpenter_al2023_spot_NodePool);
-        const apply_karpenter3 = cluster.addManifest('karpenter_al2023_on_demand_NodePool', karpenter_al2023_on_demand_NodePool);
+        const apply_karpenter1 = cluster.addManifest('karpenter_bottlerocket_EC2NodeClass', karpenter_bottlerocket_EC2NodeClass);
+        const apply_karpenter2 = cluster.addManifest('karpenter_bottlerocket_spot_NodePool', karpenter_bottlerocket_spot_NodePool);
+        const apply_karpenter3 = cluster.addManifest('karpenter_bottlerocket_on_demand_NodePool', karpenter_bottlerocket_on_demand_NodePool);
         apply_karpenter1.node.addDependency(karpenter);
         apply_karpenter2.node.addDependency(karpenter);
         apply_karpenter3.node.addDependency(karpenter);
 
     }//end deploy_cluster()
-
 
 }//end Easy_EKS_v2
 

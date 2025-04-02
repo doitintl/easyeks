@@ -4,10 +4,11 @@ import * as ec2 from 'aws-cdk-lib/aws-ec2';
 import * as cdk from 'aws-cdk-lib';
 import * as eks from 'aws-cdk-lib/aws-eks';
 
-export enum observabilityOptions {
+export enum observabilityOptions { //TENTATIVE FUTURE, may removed
     None,
     Frugal_Grafana_Prometheus_Loki
 };
+
 
 export class Easy_EKS_Config_Data { //This object just holds config data.
     //Typescript(TS) readability notes
@@ -23,7 +24,8 @@ export class Easy_EKS_Config_Data { //This object just holds config data.
     clusterAddOns?: Map<string, blueprints.ClusterAddOn>;
     kmsKeyAlias: string; //kms key with this alias will be created or reused if pre-existing
     observabilityOption: observabilityOptions;
-  
+    baselineNodesNumber: number;
+    baselineNodesType: eks.CapacityType; //enum eks.CapacityType.SPOT or eks.CapacityType.ON_DEMAND
 
   
     constructor(id_for_stack_and_eks: string){
@@ -60,6 +62,12 @@ export class Easy_EKS_Config_Data { //This object just holds config data.
     addTag(key: string, value: string){ 
         if(this.tags === undefined){ this.tags = { [key] : value } }
         else{ this.tags = { ...this.tags, [key] : value }}
+    }
+    setBaselineMNGSize(num_baseline_nodes: number){
+        this.baselineNodesNumber = num_baseline_nodes;
+    }
+    setBaselineMNGType(baseline_node_type: eks.CapacityType){
+        this.baselineNodesType = baseline_node_type;
     }
     setIpMode(ipMode: eks.IpFamily){ this.ipMode = ipMode; }
     addClusterAdminARN(arn:string){        //v--initialize if undefined

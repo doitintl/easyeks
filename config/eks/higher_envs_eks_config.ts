@@ -1,5 +1,6 @@
 import { Easy_EKS_Config_Data } from '../../lib/Easy_EKS_Config_Data';
 import * as cdk from 'aws-cdk-lib';
+import * as eks from 'aws-cdk-lib/aws-eks';
 import * as blueprints from '@aws-quickstart/eks-blueprints'
 //Intended Use: 
 //EasyEKS Admins: edit this file with config to apply to all lower environment eks cluster's in your org.
@@ -8,7 +9,8 @@ export function apply_config(config: Easy_EKS_Config_Data, stack: cdk.Stack){ //
     config.setKmsKeyAlias("eks/higher-envs"); //kms key with this alias will be created or reused if pre-existing
     config.setVpcByName("higher-envs-vpc", config, stack); //Name as in VPC's Name Tag
     //config.setVpcById("vpc-0dbcacb511f9bac4e", config, stack); //Alternative pre-existing VPC deployment option
-
+    config.setBaselineMNGSize(2);
+    config.setBaselineMNGType(eks.CapacityType.ON_DEMAND);
     //config.addClusterAdminARN(`arn:aws:iam::${process.env.CDK_DEFAULT_ACCOUNT!}:user/example`);
     //^--Important Note: identity referenced in ARN must exist or the deployment will fail
     //         This allows you to create a explicit list of ARNS (representing IAM roles or users)

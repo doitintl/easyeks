@@ -61,7 +61,7 @@ export function apply_config(config: Easy_EKS_Config_Data, stack: cdk.Stack){ //
         * Reliability/Maintainability Improvement: It eliminates the possibility of running out of IP Addresses.
         * Cost Savings: Due to the above, it's safe to run multiple EasyEKS Clusters in 1 VPC (which saves on NAT GW Costs)*/
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    config.setKubernetesVersion(KubernetesVersion.V1_30); //<--Note: EKS Blueprints can be slow to support latest
+    config.setKubernetesVersion(KubernetesVersion.V1_31);
     config.addAddOn( new blueprints.addons.MetricsServerAddOn() ); //allows `kubectl top nodes` to work
     config.addAddOn(
       new blueprints.addons.EbsCsiDriverAddOn({
