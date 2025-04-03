@@ -46,7 +46,7 @@ import { Construct } from "constructs";
 import * as route53 from 'aws-cdk-lib/aws-route53';
 import * as acm from 'aws-cdk-lib/aws-certificatemanager';
 import * as cdk from 'aws-cdk-lib';
-import { Easy_EKS } from "./Easy_EKS";
+//import { Easy_EKS } from "./Easy_EKS";
 
 export function deploy(stack: cdk.Stack, config: Easy_EKS_Config_Data){
 

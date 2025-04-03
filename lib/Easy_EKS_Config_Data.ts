@@ -1,5 +1,4 @@
 import { KubernetesVersion } from 'aws-cdk-lib/aws-eks';
-import * as blueprints from '@aws-quickstart/eks-blueprints'; 
 import * as ec2 from 'aws-cdk-lib/aws-ec2';
 import * as cdk from 'aws-cdk-lib';
 import * as eks from 'aws-cdk-lib/aws-eks';
@@ -21,7 +20,7 @@ export class Easy_EKS_Config_Data { //This object just holds config data.
     ipMode: eks.IpFamily;
     clusterAdminAccessEksApiArns?: string[];
     clusterViewerAccessAwsAuthConfigmapAccounts?: string[]; //only aws-auth configmap supports accounts
-    clusterAddOns?: Map<string, blueprints.ClusterAddOn>;
+//    clusterAddOns?: Map<string, blueprints.ClusterAddOn>;
     kmsKeyAlias: string; //kms key with this alias will be created or reused if pre-existing
     observabilityOption: observabilityOptions;
     baselineNodesNumber: number;
@@ -78,28 +77,28 @@ export class Easy_EKS_Config_Data { //This object just holds config data.
         if(this.clusterViewerAccessAwsAuthConfigmapAccounts === undefined){ this.clusterViewerAccessAwsAuthConfigmapAccounts = [account] } 
         else{ this.clusterViewerAccessAwsAuthConfigmapAccounts.push(account); } //push means add to end of array
     }
-    addAddOn(addon: blueprints.ClusterAddOn){
-        type AddOnObject = { props: { name: string }, coreAddOnProps: { addOnName: string} };
-        let addOnName: string;
-        const case1=(JSON.parse(JSON.stringify(addon)) as AddOnObject).props?.name;
-        const case2=addOnName=(JSON.parse(JSON.stringify(addon)) as AddOnObject).coreAddOnProps?.addOnName;
-        if(case1){addOnName=case1};
-        if(case2){addOnName=case2};
+    // addAddOn(addon: blueprints.ClusterAddOn){
+    //     type AddOnObject = { props: { name: string }, coreAddOnProps: { addOnName: string} };
+    //     let addOnName: string;
+    //     const case1=(JSON.parse(JSON.stringify(addon)) as AddOnObject).props?.name;
+    //     const case2=addOnName=(JSON.parse(JSON.stringify(addon)) as AddOnObject).coreAddOnProps?.addOnName;
+    //     if(case1){addOnName=case1};
+    //     if(case2){addOnName=case2};
     
-        if(this.clusterAddOns === undefined){ 
-            this.clusterAddOns = new Map<string, blueprints.ClusterAddOn>(); //<-- initialize if undefined
-            this.clusterAddOns.set(addOnName, addon); //<-- add Key Value Entry to HashMap
-        }
-        else{
-            this.clusterAddOns.set(addOnName, addon); //<-- add Key Value Entry to HashMap
-            //If you're woundering why a HashMap is used instead of an Array
-            //This is done to achieve a UX feature, where
-            //If you define an AddOn in the global config and environment specific config
-            //If it were an array, CDK would declare an error saying it already exists.
-            //Since it's a Map, the newest entry can override the older entry
-            //Which is a desired functionality for the sake of UX.
-        } 
-    }
+    //     if(this.clusterAddOns === undefined){ 
+    //         this.clusterAddOns = new Map<string, blueprints.ClusterAddOn>(); //<-- initialize if undefined
+    //         this.clusterAddOns.set(addOnName, addon); //<-- add Key Value Entry to HashMap
+    //     }
+    //     else{
+    //         this.clusterAddOns.set(addOnName, addon); //<-- add Key Value Entry to HashMap
+    //         //If you're woundering why a HashMap is used instead of an Array
+    //         //This is done to achieve a UX feature, where
+    //         //If you define an AddOn in the global config and environment specific config
+    //         //If it were an array, CDK would declare an error saying it already exists.
+    //         //Since it's a Map, the newest entry can override the older entry
+    //         //Which is a desired functionality for the sake of UX.
+    //     } 
+    // }
     setKmsKeyAlias(kms_key_alias: string){
         /*Note (About UX improvement logic):
         Expectation is for end user to pass in value like "eks/lower-envs",
@@ -116,13 +115,13 @@ export class Easy_EKS_Config_Data { //This object just holds config data.
 
 
   
-    //The following converts an internally used data type to a conventionally expected data type
-    getClusterAddons():Array<blueprints.ClusterAddOn> {//<--declaring return type
-        let eks_blueprints_expected_format: Array<blueprints.ClusterAddOn> = [];
-        if(this.clusterAddOns){//<-- JS falsy statement meaning if not empty
-            eks_blueprints_expected_format = Array.from(this.clusterAddOns.values());
-        }
-        return eks_blueprints_expected_format;
-    }
+    // //The following converts an internally used data type to a conventionally expected data type
+    // getClusterAddons():Array<blueprints.ClusterAddOn> {//<--declaring return type
+    //     let eks_blueprints_expected_format: Array<blueprints.ClusterAddOn> = [];
+    //     if(this.clusterAddOns){//<-- JS falsy statement meaning if not empty
+    //         eks_blueprints_expected_format = Array.from(this.clusterAddOns.values());
+    //     }
+    //     return eks_blueprints_expected_format;
+    // }
 
 }//end of Easy_EKS_Config_Data

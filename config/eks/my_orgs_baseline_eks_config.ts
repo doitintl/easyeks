@@ -2,9 +2,8 @@ import { Easy_EKS_Config_Data } from '../../lib/Easy_EKS_Config_Data';
 import { KubernetesVersion } from 'aws-cdk-lib/aws-eks';
 import * as cdk from 'aws-cdk-lib';
 import * as eks from 'aws-cdk-lib/aws-eks';
-import * as blueprints from '@aws-quickstart/eks-blueprints'
 import * as kms from 'aws-cdk-lib/aws-kms';
-import { NodeLocalDNSCacheAddOn } from '../../lib/Node_Local_DNS_Cache_AddOn';
+//import { NodeLocalDNSCacheAddOn } from '../../lib/Node_Local_DNS_Cache_AddOn';
 //Intended Use:
 //A baseline config file (to be applied to all EasyEKS Clusters in your organization)
 //EasyEKS Admins would be expected to edit this file with defaults specific to their org.
@@ -61,14 +60,14 @@ export function apply_config(config: Easy_EKS_Config_Data, stack: cdk.Stack){ //
         * Reliability/Maintainability Improvement: It eliminates the possibility of running out of IP Addresses.
         * Cost Savings: Due to the above, it's safe to run multiple EasyEKS Clusters in 1 VPC (which saves on NAT GW Costs)*/
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    config.setKubernetesVersion(KubernetesVersion.V1_31);
-    config.addAddOn( new blueprints.addons.MetricsServerAddOn() ); //allows `kubectl top nodes` to work
-    config.addAddOn(
-      new blueprints.addons.EbsCsiDriverAddOn({
-          version: "auto", //latest version is always best, and works for all versions of kubernetes
-          kmsKeys: [ blueprints.getNamedResource(blueprints.GlobalResources.KmsKey) ], //TO DO: Needs bug fix using default kms, and not user alias
-          storageClass: "gp3"
-      })
-    );
-    config.addAddOn( new NodeLocalDNSCacheAddOn( {} ) ); //Note: NL_DNS has issues with bottlerocket AMI, which is why EasyEKS defaults to AmazonLinux2.
+    // config.setKubernetesVersion(KubernetesVersion.V1_31);
+    // config.addAddOn( new blueprints.addons.MetricsServerAddOn() ); //allows `kubectl top nodes` to work
+    // config.addAddOn(
+    //   new blueprints.addons.EbsCsiDriverAddOn({
+    //       version: "auto", //latest version is always best, and works for all versions of kubernetes
+    //       kmsKeys: [ blueprints.getNamedResource(blueprints.GlobalResources.KmsKey) ], //TO DO: Needs bug fix using default kms, and not user alias
+    //       storageClass: "gp3"
+    //   })
+    // );
+    // config.addAddOn( new NodeLocalDNSCacheAddOn( {} ) ); //Note: NL_DNS has issues with bottlerocket AMI, which is why EasyEKS defaults to AmazonLinux2.
 }//end apply_config()
