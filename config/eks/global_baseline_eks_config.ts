@@ -33,82 +33,96 @@ export function apply_config(config: Easy_EKS_Config_Data, stack: cdk.Stack){ //
     --query 'sort_by(addons  &owner)[].{owner: owner, addonName: addonName}' \
     --output table
     */
-    // new eks.Addon(stack, 'kube-proxy', {
-    //     cluster,
-    //     addonName: 'kube-proxy',
-    //     addonVersion: 'v1.31.3-eksbuild.2',
-    // });
+    config.addEKSAddon('kube-proxy', { //spelling matters for all addons
+        addonName: 'kube-proxy', //spelling matter & should match above
+        addonVersion: 'v1.31.3-eksbuild.2', //Commented out for default (it won't be latest)
+        // Use this to look up latest
+        // aws eks describe-addon-versions --kubernetes-version=1.31 --addon-name=kube-proxy --query='addons[].addonVersions[].addonVersion' | jq '.[0]'
+        resolveConflicts: 'OVERWRITE',
+        configurationValues: '{}',
+    });
+    config.addEKSAddon('vpc-cni', {
+        addonName: 'vpc-cni',
+        resolveConflicts: 'OVERWRITE',
+        addonVersion: "v1.19.3-eksbuild.1", //latest tends to be valid for all versions of kubernetes
+        // Use this to look up latest
+        // aws eks describe-addon-versions --kubernetes-version=1.31 --addon-name=kube-proxy --query='addons[].addonVersions[].addonVersion' | jq '.[0]'
+        //serviceAccountRoleArn: <-- leave this blank, to use worker node's IAM role, which gives dualstack ipv4/ipv6 support
+        configurationValues: '{}',
+    });
+    //NOTICE: Don't add eks-pod-identity-agent via config.addEKSAddon()
+    //It's purposefully left out to work around CDK bug https://github.com/aws/aws-cdk/issues/32580
+    //Other logic will triggers it's installation. The cdk bug complains about it already being present, if added here.
 
 
 
-    // config.addAddOn( new blueprints.addons.KubeProxyAddOn() );
-    // config.addAddOn( new blueprints.addons.VpcCniAddOn({
-    //     version: "v1.19.0-eksbuild.1", //latest is valid for all kubernetes
-    //     serviceAccountPolicies: [ iam.ManagedPolicy.fromAwsManagedPolicyName("AmazonEKS_CNI_Policy"),]
-    //     //^-- Note Easy_EKS.ts also adds ipv6 support to this role
-    // }));
-    // config.addAddOn( new blueprints.addons.EksPodIdentityAgentAddOn() );
     // config.addAddOn( new blueprints.addons.AwsLoadBalancerControllerAddOn( {
     //     values: { //https://github.com/aws/eks-charts/blob/master/stable/aws-load-balancer-controller/values.yaml
     //         replicaCount: 1 //makes logs easier to read `kubectl logs deploy/aws-load-balancer-controller -n=kube-system`
     //     }
     // }));
 
-    //v-- Below represents an optimized CoreDNS deployment, based on
-    //    https://aws.amazon.com/blogs/containers/amazon-eks-add-ons-advanced-configuration/
-    //    aws eks describe-addon-configuration --addon-name coredns --addon-version v1.11.1-eksbuild.11 --query configurationSchema --output text | jq .
-    // config.addAddOn( new blueprints.addons.CoreDnsAddOn( "v1.11.3-eksbuild.2", { //<-- As of Sept 2024, "auto" (version) maps to older v1.11.1-eksbuild.8 that doesn't support autoscaling
-    //   configurationValues: {
-    //           "autoScaling": {
-    //             "enabled": true,
-    //             "minReplicas": 2,
-    //             "maxReplicas": 1000
-    //           },
-    //           "affinity": {
-    //             "nodeAffinity": {
-    //               "requiredDuringSchedulingIgnoredDuringExecution": {
-    //                 "nodeSelectorTerms": [
-    //                   {
-    //                     "matchExpressions": [
-    //                       {
-    //                         "key": "kubernetes.io/os",
-    //                         "operator": "In",
-    //                         "values": [
-    //                           "linux"
-    //                         ]
-    //                       },
-    //                       {
-    //                         "key": "kubernetes.io/arch",
-    //                         "operator": "In",
-    //                         "values": [
-    //                           "amd64",
-    //                           "arm64"
-    //                         ]
-    //                       }
-    //                     ]
-    //                   }
-    //                 ]
-    //               }
-    //             },
-    //             "podAntiAffinity": {
-    //               "requiredDuringSchedulingIgnoredDuringExecution": [
-    //                 {
-    //                   "labelSelector": {
-    //                     "matchExpressions": [
-    //                       {
-    //                         "key": "k8s-app",
-    //                         "operator": "In",
-    //                         "values": [
-    //                           "kube-dns"
-    //                         ]
-    //                       }
-    //                     ]
-    //                   },
-    //                   "topologyKey": "kubernetes.io/hostname"
-    //                 }
-    //               ]
-    //             }
-    //           }
-    //   }//end CoreDNS configurationValues override
-    // }));//end CoreDNS AddOn
+    
+    config.addEKSAddon('coredns', {
+        addonName: 'coredns',
+        addonVersion: 'v1.11.4-eksbuild.2', //latest tends to be valid for all version of kubernetes
+        // Use this to look up latest
+        // aws eks describe-addon-versions --kubernetes-version=1.31 --addon-name=coredns --query='addons[].addonVersions[].addonVersion' | jq '.[0]'
+        resolveConflicts: 'OVERWRITE',
+        //v-- Below represents an optimized CoreDNS deployment, based on
+        //    https://aws.amazon.com/blogs/containers/amazon-eks-add-ons-advanced-configuration/
+        //    aws eks describe-addon-configuration --addon-name coredns --addon-version v1.11.4-eksbuild.2 --query configurationSchema --output text | jq .
+        configurationValues: `{
+            "autoScaling": {
+              "enabled": true,
+              "minReplicas": 2,
+              "maxReplicas": 1000
+            },
+            "affinity": {
+              "nodeAffinity": {
+                "requiredDuringSchedulingIgnoredDuringExecution": {
+                  "nodeSelectorTerms": [
+                    {
+                      "matchExpressions": [
+                        {
+                          "key": "kubernetes.io/os",
+                          "operator": "In",
+                          "values": [
+                            "linux"
+                          ]
+                        },
+                        {
+                          "key": "kubernetes.io/arch",
+                          "operator": "In",
+                          "values": [
+                            "amd64",
+                            "arm64"
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              },
+              "podAntiAffinity": {
+                "requiredDuringSchedulingIgnoredDuringExecution": [
+                  {
+                    "labelSelector": {
+                      "matchExpressions": [
+                        {
+                          "key": "k8s-app",
+                          "operator": "In",
+                          "values": [
+                            "kube-dns"
+                          ]
+                        }
+                      ]
+                    },
+                    "topologyKey": "kubernetes.io/hostname"
+                  }
+                ]
+              }
+            }
+        }`, //end CoreDNS configurationValues override
+    });//end CoreDNS AddOn
 }//end function

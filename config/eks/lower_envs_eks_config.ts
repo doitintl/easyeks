@@ -1,6 +1,7 @@
 import { Easy_EKS_Config_Data } from '../../lib/Easy_EKS_Config_Data';
 import * as cdk from 'aws-cdk-lib';
 import * as eks from 'aws-cdk-lib/aws-eks';
+import { KubectlV31Layer } from '@aws-cdk/lambda-layer-kubectl-v31'; //npm install @aws-cdk/lambda-layer-kubectl-v31
 //Intended Use: 
 //EasyEKS Admins: edit this file with config to apply to all lower environment eks cluster's in your org.
 
@@ -10,13 +11,16 @@ export function apply_config(config: Easy_EKS_Config_Data, stack: cdk.Stack){ //
     //config.setVpcById("vpc-0dbcacb511f9bac4e", config, stack); //Alternative pre-existing VPC deployment option
     config.setBaselineMNGSize(2);
     config.setBaselineMNGType(eks.CapacityType.SPOT);
+    config.setKubernetesVersion(eks.KubernetesVersion.V1_31);
+    config.setKubectlLayer(new KubectlV31Layer(stack, 'kubectl'));
+    
 
     //config.addClusterAdminARN(`arn:aws:iam::${process.env.CDK_DEFAULT_ACCOUNT!}:user/example`);
     //^--Important Note: identity referenced in ARN must exist or the deployment will fail
     //         This allows you to create a explicit list of ARNS (representing IAM roles or users)
     //         That act as EKS Admins of all lower environments.
 
-    config.setObservabilityToFrugalGrafanaPrometheusLoki();
+    //config.setObservabilityToFrugalGrafanaPrometheusLoki();
 
     //v-- Karpenter addon needs to be configured after vpc is set. 
     //    (Remember cdk is imperative, as in step by step, so order of code execution matters)

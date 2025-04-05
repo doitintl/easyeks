@@ -13,7 +13,7 @@ import * as eks from 'aws-cdk-lib/aws-eks';
 import * as ec2 from 'aws-cdk-lib/aws-ec2';
 import * as iam from 'aws-cdk-lib/aws-iam';
 import * as kms from 'aws-cdk-lib/aws-kms';
-import { Easy_EKS_Config_Data, observabilityOptions } from './Easy_EKS_Config_Data';
+import { Easy_EKS_Config_Data } from './Easy_EKS_Config_Data';
 //Config Library Imports:
 import * as global_baseline_eks_config from '../config/eks/global_baseline_eks_config';
 import * as my_orgs_baseline_eks_config from '../config/eks/my_orgs_baseline_eks_config';
@@ -22,7 +22,6 @@ import * as higher_envs_eks_config from '../config/eks/higher_envs_eks_config';
 import * as dev_eks_config from '../config/eks/dev_eks_config';
 import * as observability from './Frugal_GPL_Observability_Stack';
 import { execSync } from 'child_process'; //temporary? work around for kms UX issue
-import { KubectlV31Layer } from '@aws-cdk/lambda-layer-kubectl-v31'; //npm install @aws-cdk/lambda-layer-kubectl-v31
 import request from 'sync-request-curl'; //npm install sync-request-curl (cdk requires sync functions, async not allowed)
 import { Karpenter } from 'cdk-eks-karpenter' //npm install cdk-eks-karpenter 
 
@@ -40,16 +39,17 @@ export class Easy_EKS{ //purposefully don't extend stack, to implement builder p
     }//end constructor of Easy_EKS_v2
 
     //Class Functions:
-    apply_global_baseline_eks_config(){ global_baseline_eks_config.apply_config(this.config,this.stack); }
-    apply_my_orgs_baseline_eks_config(){ my_orgs_baseline_eks_config.apply_config(this.config,this.stack); }
-    apply_lower_envs_eks_config(){ lower_envs_eks_config.apply_config(this.config,this.stack); }
-    apply_higher_envs_eks_config(){ higher_envs_eks_config.apply_config(this.config,this.stack); }
-    apply_dev_eks_config(){ dev_eks_config.apply_config(this.config,this.stack); }
+    // apply_global_baseline_eks_config(){ global_baseline_eks_config.apply_config(this.config,this.stack); }
+    // apply_my_orgs_baseline_eks_config(){ my_orgs_baseline_eks_config.apply_config(this.config,this.stack); }
+    // apply_lower_envs_eks_config(){ lower_envs_eks_config.apply_config(this.config,this.stack); }
+    // apply_higher_envs_eks_config(){ higher_envs_eks_config.apply_config(this.config,this.stack); }
+    // apply_dev_eks_config(){ dev_eks_config.apply_config(this.config,this.stack); }
     apply_dev_baseline_config(){ //convenience method
         global_baseline_eks_config.apply_config(this.config,this.stack);
         my_orgs_baseline_eks_config.apply_config(this.config,this.stack);
         lower_envs_eks_config.apply_config(this.config,this.stack);
-        dev_eks_config.apply_config(this.config,this.stack); 
+        dev_eks_config.apply_config(this.config,this.stack);
+
     }
     deploy_eks_construct_into_this_objects_stack(){
         const ipv6_support_iam_policy = new iam.PolicyDocument({
@@ -112,12 +112,19 @@ export class Easy_EKS{ //purposefully don't extend stack, to implement builder p
             accessScopeType: eks.AccessScopeType.CLUSTER
         });
 
+
+
+
+
+
+
+
         //UX convienence similar to EKS Blueprints
         const assumableEKSAdminAccessRole = new iam.Role(this.stack, 'assumableEKSAdminAccessRole', {
-        assumedBy: new iam.AccountRootPrincipal(), //<-- root as is root of the account,
-                                                   // so assumable by any principle/identity in the account.
+          assumedBy: new iam.AccountRootPrincipal(), //<-- root as is root of the account,
+                                                     // so assumable by any principle/identity in the account.
         });
-
+  
         // if (kms.Key.isLookupDummy(kms.Key.fromLookup(this.stack, "pre-existing-kms-key", { aliasName: this.config.kmsKeyAlias, returnDummyKeyOnMissing: true,  }))){
         //     eksBlueprint.resourceProvider(blueprints.GlobalResources.KmsKey, new blueprints.CreateKmsKeyProvider(
         //     this.config.kmsKeyAlias, {description: "Easy EKS generated kms key, used to encrypt etcd and ebs-csi-driver provisioned volumes"}
@@ -125,11 +132,11 @@ export class Easy_EKS{ //purposefully don't extend stack, to implement builder p
         // else { eksBlueprint.resourceProvider(blueprints.GlobalResources.KmsKey, new blueprints.LookupKmsKeyProvider(this.config.kmsKeyAlias)); }
         ensure_existance_of_aliased_kms_key(this.config.kmsKeyAlias);
         const kms_key = kms.Key.fromLookup(this.stack, 'pre-existing-kms-key', { aliasName: this.config.kmsKeyAlias });
-         
+
         this.cluster = new eks.Cluster(this.stack, this.config.id, {
             clusterName: this.config.id,
-            version: eks.KubernetesVersion.V1_31,
-            kubectlLayer: new KubectlV31Layer(this.stack, 'kubectl'),
+            version: this.config.kubernetesVersion,
+            kubectlLayer: this.config.kubectlLayer,
             vpc: this.config.vpc,
             ipFamily: this.config.ipMode,
             vpcSubnets: [{ subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS }],
@@ -138,9 +145,15 @@ export class Easy_EKS{ //purposefully don't extend stack, to implement builder p
             authenticationMode: eks.AuthenticationMode.API_AND_CONFIG_MAP,
             mastersRole: assumableEKSAdminAccessRole, //<-- adds aws eks update-kubeconfig output
             secretsEncryptionKey: kms_key,
-            });
-        this.cluster.addNodegroupCapacity(`baseline_MNG`, baseline_MNG);
+        });
+
+
+
+
+
         let cluster = this.cluster;
+
+        this.cluster.addNodegroupCapacity(`baseline_MNG`, baseline_MNG);
 
         // Configure Limited Viewer Only Access by default:
         if(this.config.clusterViewerAccessAwsAuthConfigmapAccounts){ //<-- JS truthy statement to say if not empty do the following
@@ -167,168 +180,23 @@ export class Easy_EKS{ //purposefully don't extend stack, to implement builder p
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-        /*To see official names of all eks add-ons:
-        aws eks describe-addon-versions  \
-        --kubernetes-version=1.31 \
-        --query 'sort_by(addons  &owner)[].{owner: owner, addonName: addonName}' \
-        --output table
-        */
-        // new eks.Addon(this.stack, 'kube-proxy', {
-        //     cluster,
-        //     addonName: 'kube-proxy',
-        //     addonVersion: 'v1.31.3-eksbuild.2',
-        // });
-        // new eks.CfnAddon(this.stack, 'coredns', {
-        //     clusterName: cluster.clusterName,
-        //     addonName: 'coredns',
-        //     addonVersion: 'v1.11.4-eksbuild.2',
-        //     configurationValues: `{
-        //         "autoScaling": {
-        //           "enabled": true,
-        //           "minReplicas": 2,
-        //           "maxReplicas": 1000
-        //         },
-        //         "affinity": {
-        //           "nodeAffinity": {
-        //             "requiredDuringSchedulingIgnoredDuringExecution": {
-        //               "nodeSelectorTerms": [
-        //                 {
-        //                   "matchExpressions": [
-        //                     {
-        //                       "key": "kubernetes.io/os",
-        //                       "operator": "In",
-        //                       "values": [
-        //                         "linux"
-        //                       ]
-        //                     },
-        //                     {
-        //                       "key": "kubernetes.io/arch",
-        //                       "operator": "In",
-        //                       "values": [
-        //                         "amd64",
-        //                         "arm64"
-        //                       ]
-        //                     }
-        //                   ]
-        //                 }
-        //               ]
-        //             }
-        //           },
-        //           "podAntiAffinity": {
-        //             "requiredDuringSchedulingIgnoredDuringExecution": [
-        //               {
-        //                 "labelSelector": {
-        //                   "matchExpressions": [
-        //                     {
-        //                       "key": "k8s-app",
-        //                       "operator": "In",
-        //                       "values": [
-        //                         "kube-dns"
-        //                       ]
-        //                     }
-        //                   ]
-        //                 },
-        //                 "topologyKey": "kubernetes.io/hostname"
-        //               }
-        //             ]
-        //           }
-        //         }
-        //     }`, //end CoreDNS configurationValues override
-        // });
-        // new eks.Addon(this.stack, 'vpc-cni', {
-        //     cluster,
-        //     addonName: 'vpc-cni',
-        //     addonVersion: 'v1.19.2-eksbuild.1', //v--query for latest
-        //     // aws eks describe-addon-versions --kubernetes-version=1.31 --addon-name=vpc-cni --query='addons[].addonVersions[].addonVersion' | jq '.[0]'
-        // });
-        // new eks.Addon(this.stack, 'aws-ebs-csi-driver', {
-        //     cluster,
-        //     addonName: 'aws-ebs-csi-driver', 
-        //     addonVersion: 'v1.38.1-eksbuild.2' //v--query for latest
-        //     // aws eks describe-addon-versions --kubernetes-version=1.31 --addon-name=aws-ebs-csi-driver --query='addons[].addonVersions[].addonVersion' | jq '.[0]'
-        // });
-        // new eks.Addon(this.stack, 'snapshot-controller', {
-        //     cluster,
-        //     addonName: 'snapshot-controller',
-        //     addonVersion: 'v8.1.0-eksbuild.2' //v--query for latest
-        //     // aws eks describe-addon-versions --kubernetes-version=1.31 --addon-name=snapshot-controller --query='addons[].addonVersions[].addonVersion' | jq '.[0]'
-        // });
-        // new eks.CfnAddon(this.stack, 'metrics-server', {
-        //     clusterName: cluster.clusterName,
-        //     addonName: 'metrics-server',
-        //     addonVersion: 'v0.7.2-eksbuild.1', //v--query for latest
-        //     // aws eks describe-addon-versions --kubernetes-version=1.31 --addon-name=metrics-server --query='addons[].addonVersions[].addonVersion' | jq '.[0]'
-        //     resolveConflicts: 'OVERWRITE',
-        //     configurationValues: `{
-        //         "replicas": 2,
-        //         "addonResizer": {
-        //           "enabled": true,
-        //         },
-        //         "affinity": {
-        //           "nodeAffinity": {
-        //             "requiredDuringSchedulingIgnoredDuringExecution": {
-        //               "nodeSelectorTerms": [
-        //                 {
-        //                   "matchExpressions": [
-        //                     {
-        //                       "key": "kubernetes.io/os",
-        //                       "operator": "In",
-        //                       "values": [
-        //                         "linux"
-        //                       ]
-        //                     },
-        //                     {
-        //                       "key": "kubernetes.io/arch",
-        //                       "operator": "In",
-        //                       "values": [
-        //                         "amd64",
-        //                         "arm64"
-        //                       ]
-        //                     }
-        //                   ]
-        //                 }
-        //               ]
-        //             }
-        //           },
-        //           "podAntiAffinity": {
-        //             "requiredDuringSchedulingIgnoredDuringExecution": [
-        //               {
-        //                 "labelSelector": {
-        //                   "matchExpressions": [
-        //                     {
-        //                       "key": "k8s-app",
-        //                       "operator": "In",
-        //                       "values": [
-        //                         "metrics-server"
-        //                       ]
-        //                     }
-        //                   ]
-        //                 },
-        //                 "topologyKey": "kubernetes.io/hostname"
-        //               }
-        //             ]
-        //           }
-        //         }
-        //     }`, //end metrics-server configurationValues override
-        // });
-        // new eks.CfnAddon(this.stack, 'eks-node-monitoring-agent', {
-        //     clusterName: cluster.clusterName,
-        //     addonName: 'eks-node-monitoring-agent',
-        //     addonVersion: 'v1.0.1-eksbuild.2', //v--query for latest
-        //     // aws eks describe-addon-versions --kubernetes-version=1.31 --addon-name=eks-node-monitoring-agent --query='addons[].addonVersions[].addonVersion' | jq '.[0]'
-        // });
-        // ^-- TO DO: debug, ds pods crash loop with 'failed to start metrics server: failed to create listener: listen tcp :8080: bind: address already in use'
-        // OR wait for https://github.com/aws/containers-roadmap/issues/2521
-        // Could workaround it with static manifest until the add-on is updated.
+        //Logic to Add EKS Addons Defined in Config
+        if(this.config.eksAddOnsMap){ //JS falsy statement meaning if not empty
+            for (let [addonName, input] of this.config.eksAddOnsMap){
+                const props: eks.CfnAddonProps = { 
+                    clusterName: cluster.clusterName,
+                    addonName: addonName,
+                    addonVersion: input.addonVersion,
+                    configurationValues: input.configurationValues,
+                }
+                new eks.CfnAddon(this.stack, addonName, props);
+            }
+        }
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-        // The eks-pod-identity-agent Add-on is purposefully commented out due to a CDK bug https://github.com/aws/aws-cdk/issues/32580
-        // Another call triggers it's installation, and the cdk bug complains about it already being present.
-        // new eks.Addon(this.stack, 'eks-pod-identity-agent', {
-        //     cluster,
-        //     addonName: 'eks-pod-identity-agent', 
-        //     addonVersion: 'v1.3.4-eksbuild.1' //v--query for latest
-        //     // aws eks describe-addon-versions --kubernetes-version=1.31 --addon-name=eks-pod-identity-agent --query='addons[].addonVersions[].addonVersion' | jq '.[0]'
-        // });
+
+
+
 
         // Install AWS Load Balancer Controller via Helm Chart
         // const ALBC_Version = 'v2.11.0'; //Jan 23, 2025 latest from https://github.com/kubernetes-sigs/aws-load-balancer-controller/releases

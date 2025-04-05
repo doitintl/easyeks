@@ -1,12 +1,15 @@
 import { KubernetesVersion } from 'aws-cdk-lib/aws-eks';
-import * as ec2 from 'aws-cdk-lib/aws-ec2';
 import * as cdk from 'aws-cdk-lib';
 import * as eks from 'aws-cdk-lib/aws-eks';
+import * as ec2 from 'aws-cdk-lib/aws-ec2';
 
-export enum observabilityOptions { //TENTATIVE FUTURE, may removed
-    None,
-    Frugal_Grafana_Prometheus_Loki
-};
+// export enum observabilityOptions { //TENTATIVE FUTURE, may remove
+//     None,
+//     Frugal_Grafana_Prometheus_Loki
+// };
+
+type Optional<T, K extends keyof T> = Pick<Partial<T>, K> & Omit<T, K>;
+type EKSAddOnInput = Optional<eks.CfnAddonProps, 'clusterName'>; //makes clusterName Optional parameter
 
 
 export class Easy_EKS_Config_Data { //This object just holds config data.
@@ -16,13 +19,17 @@ export class Easy_EKS_Config_Data { //This object just holds config data.
     id: string; //id of cloud formation stack and eks cluster
     vpc: ec2.Vpc; //populated with pre-existing VPC
     kubernetesVersion: KubernetesVersion;
+    kubectlLayer: cdk.aws_lambda.ILayerVersion;
     tags?: { [key: string]: string };
     ipMode: eks.IpFamily;
     clusterAdminAccessEksApiArns?: string[];
     clusterViewerAccessAwsAuthConfigmapAccounts?: string[]; //only aws-auth configmap supports accounts
 //    clusterAddOns?: Map<string, blueprints.ClusterAddOn>;
+    eksAddOnsMap?: Map<string, EKSAddOnInput>; //Map enables value override between configs (global_baseline, my_orgs_baseline, lower_envs_eks, and dev)
+    //eksHelmChartsMap?;
+    //eksManifestsMap?;
     kmsKeyAlias: string; //kms key with this alias will be created or reused if pre-existing
-    observabilityOption: observabilityOptions;
+    //observabilityOption: observabilityOptions;
     baselineNodesNumber: number;
     baselineNodesType: eks.CapacityType; //enum eks.CapacityType.SPOT or eks.CapacityType.ON_DEMAND
 
@@ -32,7 +39,7 @@ export class Easy_EKS_Config_Data { //This object just holds config data.
         Constructor with minimal args is on purpose for desired UX of "builder pattern".
         The idea is to add partial configuration snippets over time/as multiple operations
         rather than populate a complete config all at once in one go.*/
-        this.observabilityOption = observabilityOptions.None;
+        //this.observabilityOption = observabilityOptions.None;
     } 
   
   
@@ -58,6 +65,7 @@ export class Easy_EKS_Config_Data { //This object just holds config data.
         this.vpc = pre_existing_vpc as ec2.Vpc;
     }
     setKubernetesVersion(version: KubernetesVersion){ this.kubernetesVersion = version; }
+    setKubectlLayer(version: cdk.aws_lambda.ILayerVersion ){ this.kubectlLayer = version; }
     addTag(key: string, value: string){ 
         if(this.tags === undefined){ this.tags = { [key] : value } }
         else{ this.tags = { ...this.tags, [key] : value }}
@@ -77,6 +85,16 @@ export class Easy_EKS_Config_Data { //This object just holds config data.
         if(this.clusterViewerAccessAwsAuthConfigmapAccounts === undefined){ this.clusterViewerAccessAwsAuthConfigmapAccounts = [account] } 
         else{ this.clusterViewerAccessAwsAuthConfigmapAccounts.push(account); } //push means add to end of array
     }
+    addEKSAddon(name:string, EKSAddOnProps:EKSAddOnInput){
+        if(this.eksAddOnsMap === undefined){
+            this.eksAddOnsMap = new Map<string, EKSAddOnInput>(); //initialize if undefined
+            this.eksAddOnsMap.set(name, EKSAddOnProps); //<-- add Key Value Entry to Map
+        }
+        else{
+            this.eksAddOnsMap.set(name, EKSAddOnProps);  //<-- add Key Value Entry to Map
+        }
+    }
+
     // addAddOn(addon: blueprints.ClusterAddOn){
     //     type AddOnObject = { props: { name: string }, coreAddOnProps: { addOnName: string} };
     //     let addOnName: string;
@@ -99,6 +117,7 @@ export class Easy_EKS_Config_Data { //This object just holds config data.
     //         //Which is a desired functionality for the sake of UX.
     //     } 
     // }
+
     setKmsKeyAlias(kms_key_alias: string){
         /*Note (About UX improvement logic):
         Expectation is for end user to pass in value like "eks/lower-envs",
@@ -109,9 +128,9 @@ export class Easy_EKS_Config_Data { //This object just holds config data.
         if(kms_key_alias.startsWith('alias/')){ this.kmsKeyAlias = kms_key_alias; }
         else{ this.kmsKeyAlias = `alias/${kms_key_alias}`; }
     }
-    setObservabilityToFrugalGrafanaPrometheusLoki(){
-        this.observabilityOption = observabilityOptions.Frugal_Grafana_Prometheus_Loki;
-    }
+    // setObservabilityToFrugalGrafanaPrometheusLoki(){
+    //     this.observabilityOption = observabilityOptions.Frugal_Grafana_Prometheus_Loki;
+    // }
 
 
   

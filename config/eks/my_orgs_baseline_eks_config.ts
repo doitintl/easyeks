@@ -60,14 +60,76 @@ export function apply_config(config: Easy_EKS_Config_Data, stack: cdk.Stack){ //
         * Reliability/Maintainability Improvement: It eliminates the possibility of running out of IP Addresses.
         * Cost Savings: Due to the above, it's safe to run multiple EasyEKS Clusters in 1 VPC (which saves on NAT GW Costs)*/
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    // config.setKubernetesVersion(KubernetesVersion.V1_31);
-    // config.addAddOn( new blueprints.addons.MetricsServerAddOn() ); //allows `kubectl top nodes` to work
-    // config.addAddOn(
-    //   new blueprints.addons.EbsCsiDriverAddOn({
-    //       version: "auto", //latest version is always best, and works for all versions of kubernetes
-    //       kmsKeys: [ blueprints.getNamedResource(blueprints.GlobalResources.KmsKey) ], //TO DO: Needs bug fix using default kms, and not user alias
-    //       storageClass: "gp3"
-    //   })
-    // );
+    config.addEKSAddon('metrics-server', { //allows `kubectl top nodes` to work
+        addonName: 'metrics-server',
+        addonVersion: 'v0.7.2-eksbuild.2', //v--query for latest
+        // aws eks describe-addon-versions --kubernetes-version=1.31 --addon-name=metrics-server --query='addons[].addonVersions[].addonVersion' | jq '.[0]'
+        resolveConflicts: 'OVERWRITE',
+        // Commenting out broken config
+        // configurationValues: `{
+        //     "replicas": 2,
+        //     "affinity": {
+        //       "nodeAffinity": {
+        //         "requiredDuringSchedulingIgnoredDuringExecution": {
+        //           "nodeSelectorTerms": [
+        //             {
+        //               "matchExpressions": [
+        //                 {
+        //                   "key": "kubernetes.io/os",
+        //                   "operator": "In",
+        //                   "values": [
+        //                     "linux"
+        //                   ]
+        //                 },
+        //                 {
+        //                   "key": "kubernetes.io/arch",
+        //                   "operator": "In",
+        //                   "values": [
+        //                     "amd64",
+        //                     "arm64"
+        //                   ]
+        //                 }
+        //               ]
+        //             }
+        //           ]
+        //         }
+        //       },
+        //       "podAntiAffinity": {
+        //         "requiredDuringSchedulingIgnoredDuringExecution": [
+        //           {
+        //             "labelSelector": {
+        //               "matchExpressions": [
+        //                 {
+        //                   "key": "app.kubernetes.io/name",
+        //                   "operator": "In",
+        //                   "values": [
+        //                     "metrics-server"
+        //                   ]
+        //                 }
+        //               ]
+        //             },
+        //             "topologyKey": "kubernetes.io/hostname"
+        //           }
+        //         ]
+        //       }
+        //     }
+        // }`, //end metrics-server configurationValues override
+    });//end metrics-server addon
+    // config.addEKSAddon('aws-ebs-csi-driver', {
+    //     addonName: 'aws-ebs-csi-driver', 
+    //     // addonVersion: 'v1.41.0-eksbuild.1' //v--query for latest
+    //     // aws eks describe-addon-versions --kubernetes-version=1.31 --addon-name=aws-ebs-csi-driver --query='addons[].addonVersions[].addonVersion' | jq '.[0]'
+    // });
+    config.addEKSAddon('snapshot-controller', {
+        addonName: 'snapshot-controller',
+        addonVersion: 'v8.2.0-eksbuild.1' //v--query for latest
+        // aws eks describe-addon-versions --kubernetes-version=1.31 --addon-name=snapshot-controller --query='addons[].addonVersions[].addonVersion' | jq '.[0]'
+    });
+    config.addEKSAddon('eks-node-monitoring-agent', {
+        addonName: 'eks-node-monitoring-agent',
+        addonVersion: 'v1.2.0-eksbuild.1', //v--query for latest
+        // aws eks describe-addon-versions --kubernetes-version=1.31 --addon-name=eks-node-monitoring-agent --query='addons[].addonVersions[].addonVersion' | jq '.[0]'
+    });
+
     // config.addAddOn( new NodeLocalDNSCacheAddOn( {} ) ); //Note: NL_DNS has issues with bottlerocket AMI, which is why EasyEKS defaults to AmazonLinux2.
 }//end apply_config()
