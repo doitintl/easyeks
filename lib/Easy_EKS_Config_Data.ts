@@ -3,10 +3,6 @@ import * as cdk from 'aws-cdk-lib';
 import * as eks from 'aws-cdk-lib/aws-eks';
 import * as ec2 from 'aws-cdk-lib/aws-ec2';
 
-// export enum observabilityOptions { //TENTATIVE FUTURE, may remove
-//     None,
-//     Frugal_Grafana_Prometheus_Loki
-// };
 
 type Optional<T, K extends keyof T> = Pick<Partial<T>, K> & Omit<T, K>;
 type EKSAddOnInput = Optional<eks.CfnAddonProps, 'clusterName'>; //makes clusterName Optional parameter
@@ -24,22 +20,15 @@ export class Easy_EKS_Config_Data { //This object just holds config data.
     ipMode: eks.IpFamily;
     clusterAdminAccessEksApiArns?: string[];
     clusterViewerAccessAwsAuthConfigmapAccounts?: string[]; //only aws-auth configmap supports accounts
-//    clusterAddOns?: Map<string, blueprints.ClusterAddOn>;
     eksAddOnsMap?: Map<string, EKSAddOnInput>; //Map enables value override between configs (global_baseline, my_orgs_baseline, lower_envs_eks, and dev)
-    //eksHelmChartsMap?;
-    //eksManifestsMap?;
     kmsKeyAlias: string; //kms key with this alias will be created or reused if pre-existing
-    //observabilityOption: observabilityOptions;
     baselineNodesNumber: number;
     baselineNodesType: eks.CapacityType; //enum eks.CapacityType.SPOT or eks.CapacityType.ON_DEMAND
-
-  
     constructor(id_for_stack_and_eks: string){
         this.id = id_for_stack_and_eks; /*
         Constructor with minimal args is on purpose for desired UX of "builder pattern".
         The idea is to add partial configuration snippets over time/as multiple operations
         rather than populate a complete config all at once in one go.*/
-        //this.observabilityOption = observabilityOptions.None;
     } 
   
   
@@ -94,30 +83,6 @@ export class Easy_EKS_Config_Data { //This object just holds config data.
             this.eksAddOnsMap.set(name, EKSAddOnProps);  //<-- add Key Value Entry to Map
         }
     }
-
-    // addAddOn(addon: blueprints.ClusterAddOn){
-    //     type AddOnObject = { props: { name: string }, coreAddOnProps: { addOnName: string} };
-    //     let addOnName: string;
-    //     const case1=(JSON.parse(JSON.stringify(addon)) as AddOnObject).props?.name;
-    //     const case2=addOnName=(JSON.parse(JSON.stringify(addon)) as AddOnObject).coreAddOnProps?.addOnName;
-    //     if(case1){addOnName=case1};
-    //     if(case2){addOnName=case2};
-    
-    //     if(this.clusterAddOns === undefined){ 
-    //         this.clusterAddOns = new Map<string, blueprints.ClusterAddOn>(); //<-- initialize if undefined
-    //         this.clusterAddOns.set(addOnName, addon); //<-- add Key Value Entry to HashMap
-    //     }
-    //     else{
-    //         this.clusterAddOns.set(addOnName, addon); //<-- add Key Value Entry to HashMap
-    //         //If you're woundering why a HashMap is used instead of an Array
-    //         //This is done to achieve a UX feature, where
-    //         //If you define an AddOn in the global config and environment specific config
-    //         //If it were an array, CDK would declare an error saying it already exists.
-    //         //Since it's a Map, the newest entry can override the older entry
-    //         //Which is a desired functionality for the sake of UX.
-    //     } 
-    // }
-
     setKmsKeyAlias(kms_key_alias: string){
         /*Note (About UX improvement logic):
         Expectation is for end user to pass in value like "eks/lower-envs",
@@ -128,19 +93,5 @@ export class Easy_EKS_Config_Data { //This object just holds config data.
         if(kms_key_alias.startsWith('alias/')){ this.kmsKeyAlias = kms_key_alias; }
         else{ this.kmsKeyAlias = `alias/${kms_key_alias}`; }
     }
-    // setObservabilityToFrugalGrafanaPrometheusLoki(){
-    //     this.observabilityOption = observabilityOptions.Frugal_Grafana_Prometheus_Loki;
-    // }
-
-
-  
-    // //The following converts an internally used data type to a conventionally expected data type
-    // getClusterAddons():Array<blueprints.ClusterAddOn> {//<--declaring return type
-    //     let eks_blueprints_expected_format: Array<blueprints.ClusterAddOn> = [];
-    //     if(this.clusterAddOns){//<-- JS falsy statement meaning if not empty
-    //         eks_blueprints_expected_format = Array.from(this.clusterAddOns.values());
-    //     }
-    //     return eks_blueprints_expected_format;
-    // }
 
 }//end of Easy_EKS_Config_Data

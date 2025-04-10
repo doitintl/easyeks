@@ -35,22 +35,37 @@ export class Easy_EKS{ //purposefully don't extend stack, to implement builder p
     //Class Constructor:
     constructor(storage_for_stacks_state: Construct, id_for_stack_and_eks_cluster: string, stack_config: cdk.StackProps) {
         this.stack = new cdk.Stack(storage_for_stacks_state, id_for_stack_and_eks_cluster, stack_config);
-        this.config = new Easy_EKS_Config_Data(id_for_stack_and_eks_cluster);
+        this.config = new Easy_EKS_Config_Data(id_for_stack_and_eks_cluster); /*
+        Constructor with minimal args is on purpose for desired UX of "builder pattern".
+        The idea is to add partial configuration snippets over time/as multiple operations
+        rather than populate a complete config all at once in one go.*/
     }//end constructor of Easy_EKS_v2
 
     //Class Functions:
-    // apply_global_baseline_eks_config(){ global_baseline_eks_config.apply_config(this.config,this.stack); }
-    // apply_my_orgs_baseline_eks_config(){ my_orgs_baseline_eks_config.apply_config(this.config,this.stack); }
-    // apply_lower_envs_eks_config(){ lower_envs_eks_config.apply_config(this.config,this.stack); }
-    // apply_higher_envs_eks_config(){ higher_envs_eks_config.apply_config(this.config,this.stack); }
-    // apply_dev_eks_config(){ dev_eks_config.apply_config(this.config,this.stack); }
+    apply_global_baseline_eks_config(){ global_baseline_eks_config.apply_config(this.config,this.stack); }
+    apply_my_orgs_baseline_eks_config(){ my_orgs_baseline_eks_config.apply_config(this.config,this.stack); }
+    apply_lower_envs_eks_config(){ lower_envs_eks_config.apply_config(this.config,this.stack); }
+    apply_higher_envs_eks_config(){ higher_envs_eks_config.apply_config(this.config,this.stack); }
+    apply_dev_eks_config(){ dev_eks_config.apply_config(this.config,this.stack); }
     apply_dev_baseline_config(){ //convenience method
         global_baseline_eks_config.apply_config(this.config,this.stack);
         my_orgs_baseline_eks_config.apply_config(this.config,this.stack);
         lower_envs_eks_config.apply_config(this.config,this.stack);
         dev_eks_config.apply_config(this.config,this.stack);
-
     }
+    deploy_global_baseline_eks_workloads(){ global_baseline_eks_config.deploy_workloads(this.config,this.stack, this.cluster); }
+    deploy_my_orgs_baseline_eks_workloads(){ my_orgs_baseline_eks_config.deploy_workloads(this.config,this.stack, this.cluster); }
+    deploy_lower_envs_eks_workloads(){ lower_envs_eks_config.deploy_workloads(this.config,this.stack, this.cluster); }
+    deploy_higher_envs_eks_workloads(){ higher_envs_eks_config.deploy_workloads(this.config,this.stack, this.cluster); }
+    deploy_dev_eks_workloads(){ dev_eks_config.deploy_workloads(this.config,this.stack, this.cluster); }
+    deploy_dev_baseline_workloads(){ //convenience method
+        global_baseline_eks_config.deploy_workloads(this.config,this.stack, this.cluster);
+        my_orgs_baseline_eks_config.deploy_workloads(this.config,this.stack, this.cluster);
+        lower_envs_eks_config.deploy_workloads(this.config,this.stack, this.cluster);
+        dev_eks_config.deploy_workloads(this.config,this.stack, this.cluster);
+    }
+
+    
     deploy_eks_construct_into_this_objects_stack(){
         const ipv6_support_iam_policy = new iam.PolicyDocument({
             statements: [new iam.PolicyStatement({
@@ -148,9 +163,6 @@ export class Easy_EKS{ //purposefully don't extend stack, to implement builder p
         });
 
 
-
-
-
         let cluster = this.cluster;
 
         this.cluster.addNodegroupCapacity(`baseline_MNG`, baseline_MNG);
@@ -195,9 +207,6 @@ export class Easy_EKS{ //purposefully don't extend stack, to implement builder p
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
-
-
-
         // Install AWS Load Balancer Controller via Helm Chart
         // const ALBC_Version = 'v2.11.0'; //Jan 23, 2025 latest from https://github.com/kubernetes-sigs/aws-load-balancer-controller/releases
         // const ALBC_IAM_Policy_Url = `https://raw.githubusercontent.com/kubernetes-sigs/aws-load-balancer-controller/refs/tags/${ALBC_Version}/docs/install/iam_policy.json`
@@ -239,6 +248,8 @@ export class Easy_EKS{ //purposefully don't extend stack, to implement builder p
         // // The following help prevent timeout of install during initial cluster deployment
         // awsLoadBalancerController.node.addDependency(cluster.awsAuth);
         // awsLoadBalancerController.node.addDependency(ALBC_Kube_SA);
+
+        ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
         // Install Node Local DNS Cache
         // const nodeLocalDNSCache = cluster.addHelmChart('NodeLocalDNSCache', {

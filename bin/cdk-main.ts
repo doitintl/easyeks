@@ -125,13 +125,23 @@ lower_envs_vpc.deploy_vpc_construct_into_this_objects_stack();
 
 ///////////////////////////////////////////////////////////////////////////////////////////
 //EKS Infrastructure as Code:
+//Example 1 shows convience methods
 const dev1_eks = new Easy_EKS(reference_to_cdk_bootstrapped_cf_for_storing_state_of_stacks, 'dev1-eks', low_co2_AMER_stack_config);
-dev1_eks.apply_dev_baseline_config();
+dev1_eks.apply_dev_baseline_config(); //<-- conviencne method #1
 dev1_eks.deploy_eks_construct_into_this_objects_stack();
+dev1_eks.deploy_dev_baseline_workloads(); //<-- conviencne method #2
 
+//Example 2 is equivalent to Example 1, just more explicit.
 const dev2_eks = new Easy_EKS(reference_to_cdk_bootstrapped_cf_for_storing_state_of_stacks, 'dev2-eks', low_co2_AMER_stack_config);
-dev2_eks.apply_dev_baseline_config();
+dev2_eks.apply_global_baseline_eks_config();
+dev2_eks.apply_my_orgs_baseline_eks_config();
+dev2_eks.apply_lower_envs_eks_config();
+dev2_eks.apply_dev_eks_config();
 dev2_eks.deploy_eks_construct_into_this_objects_stack();
-//^-- deployment time of ~15m (active dev)
+dev2_eks.deploy_global_baseline_eks_workloads();
+dev2_eks.deploy_my_orgs_baseline_eks_workloads();
+dev2_eks.deploy_lower_envs_eks_workloads();
+dev2_eks.deploy_dev_eks_workloads();
+//^-- deployment time of ~15-20m
 ///////////////////////////////////////////////////////////////////////////////////////////
 

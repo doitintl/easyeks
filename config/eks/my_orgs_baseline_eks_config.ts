@@ -133,3 +133,8 @@ export function apply_config(config: Easy_EKS_Config_Data, stack: cdk.Stack){ //
 
     // config.addAddOn( new NodeLocalDNSCacheAddOn( {} ) ); //Note: NL_DNS has issues with bottlerocket AMI, which is why EasyEKS defaults to AmazonLinux2.
 }//end apply_config()
+
+
+export function deploy_workloads(config: Easy_EKS_Config_Data, stack: cdk.Stack, cluster: eks.Cluster){
+
+}//end deploy_workloads()

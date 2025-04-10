@@ -59,4 +59,8 @@ export function apply_config(config: Easy_EKS_Config_Data, stack: cdk.Stack){ //
     //     })
     // );//end Karpenter AddOn
     
-}
+}//end apply_config()
+
+export function deploy_workloads(config: Easy_EKS_Config_Data, stack: cdk.Stack, cluster: eks.Cluster){
+
+}//end deploy_workloads()
