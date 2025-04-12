@@ -2,11 +2,12 @@ import { Easy_EKS_Config_Data } from '../../lib/Easy_EKS_Config_Data';
 import { KubernetesVersion } from 'aws-cdk-lib/aws-eks';
 import * as cdk from 'aws-cdk-lib';
 import * as eks from 'aws-cdk-lib/aws-eks';
+import * as iam from 'aws-cdk-lib/aws-iam';
 import * as kms from 'aws-cdk-lib/aws-kms';
-//import { NodeLocalDNSCacheAddOn } from '../../lib/Node_Local_DNS_Cache_AddOn';
+import request from 'sync-request-curl'; //npm install sync-request-curl (cdk requires sync functions, async not allowed)
 //Intended Use:
 //A baseline config file (to be applied to all EasyEKS Clusters in your organization)
-//EasyEKS Admins would be expected to edit this file with defaults specific to their org.
+//EasyEKS Admins would be expected to edit this file with defaults specific to their org. (that rarely change and are low risk to add)
 
 export function apply_config(config: Easy_EKS_Config_Data, stack: cdk.Stack){ //config: is of type Easy_EKS_Config_Data
     config.addTag("Internally Maintained By", "person1@our.org and person2@our.org of Cloud Platform Team Updated 2024/12/15");
@@ -60,7 +61,80 @@ export function apply_config(config: Easy_EKS_Config_Data, stack: cdk.Stack){ //
         * Reliability/Maintainability Improvement: It eliminates the possibility of running out of IP Addresses.
         * Cost Savings: Due to the above, it's safe to run multiple EasyEKS Clusters in 1 VPC (which saves on NAT GW Costs)*/
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    config.addEKSAddon('metrics-server', { //allows `kubectl top nodes` to work
+    config.addEKSAddon('vpc-cni', {
+        addonName: 'vpc-cni',
+        resolveConflicts: 'OVERWRITE',
+        addonVersion: "v1.19.3-eksbuild.1", //latest tends to be valid for all versions of kubernetes
+        // Use this to look up latest
+        // aws eks describe-addon-versions --kubernetes-version=1.31 --addon-name=kube-proxy --query='addons[].addonVersions[].addonVersion' | jq '.[0]'
+        //serviceAccountRoleArn: <-- leave this blank, to use worker node's IAM role, which gives dualstack ipv4/ipv6 support
+        configurationValues: '{}',
+    });//end vpc-cni addon
+
+    config.addEKSAddon('coredns', {
+        addonName: 'coredns',
+        addonVersion: 'v1.11.4-eksbuild.2', //latest tends to be valid for all version of kubernetes
+        // Use this to look up latest
+        // aws eks describe-addon-versions --kubernetes-version=1.31 --addon-name=coredns --query='addons[].addonVersions[].addonVersion' | jq '.[0]'
+        resolveConflicts: 'OVERWRITE',
+        //v-- Below represents an optimized CoreDNS deployment, based on
+        //    https://aws.amazon.com/blogs/containers/amazon-eks-add-ons-advanced-configuration/
+        //    aws eks describe-addon-configuration --addon-name coredns --addon-version v1.11.4-eksbuild.2 --query configurationSchema --output text | jq .
+        configurationValues: `{
+            "autoScaling": {
+              "enabled": true,
+              "minReplicas": 2,
+              "maxReplicas": 1000
+            },
+            "affinity": {
+              "nodeAffinity": {
+                "requiredDuringSchedulingIgnoredDuringExecution": {
+                  "nodeSelectorTerms": [
+                    {
+                      "matchExpressions": [
+                        {
+                          "key": "kubernetes.io/os",
+                          "operator": "In",
+                          "values": [
+                            "linux"
+                          ]
+                        },
+                        {
+                          "key": "kubernetes.io/arch",
+                          "operator": "In",
+                          "values": [
+                            "amd64",
+                            "arm64"
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              },
+              "podAntiAffinity": {
+                "requiredDuringSchedulingIgnoredDuringExecution": [
+                  {
+                    "labelSelector": {
+                      "matchExpressions": [
+                        {
+                          "key": "k8s-app",
+                          "operator": "In",
+                          "values": [
+                            "kube-dns"
+                          ]
+                        }
+                      ]
+                    },
+                    "topologyKey": "kubernetes.io/hostname"
+                  }
+                ]
+              }
+            }
+        }`, //end CoreDNS configurationValues override
+    });//end CoreDNS AddOn
+
+    config.addEKSAddon('metrics-server', { //allows `kubectl top nodes` to work & valid for all versions of kubernetes
         addonName: 'metrics-server',
         addonVersion: 'v0.7.2-eksbuild.2', //v--query for latest
         // aws eks describe-addon-versions --kubernetes-version=1.31 --addon-name=metrics-server --query='addons[].addonVersions[].addonVersion' | jq '.[0]'
@@ -115,25 +189,26 @@ export function apply_config(config: Easy_EKS_Config_Data, stack: cdk.Stack){ //
         //     }
         // }`, //end metrics-server configurationValues override
     });//end metrics-server addon
-    // config.addEKSAddon('aws-ebs-csi-driver', {
-    //     addonName: 'aws-ebs-csi-driver', 
-    //     // addonVersion: 'v1.41.0-eksbuild.1' //v--query for latest
-    //     // aws eks describe-addon-versions --kubernetes-version=1.31 --addon-name=aws-ebs-csi-driver --query='addons[].addonVersions[].addonVersion' | jq '.[0]'
-    // });
-    config.addEKSAddon('snapshot-controller', {
+    config.addEKSAddon('aws-ebs-csi-driver', { //latest should work with all versions of kubernetes
+        addonName: 'aws-ebs-csi-driver', 
+        addonVersion: 'v1.41.0-eksbuild.1' //v--query for latest
+        // aws eks describe-addon-versions --kubernetes-version=1.31 --addon-name=aws-ebs-csi-driver --query='addons[].addonVersions[].addonVersion' | jq '.[0]'
+    });
+    config.addEKSAddon('snapshot-controller', { //latest should work with all versions of kubernetes
         addonName: 'snapshot-controller',
         addonVersion: 'v8.2.0-eksbuild.1' //v--query for latest
         // aws eks describe-addon-versions --kubernetes-version=1.31 --addon-name=snapshot-controller --query='addons[].addonVersions[].addonVersion' | jq '.[0]'
     });
-    config.addEKSAddon('eks-node-monitoring-agent', {
+    config.addEKSAddon('eks-node-monitoring-agent', { //latest should work with all versions of kubernetes
         addonName: 'eks-node-monitoring-agent',
         addonVersion: 'v1.2.0-eksbuild.1', //v--query for latest
         // aws eks describe-addon-versions --kubernetes-version=1.31 --addon-name=eks-node-monitoring-agent --query='addons[].addonVersions[].addonVersion' | jq '.[0]'
     });
-
-    // config.addAddOn( new NodeLocalDNSCacheAddOn( {} ) ); //Note: NL_DNS has issues with bottlerocket AMI, which is why EasyEKS defaults to AmazonLinux2.
 }//end apply_config()
 
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 export function deploy_workloads(config: Easy_EKS_Config_Data, stack: cdk.Stack, cluster: eks.Cluster){
 
