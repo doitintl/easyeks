@@ -92,25 +92,43 @@ export class Easy_EKS{ //purposefully don't extend stack, to implement builder p
             },
           });
 
-        const Baseline_MNG_Disk: ec2.BlockDevice = {
-            deviceName: '/dev/xvda', //Root device name
+        const Baseline_MNG_Disk_AL2023: ec2.BlockDevice = {
+            deviceName: '/dev/xvda', //AL2023's Root device name 
             volume: ec2.BlockDeviceVolume.ebs(20, { volumeType: ec2.EbsDeviceVolumeType.GP3 }), //<--20GB volume size
+        }
+        const Baseline_MNG_Disk_Bottlerocket_1_of_2: ec2.BlockDevice = {
+          deviceName: '/dev/xvda', //Bottlerocket's 2GB Read Only Root device name 
+          volume: ec2.BlockDeviceVolume.ebs(2, { volumeType: ec2.EbsDeviceVolumeType.GP3 }), //<--2GB volume size (pointless to edit)
+        }
+        const Baseline_MNG_Disk_Bottlerocket_2_of_2: ec2.BlockDevice = {
+          deviceName: '/dev/xvdb', //Bottlerocket's Ephemeral storage device name (for container image cache & empty dir volumes)
+          volume: ec2.BlockDeviceVolume.ebs(15, { volumeType: ec2.EbsDeviceVolumeType.GP3 }), //<--15GB volume size
         }
         let baseline_node_type:string;
             if(this.config.baselineNodesType === eks.CapacityType.SPOT){ baseline_node_type = "spot"; }
             else { baseline_node_type = "on-demand"; }
+//v--bottlerocket userdata patch for bug: https://github.com/bottlerocket-os/bottlerocket/issues/4472
+//Odd indentation is on purpose as spacing matters for TOML
+//v-- avoid editing this, invalid config prevents nodes from joining cluster, and results in a slow and annoying feedback loop.
+const Bottlerocket_baseline_MNG_TOML = `
+[settings.kubernetes]
+max-pods = 11
+`;
+//^-- 11 = max pods of t4g.small, per https://github.com/aws/amazon-vpc-cni-k8s/blob/master/misc/eni-max-pods.txt
+        const Bottlerocket_baseline_MNG_userdata = ec2.UserData.custom(Bottlerocket_baseline_MNG_TOML);
         const Baseline_MNG_LT = new ec2.LaunchTemplate(this.stack, `ARM64-Bottlerocket-${baseline_node_type}_MNG_LT`, {
-            launchTemplateName: `${this.config.id}/baseline-MNG/ARM64-Bottlerocket-${baseline_node_type}`, //NOTE: CDK creates 2 LT's for some reason 2nd is eks-*
-            blockDevices: [Baseline_MNG_Disk],
+            launchTemplateName: `${this.config.id}/baseline-MNG/ARM64-Bottlerocket-${baseline_node_type}`, //EKS Layer2 construct makes 2 LT's for some reason, uses the eks-* one.
+            //blockDevices: [Baseline_MNG_Disk_AL2023],
+            blockDevices: [Baseline_MNG_Disk_Bottlerocket_1_of_2, Baseline_MNG_Disk_Bottlerocket_2_of_2],
+            userData: Bottlerocket_baseline_MNG_userdata, //cdk.Fn.base64(Bottlerocket_baseline_MNG_userdata),
         });
         cdk.Tags.of(Baseline_MNG_LT).add("Name", `${this.config.id}/baseline-MNG/ARM64-Bottlerocket-${baseline_node_type}`);
         const tags = Object.entries(this.config.tags ?? {});
         tags.forEach(([key, value]) => cdk.Tags.of(Baseline_MNG_LT).add(key,value));
         const baseline_LT_Spec: eks.LaunchTemplateSpec = {
-            id: Baseline_MNG_LT.launchTemplateId!,
-            version: Baseline_MNG_LT.latestVersionNumber,
+          id: Baseline_MNG_LT.launchTemplateId!,
+          version: Baseline_MNG_LT.latestVersionNumber,
         };
-
         const baseline_MNG: eks.NodegroupOptions = {
             subnets: { subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS },
             amiType: eks.NodegroupAmiType.BOTTLEROCKET_ARM_64,
@@ -164,8 +182,13 @@ export class Easy_EKS{ //purposefully don't extend stack, to implement builder p
 
 
         let cluster = this.cluster;
-
-        this.cluster.addNodegroupCapacity(`baseline_MNG`, baseline_MNG);
+        this.cluster.addNodegroupCapacity('baseline_MNG', baseline_MNG);
+        //TIP:
+        //If you plan to make iterative changes to nodepools
+        //renaming 'baseline_MNG' to 'baseline_MNG1' 
+        //(and then switching back and forth or incrementing by 1, like baseline_MNG2, will speed things up.)
+        //If the name changes it can do a delete and create in parallel so the update takes ~400s
+        //If the name stays the same it does an inplace rolling update which takes 3x longer ~1200s
 
         // Configure Limited Viewer Only Access by default:
         if(this.config.clusterViewerAccessAwsAuthConfigmapAccounts){ //<-- JS truthy statement to say if not empty do the following

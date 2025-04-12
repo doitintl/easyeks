@@ -23,6 +23,11 @@ export function apply_config(config: Easy_EKS_Config_Data, stack: cdk.Stack){ //
     this.cluster.addNodegroupCapacity(`default_MNG-1`, default_MNG);
     redeploy and it'll go through
     then rename it back
+    Note: 
+    After setting default_MNG-1, you may see ...is in UPDATE_ROLLBACK_FAILED state and can not be updated
+    If so, go to CloudFormation -> stack -> Stack actions -> continue update rollback for stack - Advanced troubleshooting
+    --> resources to skip - optional (check the box) --> Continue update rollback. 
+    (wait 10 sec, then retry cdk deploy stack)
     */
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
