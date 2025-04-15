@@ -214,4 +214,21 @@ export function apply_config(config: Easy_EKS_Config_Data, stack: cdk.Stack){ //
 
 export function deploy_workloads(config: Easy_EKS_Config_Data, stack: cdk.Stack, cluster: eks.Cluster){
 
+    //Install Node Local DNS Cache
+    const nodeLocalDNSCache = cluster.addHelmChart('NodeLocalDNSCache', {
+        chart: "node-local-dns", // Name of the Chart to be deployed
+        release: "node-local-dns-cache", // Name for our chart in Kubernetes (helm list -A)
+        repository: "oci://ghcr.io/deliveryhero/helm-charts/node-local-dns",  // HTTPS address of the helm chart (associated with helm repo add command)
+        namespace: "kube-system",
+        version: "2.1.5", // version of the helm chart, below can be used to look up latest
+        // curl https://raw.githubusercontent.com/deliveryhero/helm-charts/refs/heads/master/stable/node-local-dns/Chart.yaml | grep version: | cut -d ':' -f 2
+        wait: false,
+        values: { //<-- helm chart values per https://github.com/deliveryhero/helm-charts/blob/master/stable/node-local-dns/values.yaml
+          config: {
+            bindIp: true, //BottleRocket specific fix
+          },
+        },
+    });
+    nodeLocalDNSCache.node.addDependency(cluster.awsAuth);
+
 }//end deploy_workloads()
