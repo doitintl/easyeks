@@ -2,6 +2,7 @@ import { KubernetesVersion } from 'aws-cdk-lib/aws-eks';
 import * as cdk from 'aws-cdk-lib';
 import * as eks from 'aws-cdk-lib/aws-eks';
 import * as ec2 from 'aws-cdk-lib/aws-ec2';
+import * as iam from 'aws-cdk-lib/aws-iam';
 
 
 type Optional<T, K extends keyof T> = Pick<Partial<T>, K> & Omit<T, K>;
@@ -24,6 +25,7 @@ export class Easy_EKS_Config_Data { //This object just holds config data.
     kmsKeyAlias: string; //kms key with this alias will be created or reused if pre-existing
     baselineNodesNumber: number;
     baselineNodesType: eks.CapacityType; //enum eks.CapacityType.SPOT or eks.CapacityType.ON_DEMAND
+    baselineNodeRole: iam.Role; //used by baselineMNG & Karpenter
     constructor(id_for_stack_and_eks: string){
         this.id = id_for_stack_and_eks; /*
         Constructor with minimal args is on purpose for desired UX of "builder pattern".

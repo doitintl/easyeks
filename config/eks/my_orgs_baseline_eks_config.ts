@@ -194,19 +194,20 @@ export function apply_config(config: Easy_EKS_Config_Data, stack: cdk.Stack){ //
         // aws eks describe-addon-versions --kubernetes-version=1.31 --addon-name=aws-ebs-csi-driver --query='addons[].addonVersions[].addonVersion' | jq '.[0]'
         configurationValues: '{}',
     });
-    config.addEKSAddon('snapshot-controller', { //latest should work with all versions of kubernetes
-        addonName: 'snapshot-controller',
-        addonVersion: 'v8.2.0-eksbuild.1', //v--query for latest
-        // aws eks describe-addon-versions --kubernetes-version=1.31 --addon-name=snapshot-controller --query='addons[].addonVersions[].addonVersion' | jq '.[0]'
-        configurationValues: '{}',
-      });
     config.addEKSAddon('eks-node-monitoring-agent', { //latest should work with all versions of kubernetes
         addonName: 'eks-node-monitoring-agent',
         addonVersion: 'v1.2.0-eksbuild.1', //v--query for latest
         // aws eks describe-addon-versions --kubernetes-version=1.31 --addon-name=eks-node-monitoring-agent --query='addons[].addonVersions[].addonVersion' | jq '.[0]'
         configurationValues: '{}',
     });
-}//end apply_config()
+    // v-- most won't need this, disabling by default
+    // config.addEKSAddon('snapshot-controller', { //latest should work with all versions of kubernetes
+    //   addonName: 'snapshot-controller',
+    //   addonVersion: 'v8.2.0-eksbuild.1', //v--query for latest
+    //   // aws eks describe-addon-versions --kubernetes-version=1.31 --addon-name=snapshot-controller --query='addons[].addonVersions[].addonVersion' | jq '.[0]'
+    //   configurationValues: '{}',
+    // });
+  }//end apply_config()
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

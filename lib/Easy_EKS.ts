@@ -23,7 +23,8 @@ import * as dev_eks_config from '../config/eks/dev_eks_config';
 import * as observability from './Frugal_GPL_Observability_Stack';
 import { execSync } from 'child_process'; //temporary? work around for kms UX issue
 import request from 'sync-request-curl'; //npm install sync-request-curl (cdk requires sync functions, async not allowed)
-import { Karpenter } from 'cdk-eks-karpenter' //npm install cdk-eks-karpenter 
+
+
 
 export class Easy_EKS{ //purposefully don't extend stack, to implement builder pattern and give more flexibility for imperative logic.
 
@@ -53,6 +54,7 @@ export class Easy_EKS{ //purposefully don't extend stack, to implement builder p
         lower_envs_eks_config.apply_config(this.config,this.stack);
         dev_eks_config.apply_config(this.config,this.stack);
     }
+
     deploy_global_baseline_eks_workloads(){ global_baseline_eks_config.deploy_workloads(this.config,this.stack, this.cluster); }
     deploy_my_orgs_baseline_eks_workloads(){ my_orgs_baseline_eks_config.deploy_workloads(this.config,this.stack, this.cluster); }
     deploy_lower_envs_eks_workloads(){ lower_envs_eks_config.deploy_workloads(this.config,this.stack, this.cluster); }
@@ -65,70 +67,10 @@ export class Easy_EKS{ //purposefully don't extend stack, to implement builder p
         dev_eks_config.deploy_workloads(this.config,this.stack, this.cluster);
     }
 
-    
     deploy_eks_construct_into_this_objects_stack(){
-        const ipv6_support_iam_policy = new iam.PolicyDocument({
-            statements: [new iam.PolicyStatement({
-            resources: ['arn:aws:ec2:*:*:network-interface/*'],
-            actions: [
-                'ec2:AssignIpv6Addresses',
-                'ec2:UnassignIpv6Addresses',
-            ],
-            })],
-        });
-        const EKS_Node_Role = new iam.Role(this.stack, `EKS_Node_Role`, {
-            //roleName: //cdk isn't great about cleaning up resources, so leting it generate name is more reliable
-            assumedBy: new iam.ServicePrincipal('ec2.amazonaws.com'),
-            managedPolicies: [
-              iam.ManagedPolicy.fromAwsManagedPolicyName('AmazonEKSWorkerNodePolicy'),
-              iam.ManagedPolicy.fromAwsManagedPolicyName('AmazonEC2ContainerRegistryReadOnly'),
-              iam.ManagedPolicy.fromAwsManagedPolicyName('AmazonEKS_CNI_Policy'),
-              iam.ManagedPolicy.fromAwsManagedPolicyName('AmazonSSMManagedInstanceCore'),
-              //^-- allows aws managed browser based shell access to private nodes, can be useful for debuging
-              //^-- AWS Systems Manager --> Session Manager --> Start Session
-            ],
-              inlinePolicies: {
-                ipv6_support_iam_policy,
-            },
-          });
+        this.config.baselineNodeRole = initialize_baselineNodeRole(this.stack);
+        const baseline_LT_Spec = initalize_baseline_LT_Spec(this.stack, this.config);
 
-        const Baseline_MNG_Disk_AL2023: ec2.BlockDevice = {
-            deviceName: '/dev/xvda', //AL2023's Root device name 
-            volume: ec2.BlockDeviceVolume.ebs(20, { volumeType: ec2.EbsDeviceVolumeType.GP3 }), //<--20GB volume size
-        }
-        const Baseline_MNG_Disk_Bottlerocket_1_of_2: ec2.BlockDevice = {
-          deviceName: '/dev/xvda', //Bottlerocket's 2GB Read Only Root device name 
-          volume: ec2.BlockDeviceVolume.ebs(2, { volumeType: ec2.EbsDeviceVolumeType.GP3 }), //<--2GB volume size (pointless to edit)
-        }
-        const Baseline_MNG_Disk_Bottlerocket_2_of_2: ec2.BlockDevice = {
-          deviceName: '/dev/xvdb', //Bottlerocket's Ephemeral storage device name (for container image cache & empty dir volumes)
-          volume: ec2.BlockDeviceVolume.ebs(15, { volumeType: ec2.EbsDeviceVolumeType.GP3 }), //<--15GB volume size
-        }
-        let baseline_node_type:string;
-            if(this.config.baselineNodesType === eks.CapacityType.SPOT){ baseline_node_type = "spot"; }
-            else { baseline_node_type = "on-demand"; }
-//v--bottlerocket userdata patch for bug: https://github.com/bottlerocket-os/bottlerocket/issues/4472
-//Odd indentation is on purpose as spacing matters for TOML
-//v-- avoid editing this, invalid config prevents nodes from joining cluster, and results in a slow and annoying feedback loop.
-const Bottlerocket_baseline_MNG_TOML = `
-[settings.kubernetes]
-max-pods = 11
-`;
-//^-- 11 = max pods of t4g.small, per https://github.com/aws/amazon-vpc-cni-k8s/blob/master/misc/eni-max-pods.txt
-        const Bottlerocket_baseline_MNG_userdata = ec2.UserData.custom(Bottlerocket_baseline_MNG_TOML);
-        const Baseline_MNG_LT = new ec2.LaunchTemplate(this.stack, `ARM64-Bottlerocket-${baseline_node_type}_MNG_LT`, {
-            launchTemplateName: `${this.config.id}/baseline-MNG/ARM64-Bottlerocket-${baseline_node_type}`, //EKS Layer2 construct makes 2 LT's for some reason, uses the eks-* one.
-            //blockDevices: [Baseline_MNG_Disk_AL2023],
-            blockDevices: [Baseline_MNG_Disk_Bottlerocket_1_of_2, Baseline_MNG_Disk_Bottlerocket_2_of_2],
-            userData: Bottlerocket_baseline_MNG_userdata, //cdk.Fn.base64(Bottlerocket_baseline_MNG_userdata),
-        });
-        cdk.Tags.of(Baseline_MNG_LT).add("Name", `${this.config.id}/baseline-MNG/ARM64-Bottlerocket-${baseline_node_type}`);
-        const tags = Object.entries(this.config.tags ?? {});
-        tags.forEach(([key, value]) => cdk.Tags.of(Baseline_MNG_LT).add(key,value));
-        const baseline_LT_Spec: eks.LaunchTemplateSpec = {
-          id: Baseline_MNG_LT.launchTemplateId!,
-          version: Baseline_MNG_LT.latestVersionNumber,
-        };
         const baseline_MNG: eks.NodegroupOptions = {
             subnets: { subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS },
             amiType: eks.NodegroupAmiType.BOTTLEROCKET_ARM_64,
@@ -137,20 +79,13 @@ max-pods = 11
             desiredSize: this.config.baselineNodesNumber,
             minSize: 0,
             maxSize: 50,
-            nodeRole: EKS_Node_Role,
+            nodeRole: this.config.baselineNodeRole,
             launchTemplateSpec: baseline_LT_Spec, //<-- necessary to add tags to EC2 instances
         };
 
         const clusterAdminAccessPolicy: eks.AccessPolicy = eks.AccessPolicy.fromAccessPolicyName('AmazonEKSClusterAdminPolicy', {
             accessScopeType: eks.AccessScopeType.CLUSTER
         });
-
-
-
-
-
-
-
 
         //UX convienence similar to EKS Blueprints
         const assumableEKSAdminAccessRole = new iam.Role(this.stack, 'assumableEKSAdminAccessRole', {
@@ -231,180 +166,90 @@ max-pods = 11
 
         ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-        // Install Karpenter.sh
-        // const karpenter = new Karpenter(this.stack, 'Karpenter', {
-        //     cluster: cluster,
-        //     namespace: 'kube-system',
-        //     version: '1.2.0', //https://gallery.ecr.aws/karpenter/karpenter
-        //     nodeRole: EKS_Node_Role, //custom NodeRole to pass to Karpenter Nodes
-        //     helmExtraValues: { //https://github.com/aws/karpenter-provider-aws/blob/v1.2.0/charts/karpenter/values.yaml
-        //         replicas: 2,
-        //     },
-        // });
-        // karpenter.node.addDependency(cluster.awsAuth);
-
-        //Karpenter Custom Resources based on https://karpenter.sh/docs/getting-started/getting-started-with-karpenter/
-        //Converted using https://onlineyamltools.com/convert-yaml-to-json
-        // const karpenter_bottlerocket_spot_NodePool = {
-        //     "apiVersion": "karpenter.sh/v1",
-        //     "kind": "NodePool",
-        //     "metadata": {
-        //       "name": "karpenter-bottlerocket-spot" //karpenter in name b/c it shows up in Managed by column of AWS Web Console GUI
-        //     },
-        //     "spec": {
-        //       "weight": 100, //<-- Note highest weight = default
-        //       "template": {
-        //         "metadata": {
-        //           "labels": { //Kubernetes Label attached to EKS Node
-        //             "Name": 'bottlerocket-spot',
-        //           }
-        //         },
-        //         "spec": {
-        //           "nodeClassRef": {
-        //             "group": "karpenter.k8s.aws",
-        //             "kind": "EC2NodeClass",
-        //             "name": "bottlerocket"
-        //           },
-        //           "requirements": [
-        //             {
-        //               "key": "karpenter.k8s.aws/instance-category",
-        //               "operator": "In",
-        //               "values": [ "t", "c", "m", "r", ]
-        //             },
-        //             {
-        //               "key": "kubernetes.io/arch",
-        //               "operator": "In",
-        //               "values": [
-        //                 "amd64",
-        //                 "arm64"
-        //               ]
-        //             },
-        //             {
-        //               "key": "kubernetes.io/os",
-        //               "operator": "In",
-        //               "values": [ "linux" ]
-        //             },
-        //             {
-        //               "key": "karpenter.sh/capacity-type",
-        //               "operator": "In",
-        //               "values": [ "spot" ]
-        //             }
-        //           ],
-        //           "expireAfter": "720h"
-        //         }
-        //       },
-        //       "limits": {
-        //         "cpu": 1000
-        //       },
-        //       "disruption": {
-        //         "consolidationPolicy": "WhenEmptyOrUnderutilized",
-        //         "consolidateAfter": "1m"
-        //       }
-        //     }
-        // };//end karpenter_bottlerocket_spot_NodePool
-        // const karpenter_bottlerocket_on_demand_NodePool = {
-        //     "apiVersion": "karpenter.sh/v1",
-        //     "kind": "NodePool",
-        //     "metadata": {
-        //       "name": 'karpenter-bottlerocket-on-demand' //karpenter in name b/c it shows up in Managed by column of AWS Web Console GUI
-        //     },
-        //     "spec": {
-        //       "weight": 50, //<-- Note highest weight = default
-        //       "template": {
-        //         "metadata": {
-        //           "labels": { //Kubernetes Label attached to EKS Node
-        //             "Name": 'bottlerocket-on-demand'
-        //           }
-        //         },
-        //         "spec": {
-        //           "nodeClassRef": {
-        //             "group": "karpenter.k8s.aws",
-        //             "kind": "EC2NodeClass",
-        //             "name": "bottlerocket"
-        //           },
-        //           "requirements": [
-        //             {
-        //               "key": "karpenter.k8s.aws/instance-category",
-        //               "operator": "In",
-        //               "values": [ "t", "c", "m", "r", ]
-        //             },
-        //             {
-        //               "key": "kubernetes.io/arch",
-        //               "operator": "In",
-        //               "values": [
-        //                 "amd64",
-        //                 "arm64"
-        //               ]
-        //             },
-        //             {
-        //               "key": "kubernetes.io/os",
-        //               "operator": "In",
-        //               "values": [ "linux" ]
-        //             },
-        //             {
-        //               "key": "karpenter.sh/capacity-type",
-        //               "operator": "In",
-        //               "values": [ "on-demand" ]
-        //             }
-        //           ],
-        //           "expireAfter": "720h"
-        //         }
-        //       },
-        //       "limits": {
-        //         "cpu": 1000
-        //       },
-        //       "disruption": {
-        //         "consolidationPolicy": "WhenEmptyOrUnderutilized",
-        //         "consolidateAfter": "1m"
-        //       }
-        //     }
-        // };//end karpenter_bottlerocket_on_demand_NodePool
-        // let subnetSelectorTerms: Array<{[key:string]: string}> = [];
-        // for(let i=0; i<3; i++){ 
-        //   subnetSelectorTerms.push( {"id": `${this.config.vpc.privateSubnets[i]?.subnetId}`} );
-        // };
-
-        //^-- The above oddness is equivalent to this-v, but is resilient against a variable number of subnets:
-        //       "subnetSelectorTerms": [
-        //         { "id": `${this.config.vpc.privateSubnets[0]?.subnetId}` },
-        //         { "id": `${this.config.vpc.privateSubnets[1]?.subnetId}` },
-        //         { "id": `${this.config.vpc.privateSubnets[2]?.subnetId}` },
-        //       ],
-
-        // const karpenter_bottlerocket_EC2NodeClass = {
-        //   "apiVersion": "karpenter.k8s.aws/v1",
-        //   "kind": "EC2NodeClass",
-        //   "metadata": {
-        //     "name": "bottlerocket"
-        //   },
-        //   "spec": {
-        //     "amiFamily": "bottlerocket",
-        //     "role": `${EKS_Node_Role.roleName}`,
-        //     "subnetSelectorTerms": subnetSelectorTerms,
-        //     "securityGroupSelectorTerms": [ { "tags": { "aws:eks:cluster-name": `${this.cluster.clusterName}` } } ],
-        //     "amiSelectorTerms": [
-        //       { "alias": "bottlerocket@v1.31.6" },
-        //       //Bottlerocket is easier than AL2023 & more secure by default, but if need AL2023:
-        //       //AL2023's Alias = "al2023@v20250123"
-        //       //Date came from:
-        //       //aws ssm get-parameter --name /aws/service/eks/optimized-ami/1.31/amazon-linux-2023/x86_64/standard/recommended/image_name --region ca-central-1 --query "Parameter.Value" --output text
-        //       //amazon-eks-node-al2023-x86_64-standard-1.31-v20250123
-        //     ],
-        //     "tags": {//ARM64-bottlerocket-spot
-        //       "Name": `${this.cluster.clusterName}/karpenter/bottlerocket-spot`,
-        //     }
-        //   }
-        // };
-        // const apply_karpenter1 = cluster.addManifest('karpenter_bottlerocket_EC2NodeClass', karpenter_bottlerocket_EC2NodeClass);
-        // const apply_karpenter2 = cluster.addManifest('karpenter_bottlerocket_spot_NodePool', karpenter_bottlerocket_spot_NodePool);
-        // const apply_karpenter3 = cluster.addManifest('karpenter_bottlerocket_on_demand_NodePool', karpenter_bottlerocket_on_demand_NodePool);
-        // apply_karpenter1.node.addDependency(karpenter);
-        // apply_karpenter2.node.addDependency(karpenter);
-        // apply_karpenter3.node.addDependency(karpenter);
 
     }//end deploy_cluster()
 
 }//end Easy_EKS_v2
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+function initialize_baselineNodeRole(stack: cdk.Stack){
+  const ipv6_support_iam_policy = new iam.PolicyDocument({
+      statements: [new iam.PolicyStatement({
+      resources: ['arn:aws:ec2:*:*:network-interface/*'],
+      actions: [
+          'ec2:AssignIpv6Addresses',
+          'ec2:UnassignIpv6Addresses',
+      ],
+      })],
+  });
+  const EKS_Node_Role = new iam.Role(stack, `EKS_Node_Role`, {
+      //roleName: //cdk isn't great about cleaning up resources, so leting it generate name is more reliable
+      assumedBy: new iam.ServicePrincipal('ec2.amazonaws.com'),
+      managedPolicies: [
+          iam.ManagedPolicy.fromAwsManagedPolicyName('AmazonEKSWorkerNodePolicy'),
+          iam.ManagedPolicy.fromAwsManagedPolicyName('AmazonEC2ContainerRegistryReadOnly'),
+          iam.ManagedPolicy.fromAwsManagedPolicyName('AmazonEKS_CNI_Policy'),
+          iam.ManagedPolicy.fromAwsManagedPolicyName('AmazonSSMManagedInstanceCore'),
+          //^-- allows aws managed browser based shell access to private nodes, can be useful for debuging
+          //^-- AWS Systems Manager --> Session Manager --> Start Session
+      ],
+      inlinePolicies: {
+          ipv6_support_iam_policy,
+      },
+  });
+  return EKS_Node_Role
+}
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+function initalize_baseline_LT_Spec(stack: cdk.Stack, config: Easy_EKS_Config_Data){
+
+    const Baseline_MNG_Disk_AL2023: ec2.BlockDevice = {
+      deviceName: '/dev/xvda', //AL2023's Root device name 
+      volume: ec2.BlockDeviceVolume.ebs(20, { volumeType: ec2.EbsDeviceVolumeType.GP3 }), //<--20GB volume size
+    }
+    const Baseline_MNG_Disk_Bottlerocket_1_of_2: ec2.BlockDevice = {
+    deviceName: '/dev/xvda', //Bottlerocket's 2GB Read Only Root device name 
+    volume: ec2.BlockDeviceVolume.ebs(2, { volumeType: ec2.EbsDeviceVolumeType.GP3 }), //<--2GB volume size (pointless to edit)
+    }
+    const Baseline_MNG_Disk_Bottlerocket_2_of_2: ec2.BlockDevice = {
+    deviceName: '/dev/xvdb', //Bottlerocket's Ephemeral storage device name (for container image cache & empty dir volumes)
+    volume: ec2.BlockDeviceVolume.ebs(15, { volumeType: ec2.EbsDeviceVolumeType.GP3 }), //<--15GB volume size
+    }
+    let baseline_node_type:string;
+      if(config.baselineNodesType === eks.CapacityType.SPOT){ baseline_node_type = "spot"; }
+      else { baseline_node_type = "on-demand"; }
+    //v--bottlerocket userdata patch for bug: https://github.com/bottlerocket-os/bottlerocket/issues/4472
+    //Odd indentation is on purpose as spacing matters for TOML
+    //v-- avoid editing this, invalid config prevents nodes from joining cluster, and results in a slow and annoying feedback loop.
+    const Bottlerocket_baseline_MNG_TOML = `
+    [settings.kubernetes]
+    max-pods = 11
+    `;
+    //^-- 11 = max pods of t4g.small, per https://github.com/aws/amazon-vpc-cni-k8s/blob/master/misc/eni-max-pods.txt
+    const Bottlerocket_baseline_MNG_userdata = ec2.UserData.custom(Bottlerocket_baseline_MNG_TOML);
+    const Baseline_MNG_LT = new ec2.LaunchTemplate(stack, `ARM64-Bottlerocket-${baseline_node_type}_MNG_LT`, {
+      launchTemplateName: `${config.id}/baseline-MNG/ARM64-Bottlerocket-${baseline_node_type}`, //EKS Layer2 construct makes 2 LT's for some reason, uses the eks-* one.
+      //blockDevices: [Baseline_MNG_Disk_AL2023],
+      blockDevices: [Baseline_MNG_Disk_Bottlerocket_1_of_2, Baseline_MNG_Disk_Bottlerocket_2_of_2],
+      userData: Bottlerocket_baseline_MNG_userdata, //cdk.Fn.base64(Bottlerocket_baseline_MNG_userdata),
+    });
+    cdk.Tags.of(Baseline_MNG_LT).add("Name", `${config.id}/baseline-MNG/ARM64-Bottlerocket-${baseline_node_type}`);
+    const tags = Object.entries(config.tags ?? {});
+    tags.forEach(([key, value]) => cdk.Tags.of(Baseline_MNG_LT).add(key,value));
+    const baseline_LT_Spec: eks.LaunchTemplateSpec = {
+      id: Baseline_MNG_LT.launchTemplateId!,
+      version: Baseline_MNG_LT.latestVersionNumber,
+    };
+    return baseline_LT_Spec;
+
+}//end initialize_baseline_LT_Spec 
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
 
