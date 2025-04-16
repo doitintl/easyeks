@@ -4,6 +4,8 @@ import * as eks from 'aws-cdk-lib/aws-eks';
 import * as iam from 'aws-cdk-lib/aws-iam';
 import { KubectlV31Layer } from '@aws-cdk/lambda-layer-kubectl-v31'; //npm install @aws-cdk/lambda-layer-kubectl-v31
 import request from 'sync-request-curl'; //npm install sync-request-curl (cdk requires sync functions, async not allowed)
+import { Karpenter } from 'cdk-eks-karpenter' //npm install cdk-eks-karpenter 
+import { Karpenter_YAML_Generator } from '../../lib/Karpenter_Manifests';
 //Intended Use: 
 //EasyEKS Admins: edit this file with config to apply to all lower environment eks cluster's in your org.
 
@@ -34,51 +36,6 @@ export function apply_config(config: Easy_EKS_Config_Data, stack: cdk.Stack){ //
     });
     //NOTE! AWS LoadBalancer Controller may need to be updated along with version of Kubernetes
     /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-
-    //v-- Karpenter addon needs to be configured after vpc is set. 
-    //    (Remember cdk is imperative, as in step by step, so order of code execution matters)
-    //    Alternatively you could try ${stack.region}a, b, c, but that assumption doesn't work for all regions.
-    // config.addAddOn( //https://github.com/aws-quickstart/cdk-eks-blueprints/blob/blueprints-1.15.1/lib/addons/karpenter/index.ts
-    //     new blueprints.addons.KarpenterAddOn({
-    //         version: "0.37.0", //https://github.com/aws/karpenter-provider-aws/releases
-    //         // newer version: 1.1.0 works with kube 1.31 only if ec2nodeclassspec & nodepoolspec are commented
-    //         // so newer only partially works
-    //         // strategy: prioritize other issues, then this might fix itself by the time I get to it.
-    //         // https://github.com/aws-quickstart/cdk-eks-blueprints/issues/1078
-    //         namespace: "kube-system", //yet anther workaround for upstream bug... :\
-    //         ec2NodeClassSpec: {
-    //             amiFamily: "AL2", //"AL2 = Amazon Linux 2", "Bottlerocket" has a node-local-dns-cache bug to troubleshoot later
-    //             subnetSelectorTerms: [{ tags: { "Name": `higher-envs-vpc/PrivateSubnet*` } }],
-    //             securityGroupSelectorTerms: [{ tags: { "aws:eks:cluster-name": `${config.id}` } }],
-    //             detailedMonitoring: false,
-    //             tags: config.tags,
-    //         },
-    //         nodePoolSpec: {
-    //             requirements: [
-    //                 { key: 'topology.kubernetes.io/zone', operator: 'In', 
-    //                   values: [
-    //                       `${config.vpc.availabilityZones[0]}`,
-    //                       `${config.vpc.availabilityZones[1]}`,
-    //                       `${config.vpc.availabilityZones[2]}`] },
-    //                 { key: 'kubernetes.io/arch', operator: 'In', values: ['amd64','arm64']},
-    //                 { key: 'karpenter.sh/capacity-type', operator: 'In', values: ['on-demand']}, //on-demand for higher_envs
-    //             ],
-    //             disruption: {
-    //                 consolidationPolicy: "WhenEmpty", //"WhenEmpty" is slightly higher cost and stability
-    //                 consolidateAfter: "30s",
-    //                 expireAfter: "20m",
-    //                 budgets: [{nodes: "10%"}] 
-    //             }
-    //         },
-    //         interruptionHandling: true,
-    //         podIdentity: true,
-    //         values: { //https://github.com/aws/karpenter-provider-aws/tree/main/charts/karpenter#values
-    //             replicas: 2, //HA, because baseline MNG nodes are spot. 
-    //             //FYI: good helm default automatically make the replicas spread across nodes.
-    //         }
-    //     })
-    // );//end Karpenter AddOn
     
 }//end apply_config()
 
@@ -131,6 +88,46 @@ export function deploy_workloads(config: Easy_EKS_Config_Data, stack: cdk.Stack,
     // The following help prevent timeout of install during initial cluster deployment
     awsLoadBalancerController.node.addDependency(cluster.awsAuth);
     awsLoadBalancerController.node.addDependency(ALBC_Kube_SA);
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // Install Karpenter.sh
+    const karpenter = new Karpenter(stack, 'Karpenter', {
+        cluster: cluster,
+        namespace: 'kube-system',
+        version: '1.3.3', //https://gallery.ecr.aws/karpenter/karpenter
+        nodeRole: config.baselineNodeRole, //custom NodeRole to pass to Karpenter Nodes
+        helmExtraValues: { //https://github.com/aws/karpenter-provider-aws/blob/v1.2.0/charts/karpenter/values.yaml
+            replicas: 2,
+        },
+    });
+    karpenter.node.addDependency(cluster.awsAuth); //editing order of operations to say deploy karpenter after cluster exists
+
+    const karpenter_YAML_generator = new Karpenter_YAML_Generator({
+        cluster: cluster,
+        config: config,
+        amiSelectorTerms_alias: "bottlerocket@v1.31.0", /* <-- Bottlerocket alias always ends in a zero
+        export K8S_VERSION="1.31"
+        aws ssm get-parameters-by-path --path "/aws/service/bottlerocket/aws-k8s-$K8S_VERSION" --recursive | jq -cr '.Parameters[].Name' | grep -v "latest" | awk -F '/' '{print $7}' | sort | uniq
+        */
+        consolidationPolicy: "WhenEmpty", //"WhenEmpty" is slightly higher cost and stability
+        manifest_inputs: [ //Note highest weight = default, higher = preferred
+            { type: "on-demand", arch: "arm64", nodepools_cpu_limit: 1000, weight: 4, },
+            { type: "on-demand", arch: "amd64", nodepools_cpu_limit: 1000, weight: 3, },
+            { type: "spot",      arch: "arm64", nodepools_cpu_limit: 1000, weight: 2, },
+            { type: "spot",      arch: "amd64", nodepools_cpu_limit: 1000, weight: 1, },
+        ]
+    });
+    const karpenter_YAMLs = karpenter_YAML_generator.generate_manifests();
+    const apply_kaprenter_YAML = new eks.KubernetesManifest(stack, 'karpenter_YAMLs',
+        {
+            cluster: cluster,
+            manifest: karpenter_YAMLs,
+            overwrite: true,
+            prune: false,
+        });
+    //cluster.addManifest('karpenter_YAML', ...karpenter_YAMLs); //... is a TypeScript operation to convert array to CSV.
+    apply_kaprenter_YAML.node.addDependency(karpenter); //Inform cdk of order of operations
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 }//end deploy_workloads()

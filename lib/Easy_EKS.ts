@@ -118,12 +118,14 @@ export class Easy_EKS{ //purposefully don't extend stack, to implement builder p
 
         let cluster = this.cluster;
         this.cluster.addNodegroupCapacity('baseline_MNG', baseline_MNG);
-        //TIP:
-        //If you plan to make iterative changes to nodepools
-        //renaming 'baseline_MNG' to 'baseline_MNG1' 
-        //(and then switching back and forth or incrementing by 1, like baseline_MNG2, will speed things up.)
-        //If the name changes it can do a delete and create in parallel so the update takes ~400s
-        //If the name stays the same it does an inplace rolling update which takes 3x longer ~1200s
+        // TIP:
+        // If CloudFormation update fails after editing nodepool
+        // OR
+        // If you plan to make iterative changes to nodepools
+        // renaming 'baseline_MNG' to 'baseline_MNG1' 
+        // (and then switching back and forth or incrementing by 1, like baseline_MNG2, will speed things up.)
+        // If the name changes it can do a delete and create in parallel so the update takes ~400s
+        // If the name stays the same it does an inplace rolling update which takes 3x longer ~1200s
 
         // Configure Limited Viewer Only Access by default:
         if(this.config.clusterViewerAccessAwsAuthConfigmapAccounts){ //<-- JS truthy statement to say if not empty do the following
@@ -234,12 +236,12 @@ function initalize_baseline_LT_Spec(stack: cdk.Stack, config: Easy_EKS_Config_Da
     //^-- 11 = max pods of t4g.small, per https://github.com/aws/amazon-vpc-cni-k8s/blob/master/misc/eni-max-pods.txt
     const Bottlerocket_baseline_MNG_userdata = ec2.UserData.custom(Bottlerocket_baseline_MNG_TOML);
     const Baseline_MNG_LT = new ec2.LaunchTemplate(stack, `ARM64-Bottlerocket-${baseline_node_type}_MNG_LT`, {
-      launchTemplateName: `${config.id}/baseline-MNG/ARM64-Bottlerocket-${baseline_node_type}`, //EKS Layer2 construct makes 2 LT's for some reason, uses the eks-* one.
+      launchTemplateName: `${config.id}/baseline-MNG/arm64-bottlerocket-${baseline_node_type}`, //EKS Layer2 construct makes 2 LT's for some reason, uses the eks-* one.
       //blockDevices: [Baseline_MNG_Disk_AL2023],
       blockDevices: [Baseline_MNG_Disk_Bottlerocket_1_of_2, Baseline_MNG_Disk_Bottlerocket_2_of_2],
       userData: Bottlerocket_baseline_MNG_userdata, //cdk.Fn.base64(Bottlerocket_baseline_MNG_userdata),
     });
-    cdk.Tags.of(Baseline_MNG_LT).add("Name", `${config.id}/baseline-MNG/ARM64-Bottlerocket-${baseline_node_type}`);
+    cdk.Tags.of(Baseline_MNG_LT).add("Name", `${config.id}/baseline-MNG/arm64-bottlerocket-${baseline_node_type}`);
     const tags = Object.entries(config.tags ?? {});
     tags.forEach(([key, value]) => cdk.Tags.of(Baseline_MNG_LT).add(key,value));
     const baseline_LT_Spec: eks.LaunchTemplateSpec = {
