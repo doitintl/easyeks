@@ -68,9 +68,10 @@ export class Easy_EKS{ //purposefully don't extend stack, to implement builder p
     }
 
     deploy_eks_construct_into_this_objects_stack(){
+        ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        //Logic to define baseline Managed Node Group
         this.config.baselineNodeRole = initialize_baselineNodeRole(this.stack);
         const baseline_LT_Spec = initalize_baseline_LT_Spec(this.stack, this.config);
-
         const baseline_MNG: eks.NodegroupOptions = {
             subnets: { subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS },
             amiType: eks.NodegroupAmiType.BOTTLEROCKET_ARM_64,
@@ -82,11 +83,10 @@ export class Easy_EKS{ //purposefully don't extend stack, to implement builder p
             nodeRole: this.config.baselineNodeRole,
             launchTemplateSpec: baseline_LT_Spec, //<-- necessary to add tags to EC2 instances
         };
+        ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-        const clusterAdminAccessPolicy: eks.AccessPolicy = eks.AccessPolicy.fromAccessPolicyName('AmazonEKSClusterAdminPolicy', {
-            accessScopeType: eks.AccessScopeType.CLUSTER
-        });
-
+        ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        //Logic to create cluster:
         //UX convienence similar to EKS Blueprints
         const assumableEKSAdminAccessRole = new iam.Role(this.stack, 'assumableEKSAdminAccessRole', {
           assumedBy: new iam.AccountRootPrincipal(), //<-- root as is root of the account,
@@ -114,9 +114,10 @@ export class Easy_EKS{ //purposefully don't extend stack, to implement builder p
             mastersRole: assumableEKSAdminAccessRole, //<-- adds aws eks update-kubeconfig output
             secretsEncryptionKey: kms_key,
         });
+        ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-
-        let cluster = this.cluster;
+        ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        //Logic to add baseline Managed Node Group to Cluster
         this.cluster.addNodegroupCapacity('baseline_MNG', baseline_MNG);
         // TIP:
         // If CloudFormation update fails after editing nodepool
@@ -126,37 +127,68 @@ export class Easy_EKS{ //purposefully don't extend stack, to implement builder p
         // (and then switching back and forth or incrementing by 1, like baseline_MNG2, will speed things up.)
         // If the name changes it can do a delete and create in parallel so the update takes ~400s
         // If the name stays the same it does an inplace rolling update which takes 3x longer ~1200s
+        ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-        // Configure Limited Viewer Only Access by default:
+        ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        // Logic to allow all authenticated users in AWS account Limited Viewer Only Access by default:
         if(this.config.clusterViewerAccessAwsAuthConfigmapAccounts){ //<-- JS truthy statement to say if not empty do the following
-            for (let index = 0; index < this.config.clusterViewerAccessAwsAuthConfigmapAccounts?.length; index++) {
-                cluster.awsAuth.addAccount(this.config.clusterViewerAccessAwsAuthConfigmapAccounts[index]);
-            }
-            cluster.addManifest('viewer_only_cluster_role_binding', viewer_only_crb);
-            cluster.addManifest('enhanced_viewer_cluster_role', enhanced_viewer_cr);
+          for (let index = 0; index < this.config.clusterViewerAccessAwsAuthConfigmapAccounts?.length; index++) {
+              this.cluster.awsAuth.addAccount(this.config.clusterViewerAccessAwsAuthConfigmapAccounts[index]);
+          }
+          this.cluster.addManifest('viewer_only_cluster_role_binding', viewer_only_crb);
+          this.cluster.addManifest('enhanced_viewer_cluster_role', enhanced_viewer_cr);
         }
+        /* Note: Config as Code allows this to be enabled/disabled, default config has it set to enabled.
+           Intented functionality?
+           * To allow any authenticated human user to view non-sensitive yaml in AWS Web Console by default.
 
-        // Configure Cluster Admins via IaC:
+           How?
+           * A Cluster Role Binding maps all authenticated users to viewer only access.
+           * It's a little excessive in terms of principle of least privilege, but shouldn't hurt security, given limited rights.
+           
+           Who are Limited Viewr Only Users?
+           * Human users logged into the EKS Section of the AWS Web Console
+           * All authenticated Kubernetes users (so all pods)
+
+           What can't they do?
+           * Regardless of AWS Web Console or kubectl access
+             * Can't read kubernetes secrets
+             * Can't create or edit objects
+           * AWS IAM identities won't automatically gain the ability to get kubectl access.
+           * kubectl access requires additional IAM permissions, even if kubectl access is given, it
+             * Can't read kubectl secrets
+             * Can't kubectl exec into pods           
+
+           What can they do?
+           * View YAML objects in AWS Web Console (with the exception of secrets)           
+           * If given additional IAM rights for kubectl access, can get, describe, and -o yaml most objects.  
+        */
+        ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+        ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        // Logic to add Cluster Admins Defined in Config as Code:
+        const clusterAdminAccessPolicy: eks.AccessPolicy = eks.AccessPolicy.fromAccessPolicyName('AmazonEKSClusterAdminPolicy', {
+          accessScopeType: eks.AccessScopeType.CLUSTER
+        });
         if(this.config.clusterAdminAccessEksApiArns){ //<-- JS truthy statement to say if not empty do the following
             for (let index = 0; index < this.config.clusterAdminAccessEksApiArns?.length; index++) {
                 new eks.AccessEntry( this.stack, this.config.clusterAdminAccessEksApiArns[index], //<-- using ARN as a unique subStack id
                 {
                     accessPolicies: [clusterAdminAccessPolicy],
-                    cluster: cluster,
+                    cluster: this.cluster,
                     principal: this.config.clusterAdminAccessEksApiArns[index],
                     accessEntryName: this.config.clusterAdminAccessEksApiArns[index]
                 });
             }
-        }//end if
+        }
+        ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-
-
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-        //Logic to Add EKS Addons Defined in Config
+        ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        //Logic to Add EKS Addons Defined in Config as Code 
         if(this.config.eksAddOnsMap){ //JS falsy statement meaning if not empty
             for (let [addonName, input] of this.config.eksAddOnsMap){
                 const props: eks.CfnAddonProps = { 
-                    clusterName: cluster.clusterName,
+                    clusterName: this.cluster.clusterName,
                     addonName: addonName,
                     addonVersion: input.addonVersion,
                     configurationValues: input.configurationValues,
@@ -164,10 +196,7 @@ export class Easy_EKS{ //purposefully don't extend stack, to implement builder p
                 new eks.CfnAddon(this.stack, addonName, props);
             }
         }
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-        ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
+        ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     }//end deploy_cluster()
 
@@ -179,13 +208,16 @@ export class Easy_EKS{ //purposefully don't extend stack, to implement builder p
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 function initialize_baselineNodeRole(stack: cdk.Stack){
   const ipv6_support_iam_policy = new iam.PolicyDocument({
-      statements: [new iam.PolicyStatement({
-      resources: ['arn:aws:ec2:*:*:network-interface/*'],
-      actions: [
-          'ec2:AssignIpv6Addresses',
-          'ec2:UnassignIpv6Addresses',
+      statements: [
+          new iam.PolicyStatement({
+              effect: iam.Effect.ALLOW,
+              resources: ['arn:aws:ec2:*:*:network-interface/*'],
+              actions: [
+                  'ec2:AssignIpv6Addresses',
+                  'ec2:UnassignIpv6Addresses',
+              ],
+          }),
       ],
-      })],
   });
   const EKS_Node_Role = new iam.Role(stack, `EKS_Node_Role`, {
       //roleName: //cdk isn't great about cleaning up resources, so leting it generate name is more reliable
