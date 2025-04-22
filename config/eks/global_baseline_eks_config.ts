@@ -50,10 +50,18 @@ export function apply_config(config: Easy_EKS_Config_Data, stack: cdk.Stack){ //
       resolveConflicts: 'OVERWRITE',
       configurationValues: '{}',
     });
-    //NOTICE: Don't add eks-pod-identity-agent via config.addEKSAddon(...omitted...);
-    //It's purposefully left out to work around CDK bug https://github.com/aws/aws-cdk/issues/32580
-    //The cdk bug relates to an error where there's a complaint about it already being present, if 2 things try to install it.
-    //The AWS Load Balancer Controller installation logic, will trigger the installation of eks-pod-identity-agent addon.
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // NOTICE: Don't add eks-pod-identity-agent via config.addEKSAddon(...omitted...);
+    // It's purposefully left out to work around CDK bug https://github.com/aws/aws-cdk/issues/32580
+    // The cdk bug relates to an error where there's a complaint about it already being present, if 2 things try to install it.
+    // The AWS Load Balancer Controller installation logic, will trigger the installation of eks-pod-identity-agent addon.
+    // https://github.com/aws/aws-cdk/pull/33891
+    // ^-- A WIP fix exists
+    // Note the IaC will deploy default (which isn't latest)
+    // but if you manually update in GUI it'll stay updated
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 }//end apply_config()
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

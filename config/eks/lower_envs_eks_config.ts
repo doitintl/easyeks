@@ -53,7 +53,7 @@ export function deploy_workloads(config: Easy_EKS_Config_Data, stack: cdk.Stack,
     const ALBC_IAM_Policy = new iam.Policy(stack, `${config.id}_AWS_LB_Controller_policy_for_EKS`, {
         document: iam.PolicyDocument.fromJson( ALBC_IAM_Policy_JSON ),
     });
-    const ALBC_Kube_SA = new eks.ServiceAccount(stack, 'aws-load-balancer-controller', {
+    const ALBC_Kube_SA = new eks.ServiceAccount(stack, 'aws-load-balancer-controller_kube-sa', {
         cluster: cluster,
         name: 'aws-load-balancer-controller',
         namespace: 'kube-system',
@@ -102,7 +102,6 @@ export function deploy_workloads(config: Easy_EKS_Config_Data, stack: cdk.Stack,
         },
     });
     karpenter.node.addDependency(cluster.awsAuth); //editing order of operations to say deploy karpenter after cluster exists
-
     const karpenter_YAML_generator = new Karpenter_YAML_Generator({
         cluster: cluster,
         config: config,

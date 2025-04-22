@@ -5,6 +5,7 @@ import * as eks from 'aws-cdk-lib/aws-eks';
 import * as iam from 'aws-cdk-lib/aws-iam';
 import * as kms from 'aws-cdk-lib/aws-kms';
 import request from 'sync-request-curl'; //npm install sync-request-curl (cdk requires sync functions, async not allowed)
+import cluster from 'cluster';
 //Intended Use:
 //A baseline config file (to be applied to all EasyEKS Clusters in your organization)
 //EasyEKS Admins would be expected to edit this file with defaults specific to their org. (that rarely change and are low risk to add)
@@ -136,7 +137,7 @@ export function apply_config(config: Easy_EKS_Config_Data, stack: cdk.Stack){ //
 
     config.addEKSAddon('metrics-server', { //allows `kubectl top nodes` to work & valid for all versions of kubernetes
         addonName: 'metrics-server',
-        addonVersion: 'v0.7.2-eksbuild.2', //v--query for latest
+        addonVersion: 'v0.7.2-eksbuild.3', //v--query for latest
         // aws eks describe-addon-versions --kubernetes-version=1.31 --addon-name=metrics-server --query='addons[].addonVersions[].addonVersion' | jq '.[0]'
         resolveConflicts: 'OVERWRITE',
         configurationValues: `{
@@ -188,12 +189,7 @@ export function apply_config(config: Easy_EKS_Config_Data, stack: cdk.Stack){ //
             }
         }`, //end metrics-server configurationValues override
     });//end metrics-server addon
-    config.addEKSAddon('aws-ebs-csi-driver', { //latest should work with all versions of kubernetes
-        addonName: 'aws-ebs-csi-driver', 
-        addonVersion: 'v1.41.0-eksbuild.1', //v--query for latest
-        // aws eks describe-addon-versions --kubernetes-version=1.31 --addon-name=aws-ebs-csi-driver --query='addons[].addonVersions[].addonVersion' | jq '.[0]'
-        configurationValues: '{}',
-    });
+
     config.addEKSAddon('eks-node-monitoring-agent', { //latest should work with all versions of kubernetes
         addonName: 'eks-node-monitoring-agent',
         addonVersion: 'v1.2.0-eksbuild.1', //v--query for latest
@@ -215,6 +211,7 @@ export function apply_config(config: Easy_EKS_Config_Data, stack: cdk.Stack){ //
 
 export function deploy_workloads(config: Easy_EKS_Config_Data, stack: cdk.Stack, cluster: eks.Cluster){
 
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     //Install Node Local DNS Cache
     const nodeLocalDNSCache = cluster.addHelmChart('NodeLocalDNSCache', {
         chart: "node-local-dns", // Name of the Chart to be deployed
@@ -231,5 +228,47 @@ export function deploy_workloads(config: Easy_EKS_Config_Data, stack: cdk.Stack,
         },
     });
     nodeLocalDNSCache.node.addDependency(cluster.awsAuth);
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // Install EBS CSI Driver Addon
+    // If you try to use eks.ServiceAccount with eksAddons you'll hit an integration bug, this works around it.
+    // (The gist of the bug is it'd fail, because the name would already exist because 2 things would try to create it.)
+    const ebs_csi_addon_iam_role = new iam.Role(stack, 'aws-ebs-csi-driver-iam-role', {
+        managedPolicies: [ iam.ManagedPolicy.fromAwsManagedPolicyName('service-role/AmazonEBSCSIDriverPolicy') ],
+        assumedBy: (new cdk.aws_iam.ServicePrincipal("pods.eks.amazonaws.com")),
+    });
+    ebs_csi_addon_iam_role.assumeRolePolicy!.addStatements(
+        new iam.PolicyStatement({
+            actions: ['sts:AssumeRole', 'sts:TagSession'],
+            principals: [new iam.ServicePrincipal('pods.eks.amazonaws.com')],
+        })
+    );
+
+    const ebs_csi_addon = new eks.CfnAddon(stack, 'aws-ebs-csi-driver', {
+        clusterName: cluster.clusterName,
+        addonName: 'aws-ebs-csi-driver',
+        addonVersion: 'v1.41.0-eksbuild.1', //v--query for latest
+        // aws eks describe-addon-versions --kubernetes-version=1.31 --addon-name=aws-ebs-csi-driver --query='addons[].addonVersions[].addonVersion' | jq '.[0]'
+        resolveConflicts: 'OVERWRITE',
+        podIdentityAssociations: [
+            {
+                serviceAccount: "ebs-csi-controller-sa",
+                roleArn: ebs_csi_addon_iam_role.roleArn,
+            }
+        ], // (v-- replicaCount: 1, makes logs easier to read/debug, and doesn't hurt stability.)
+        configurationValues: `{
+            controller: {
+                "replicaCount": 1,
+            },
+        }`, //end aws-ebs-csi-driver configurationValues override
+    });
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    //Install default storage class
+    //File in /research/ was converted using https://onlineyamltools.com/convert-yaml-to-json
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 }//end deploy_workloads()

@@ -6,9 +6,12 @@ metadata:
     storageclass.kubernetes.io/is-default-class: "true"
 provisioner: ebs.csi.aws.com
 volumeBindingMode: WaitForFirstConsumer
+allowVolumeExpansion: true
+reclaimPolicy: Delete
 parameters:
   type: gp3
-#  encrypted: "true"
+  encrypted: "true"
+  kmsKeyId: "" # optional, if not specified default kms key (alias = aws/ebs) is used
 # NOTE: 
 # * Don't use `provisioner: ebs.csi.eks.amazonaws.com`
 #   It's EKS AutoMode's provsioner and only works with EKS AutoMode provisioned nodes.
@@ -36,7 +39,7 @@ metadata:
   name: web
 spec:
   serviceName: "nginx"
-  replicas: 2
+  replicas: 1
   selector:
     matchLabels:
       app: nginx
@@ -47,7 +50,7 @@ spec:
     spec:
       containers:
       - name: nginx
-        image: registry.k8s.io/nginx-slim:0.21
+        image: docker.io/nginx
         ports:
         - containerPort: 80
           name: web
