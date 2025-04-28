@@ -25,7 +25,7 @@ export class Easy_EKS_Config_Data { //This object just holds config data.
     kmsKeyAlias: string; //kms key with this alias will be created or reused if pre-existing
     baselineNodesNumber: number;
     baselineNodesType: eks.CapacityType; //enum eks.CapacityType.SPOT or eks.CapacityType.ON_DEMAND
-    baselineNodeRole: iam.Role; //used by baselineMNG & Karpenter
+    workerNodeRole: iam.Role; //used by baselineMNG & Karpenter
     constructor(id_for_stack_and_eks: string){
         this.id = id_for_stack_and_eks; /*
         Constructor with minimal args is on purpose for desired UX of "builder pattern".

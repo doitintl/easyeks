@@ -238,13 +238,12 @@ export function deploy_workloads(config: Easy_EKS_Config_Data, stack: cdk.Stack,
         managedPolicies: [ iam.ManagedPolicy.fromAwsManagedPolicyName('service-role/AmazonEBSCSIDriverPolicy') ],
         assumedBy: (new cdk.aws_iam.ServicePrincipal("pods.eks.amazonaws.com")),
     });
-    ebs_csi_addon_iam_role.assumeRolePolicy!.addStatements(
+    ebs_csi_addon_iam_role.assumeRolePolicy!.addStatements( //<-- ! is TypeScript for "I know this variable isn't null"
         new iam.PolicyStatement({
             actions: ['sts:AssumeRole', 'sts:TagSession'],
             principals: [new iam.ServicePrincipal('pods.eks.amazonaws.com')],
         })
     );
-
     const ebs_csi_addon = new eks.CfnAddon(stack, 'aws-ebs-csi-driver', {
         clusterName: cluster.clusterName,
         addonName: 'aws-ebs-csi-driver',

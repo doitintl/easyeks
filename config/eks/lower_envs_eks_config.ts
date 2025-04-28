@@ -4,8 +4,7 @@ import * as eks from 'aws-cdk-lib/aws-eks';
 import * as iam from 'aws-cdk-lib/aws-iam';
 import { KubectlV31Layer } from '@aws-cdk/lambda-layer-kubectl-v31'; //npm install @aws-cdk/lambda-layer-kubectl-v31
 import request from 'sync-request-curl'; //npm install sync-request-curl (cdk requires sync functions, async not allowed)
-import { Karpenter } from 'cdk-eks-karpenter' //npm install cdk-eks-karpenter 
-import { Karpenter_YAML_Generator } from '../../lib/Karpenter_Manifests';
+import { Karpenter_Helm_Config, Karpenter_YAML_Generator, Apply_Karpenter_YAMLs_with_fixes } from '../../lib/Karpenter_Manifests';
 //Intended Use: 
 //EasyEKS Admins: edit this file with config to apply to all lower environment eks cluster's in your org.
 
@@ -50,7 +49,7 @@ export function deploy_workloads(config: Easy_EKS_Config_Data, stack: cdk.Stack,
     const ALBC_Version = 'v2.12.0'; //April 9th, 2025 latest from https://github.com/kubernetes-sigs/aws-load-balancer-controller/releases
     const ALBC_IAM_Policy_Url = `https://raw.githubusercontent.com/kubernetes-sigs/aws-load-balancer-controller/refs/tags/${ALBC_Version}/docs/install/iam_policy.json`
     const ALBC_IAM_Policy_JSON = JSON.parse(request("GET", ALBC_IAM_Policy_Url).body.toString());
-    const ALBC_IAM_Policy = new iam.Policy(stack, `${config.id}_AWS_LB_Controller_policy_for_EKS`, {
+    const ALBC_IAM_Policy = new iam.Policy(stack, 'AWS_LB_Controller_IAM_policy_for_EKS', {
         document: iam.PolicyDocument.fromJson( ALBC_IAM_Policy_JSON ),
     });
     const ALBC_Kube_SA = new eks.ServiceAccount(stack, 'aws-load-balancer-controller_kube-sa', {
@@ -92,20 +91,16 @@ export function deploy_workloads(config: Easy_EKS_Config_Data, stack: cdk.Stack,
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // Install Karpenter.sh
-    const karpenter = new Karpenter(stack, 'Karpenter', {
-        cluster: cluster,
-        namespace: 'kube-system',
-        version: '1.3.3', //https://gallery.ecr.aws/karpenter/karpenter
-        nodeRole: config.baselineNodeRole, //custom NodeRole to pass to Karpenter Nodes
-        helmExtraValues: { //https://github.com/aws/karpenter-provider-aws/blob/v1.2.0/charts/karpenter/values.yaml
+    const karpenter_helm_config: Karpenter_Helm_Config = {
+        helm_chart_version: '1.4.0', //https://gallery.ecr.aws/karpenter/karpenter
+        helm_chart_values: { //https://github.com/aws/karpenter-provider-aws/blob/v1.4.0/charts/karpenter/values.yaml
             replicas: 1,
         },
-    });
-    karpenter.node.addDependency(cluster.awsAuth); //editing order of operations to say deploy karpenter after cluster exists
-    const karpenter_YAML_generator = new Karpenter_YAML_Generator({
+    };
+    const karpenter_YAMLs = (new Karpenter_YAML_Generator({
         cluster: cluster,
         config: config,
-        amiSelectorTerms_alias: "bottlerocket@v1.31.0", /* <-- Bottlerocket alias always ends in a zero
+        amiSelectorTerms_alias: "bottlerocket@v1.31.0", /* <-- Bottlerocket alias always ends in a zero, below is proof by command output
         export K8S_VERSION="1.31"
         aws ssm get-parameters-by-path --path "/aws/service/bottlerocket/aws-k8s-$K8S_VERSION" --recursive | jq -cr '.Parameters[].Name' | grep -v "latest" | awk -F '/' '{print $7}' | sort | uniq
         */
@@ -116,17 +111,8 @@ export function deploy_workloads(config: Easy_EKS_Config_Data, stack: cdk.Stack,
             { type: "on-demand", arch: "arm64", nodepools_cpu_limit: 1000, weight: 2, },
             { type: "on-demand", arch: "amd64", nodepools_cpu_limit: 1000, weight: 1, },
         ]
-    });
-    const karpenter_YAMLs = karpenter_YAML_generator.generate_manifests();
-    const apply_kaprenter_YAML = new eks.KubernetesManifest(stack, 'karpenter_YAMLs',
-        {
-            cluster: cluster,
-            manifest: karpenter_YAMLs,
-            overwrite: true,
-            prune: false,
-        });
-    //cluster.addManifest('karpenter_YAML', ...karpenter_YAMLs); //... is a TypeScript operation to convert array to CSV.
-    apply_kaprenter_YAML.node.addDependency(karpenter); //Inform cdk of order of operations
+    })).generate_manifests();
+    Apply_Karpenter_YAMLs_with_fixes(stack, cluster, config, karpenter_helm_config, karpenter_YAMLs, awsLoadBalancerController);
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 }//end deploy_workloads()

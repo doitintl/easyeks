@@ -70,7 +70,8 @@ export class Easy_EKS{ //purposefully don't extend stack, to implement builder p
     deploy_eks_construct_into_this_objects_stack(){
         ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
         //Logic to define baseline Managed Node Group
-        this.config.baselineNodeRole = initialize_baselineNodeRole(this.stack);
+        this.config.workerNodeRole = initialize_WorkerNodeRole(this.stack);
+        //^-- Both have the same IAM rights, but 2 objects were needed to avoid a cdk destroy error
         const baseline_LT_Spec = initalize_baseline_LT_Spec(this.stack, this.config);
         const baseline_MNG: eks.NodegroupOptions = {
             subnets: { subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS },
@@ -80,7 +81,7 @@ export class Easy_EKS{ //purposefully don't extend stack, to implement builder p
             desiredSize: this.config.baselineNodesNumber,
             minSize: 0,
             maxSize: 50,
-            nodeRole: this.config.baselineNodeRole,
+            nodeRole: this.config.workerNodeRole,
             launchTemplateSpec: baseline_LT_Spec, //<-- necessary to add tags to EC2 instances
         };
         ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -206,7 +207,7 @@ export class Easy_EKS{ //purposefully don't extend stack, to implement builder p
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-function initialize_baselineNodeRole(stack: cdk.Stack){
+function initialize_WorkerNodeRole(stack: cdk.Stack){
   const ipv6_support_iam_policy = new iam.PolicyDocument({
       statements: [
           new iam.PolicyStatement({
@@ -219,7 +220,7 @@ function initialize_baselineNodeRole(stack: cdk.Stack){
           }),
       ],
   });
-  const EKS_Node_Role = new iam.Role(stack, `EKS_Node_Role`, {
+  const EKS_Worker_Node_Role = new iam.Role(stack, 'EKS_Worker_Node_Role', {
       //roleName: //cdk isn't great about cleaning up resources, so leting it generate name is more reliable
       assumedBy: new iam.ServicePrincipal('ec2.amazonaws.com'),
       managedPolicies: [
@@ -234,7 +235,8 @@ function initialize_baselineNodeRole(stack: cdk.Stack){
           ipv6_support_iam_policy,
       },
   });
-  return EKS_Node_Role
+  EKS_Worker_Node_Role.applyRemovalPolicy(cdk.RemovalPolicy.RETAIN); //Workaround to avoid cdk destroy bug
+  return EKS_Worker_Node_Role
 }
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 

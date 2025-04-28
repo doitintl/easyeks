@@ -1,6 +1,14 @@
 import { Easy_EKS_Config_Data } from './Easy_EKS_Config_Data';
 import * as cdk from 'aws-cdk-lib';
 import * as eks from 'aws-cdk-lib/aws-eks';
+import * as iam from 'aws-cdk-lib/aws-iam';
+import { IConstruct } from 'constructs';
+import { Karpenter } from 'cdk-eks-karpenter' //npm install cdk-eks-karpenter 
+
+export interface Karpenter_Helm_Config {
+    helm_chart_version: string,
+    helm_chart_values?: Record<string, any> | undefined,
+}
 
 export interface Karpenter_Manifest_Loop_Inputs {
     arch: string,
@@ -8,6 +16,8 @@ export interface Karpenter_Manifest_Loop_Inputs {
     weight: number,
     nodepools_cpu_limit: number,
 }
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 export class Karpenter_YAML_Generator{
                                     
@@ -54,7 +64,7 @@ export class Karpenter_YAML_Generator{
                 },
                 "spec": {
                     "amiFamily": "Bottlerocket",
-                    "role": `${config.baselineNodeRole.roleName}`,
+                    "role": `${config.workerNodeRole.roleName}`,
                     "subnetSelectorTerms": subnetSelectorTerms,
                     "securityGroupSelectorTerms": [ { "tags": { "aws:eks:cluster-name": `${cluster.clusterName}` } } ],
                     "tags": {//ARM64-bottlerocket-spot
@@ -132,9 +142,83 @@ export class Karpenter_YAML_Generator{
             array_of_yaml_manifests_to_return.push(karpenter_bottlerocket_NodePool);
         }//end for
 
-
-
         return array_of_yaml_manifests_to_return;
     } //end generate_manifests
 
 } //end class Karepnter_Manifests
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+export function Apply_Karpenter_YAMLs_with_fixes(stack: cdk.Stack, cluster: eks.Cluster, config: Easy_EKS_Config_Data,
+                                                karpenter_helm_config: Karpenter_Helm_Config, 
+                                                karpenter_YAMLs: {[key: string]: any;}[],
+                                                readiness_dependency: IConstruct){
+
+    //v-- Creates a ton of prerequisites and a release/instance of karpenter helm chart
+    const karpenter = new Karpenter(stack, 'Karpenter', {
+        cluster: cluster,
+        namespace: 'kube-system',
+        version: karpenter_helm_config.helm_chart_version,
+        nodeRole: config.workerNodeRole,
+        helmExtraValues: karpenter_helm_config.helm_chart_values,
+    });
+    //v-- The following 2 lines update cdk's order of operations to wait to deploy karpenter, until cluster is ready
+    karpenter.node.addDependency(readiness_dependency); //Expected value of awsLoadBalancerController Helm Release
+    karpenter.node.addDependency(cluster.awsAuth);
+    //v-- Patch fix for https://github.com/aws-samples/cdk-eks-karpenter/issues/231
+    Patch_Karpenters_IAM_Role(stack, config);
+    //v-- The following 2 lines help prevent cdk destroy issue
+    const karpenter_helm_chart_CFR = (stack.node.tryFindChild(config.id)?.node.tryFindChild('chart-karpenter')?.node.defaultChild as cdk.CfnResource);
+    if(karpenter_helm_chart_CFR){ karpenter_helm_chart_CFR.applyRemovalPolicy(cdk.RemovalPolicy.RETAIN); }
+
+    //v-- kubectl apply -f karpenter_YAMLs
+    const apply_karpenter_YAML = new eks.KubernetesManifest(stack, 'karpenter_YAMLs',
+        {
+            cluster: cluster,
+            manifest: karpenter_YAMLs,
+            overwrite: true,
+            prune: true,   
+        }
+    );
+    //v-- Inform cdk of order of operations
+    apply_karpenter_YAML.node.addDependency(karpenter);
+    //v-- The following 2 lines prevent cdk destroy issue
+    const apply_karpenter_YAML_CFR = (apply_karpenter_YAML.node.defaultChild as cdk.CfnResource);
+    if(apply_karpenter_YAML_CFR){ apply_karpenter_YAML_CFR.applyRemovalPolicy(cdk.RemovalPolicy.RETAIN); }
+
+} //end function Apply_Karpenter_YAMLs_with_fixes
+
+function Patch_Karpenters_IAM_Role(stack: cdk.Stack, config: Easy_EKS_Config_Data){
+    //Patch fix for https://github.com/aws-samples/cdk-eks-karpenter/issues/231
+    let karpenter_controller_pods_role = stack.node.tryFindChild(config.id)?.node.tryFindChild('karpenter')?.node.tryFindChild('Role') as iam.Role;
+    const karpenter_IAM_Policy_JSON = {
+        "Version": "2012-10-17",
+        "Statement": [
+          {
+            "Sid": "AllowInstanceProfileActions",
+            "Effect": "Allow",
+            "Resource": `arn:aws:iam::${process.env.CDK_DEFAULT_ACCOUNT!}:instance-profile/*`,
+            "Action": [
+              "iam:GetInstanceProfile",
+              "iam:AddRoleToInstanceProfile",
+              "iam:RemoveRoleFromInstanceProfile",
+              ],
+          },
+          { //v-- This isn't a hard requirement, but enables faster convergence
+            //    without it karpenter logs temporarily mention an IAM rights failure, that fixes itself within 11 mins.
+            "Sid": "LessRestrictivePassRoleForFasterConvergence",
+            "Effect": "Allow",
+            "Resource": `arn:aws:iam::${process.env.CDK_DEFAULT_ACCOUNT!}:role/*`,
+            "Action": [
+              "iam:PassRole",
+              ],
+          },
+        ]
+      };
+    const karpenter_IAM_Policy = new iam.Policy(stack, `karpenter_controller_pod_IAM_policy_for_EKS`, {
+        document: iam.PolicyDocument.fromJson( karpenter_IAM_Policy_JSON ),
+    });
+    karpenter_controller_pods_role.attachInlinePolicy(karpenter_IAM_Policy);
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
