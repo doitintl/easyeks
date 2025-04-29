@@ -12,10 +12,6 @@ Pre-Alpha
 * There are multiple production readiness goals that have not yet been met.
 * Upgrade paths and everyday usage aren't well tested.
 
-## If you're interested in trying it:
-1. Try the quickstart
-2. If you want to adopt it fork
-
 ## How do I get started / use it?
 1. Try the [quickstart](./docs/03_Quickstart/Quickstart.md)
-2. Fork the repo for long term usage.
+2. Fork the repo if you want to adopt for long term usage.
