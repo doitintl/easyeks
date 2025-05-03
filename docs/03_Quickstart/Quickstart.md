@@ -123,7 +123,7 @@ POLICYFILE
   aws iam create-role \
     --role-name $ROLE_NAME \
     --max-session-duration 3600 \
-    --tags '{"Key": "Role Generated Using Docs In", "Value": "https://github.com/doitintl/eks-cdk-quickstart"}' \
+    --tags '{"Key": "Role Generated Using Docs In", "Value": "https://github.com/doitintl/easyeks"}' \
            '{"Key": "Purpose", "Value": "Allows named human user to easily manually generate ephemeral IAM admin credentials for use by local docker IaC Automation"}' \
     --assume-role-policy-document file:///tmp/assume-role-policy.json
   aws iam attach-role-policy \
@@ -210,19 +210,19 @@ chmod +x /home/cloudshell-user/.local/bin/gencreds
    `[admin-user@local-machine:~]`  
    ```shell
    cd ~
-   git clone https://$TOKEN_NAME:$TOKEN_PASS@github.com/doitintl/eks-cdk-quickstart.git
-   cd ~/eks-cdk-quickstart
+   git clone https://$TOKEN_NAME:$TOKEN_PASS@github.com/doitintl/easyeks.git
+   cd ~/easyeks
    ```
 
 ### Step 4: Use a Dockerfile in the repo to build a custom docker image for local use
-* `[admin-user@local-machine:~/eks-cdk-quickstart]`  
+* `[admin-user@local-machine:~/easyeks]`  
   ```shell
-  cd ~/eks-cdk-quickstart
+  cd ~/easyeks
   time docker build . --tag local-image
   ```
 
 ### Step 5: Run the local-image with an interactive shell
-* `[admin-user@local-machine:~/eks-cdk-quickstart]`  
+* `[admin-user@local-machine:~/easyeks]`  
   ```shell
   docker run -it --hostname dockerized-cdk-runner local-image bash
   ```
@@ -250,7 +250,7 @@ chmod +x /home/cloudshell-user/.local/bin/gencreds
 
 ### Step 1: Use docker shell to bootstrap cdk
 * Verify IAM rights, then Bootstrap cdk:
-  `[user@dockerized-cdk-runner:/app $]`  
+  `[root@dockerized-cdk-runner:/app $]`  
 ```shell
 aws sts get-caller-identity
 export AWS_REGION="ca-central-1"
@@ -269,25 +269,25 @@ cdk bootstrap
 
 ### Step 2: Use docker shell to list stacks and deploy VPC
 * run cdk list:  
-  `[user@dockerized-cdk-runner:/app $]`  
+  `[root@dockerized-cdk-runner:/app $]`  
 ```shell
 export AWS_REGION="ca-central-1"
 time cdk list
 cdk deploy lower-envs-vpc
 ```
-* Note: cdk list won't be instant, for me it took about 7 seconds.
+* Note: cdk list won't be instant, it took about 15 seconds on an M3 Mac.
 * Also you'll notice a prompt 'Do you wish to deploy these changes (y/n)?'
-* ETA on VPC deployment = 3.5 minutes
+* ETA on deployment of lower-envs-vpc = 3.5 minutes
 
 ### Step 3: Use docker shell to list stacks and deploy dev1-eks (cluster)
 * run cdk list:  
-  `[user@dockerized-cdk-runner:/app $]`  
+  `[root@dockerized-cdk-runner:/app $]`  
 ```shell
 export AWS_REGION="ca-central-1"
 time cdk list
 cdk deploy dev1-eks
 ```
-* ETA on VPC deployment = ~15 minutes
+* ETA on deployment of dev1-eks = ~18 minutes
 * At the end you should see feedback similar to the following:
 ```console
 Do you wish to deploy these changes (y/n)? y
@@ -296,18 +296,15 @@ dev1-eks: creating CloudFormation changeset...
 
  ✅  dev1-eks
 
-✨  Deployment time: 893.2s
+✨  Deployment time: 1052.74s
 
 Outputs:
-dev1-eks.KarpenterInstanceNodeRole = dev1-eks-dev1ekskarpenternoderoleF6445C46-xvJZpMysh8oo
-dev1-eks.KarpenterInstanceProfilename = KarpenterNodeInstanceProfile-1f463f4eccef4793d856668b2c84dd9a
-dev1-eks.dev1eksClusterName701CF81F = dev1-eks
-dev1-eks.dev1eksConfigCommand9B300592 = aws eks update-kubeconfig --name dev1-eks --region ca-central-1 --role-arn arn:aws:iam::905418347382:role/dev1-eks-dev1eksAccessRole5BA1A9E3-w3E8P0T0L4nj
-dev1-eks.dev1eksGetTokenCommandDE6D6947 = aws eks get-token --cluster-name dev1-eks --region ca-central-1 --role-arn arn:aws:iam::905418347382:role/dev1-eks-dev1eksAccessRole5BA1A9E3-w3E8P0T0L4nj
+dev1-eks.dev1eksConfigCommand9B300592 = aws eks update-kubeconfig --name dev1-eks --region ca-central-1 --role-arn arn:aws:iam::905418347382:role/dev1-eks-assumableEKSAdminAccessRoleC284FA0F-F22KjKQrjLpO
+dev1-eks.dev1eksGetTokenCommandDE6D6947 = aws eks get-token --cluster-name dev1-eks --region ca-central-1 --role-arn arn:aws:iam::905418347382:role/dev1-eks-assumableEKSAdminAccessRoleC284FA0F-F22KjKQrjLpO
 Stack ARN:
-arn:aws:cloudformation:ca-central-1:905418347382:stack/dev1-eks/7c3ff440-a6cc-11ef-8c11-02f264ebaca7
+arn:aws:cloudformation:ca-central-1:905418347382:stack/dev1-eks/60d97430-27d0-11f0-ae18-0e71104456e5
 
-✨  Total time: 898.35s
+✨  Total time: 1069.52s
 ```
-* Note: When done, you can see results here  
+* Note: When done, you should see Status CREATE_COMPLETE in this location  
   https://ca-central-1.console.aws.amazon.com/cloudformation/home?region=ca-central-1

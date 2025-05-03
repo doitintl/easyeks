@@ -14,6 +14,7 @@ import * as my_orgs_baseline_vpc_config from '../config/vpc/my_orgs_baseline_vpc
 import * as lower_envs_vpc_config from '../config/vpc/lower_envs_vpc_config';
 import * as higher_envs_vpc_config from '../config/vpc/higher_envs_vpc_config';
 import { FckNatInstanceProvider } from 'cdk-fck-nat' //source: npm install cdk-fck-nat@latest
+import { execSync } from 'child_process'; //work around for vpc lookup issue
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -36,6 +37,11 @@ export class Opinionated_VPC{
     apply_lower_envs_vpc_config(){ lower_envs_vpc_config.apply_config(this.config,this.stack); }
     apply_higher_envs_vpc_config(){ higher_envs_vpc_config.apply_config(this.config,this.stack); }
     deploy_vpc_construct_into_this_objects_stack(){
+
+        //The following is to prevent creation 2 VPCs with the same name:
+        //Plausible values of this.config.id = "lower-envs-vpc" or "higher-envs-vpc"
+        check_for_partially_deleted_vpc_to_prevent_error(this.config.id, this.stack);
+
         //https://docs.aws.amazon.com/cdk/api/v2/docs/aws-cdk-lib.aws_ec2.VpcProps.html
         this.vpc = new ec2.Vpc(this.stack, this.config.id, {
             vpcName: this.config.id,
@@ -124,3 +130,52 @@ export class Opinionated_VPC{
     }//end deploy_vpc_construct_into_this_objects_stack()
 
 }//end class of Opinionated_VPC
+
+///////////////////////////////////////////////////////////////////////////////////////////////////
+
+function check_for_partially_deleted_vpc_to_prevent_error(vpc_name_tag: string, stack: cdk.Stack){
+    /* Why this exists:
+    Earlier ran into a bug where more than 1 instance of lower-envs-vpcs was created
+    cdk's ec2.Vpc.fromLookup() is useful for importing pre-existing VPC
+    but is bad for acting as an existance check, because non-existence triggers error
+    so using aws cli as more flexible fallback option to try to prevent the issue.
+    */
+    const cmd = `aws ec2 describe-vpcs --filter Name=tag:Name,Values=${vpc_name_tag} --query "Vpcs[].VpcId" | tr -d '\r\n []"'`
+    //` | jq '.Aliases[] | select(.AliasName == "${kmsKeyAlias}") | .TargetKeyId'`
+    const cmd_results = execSync(cmd).toString();
+    // Plausible Values to expect:
+    // cmd_results===""
+    // cmd_results==="vpc-0f79593fc83da0b82" (Note: If you console.log it you wouldn't see doublequotes)
+    if(cmd_results===""){ return; } //If no pre-existing vpc detected all good, resume creation.
+    else{ //if pre-existing vpc detected, check for partially deleted instance of VPC stack to avoid error.
+        const potential_vpc_id=cmd_results;
+        let vpc = ec2.Vpc.fromLookup(stack, 'vpc-lookup', {
+            isDefault: false,
+            tags: { ["Name"]: vpc_name_tag },
+            vpcId: potential_vpc_id,
+        });
+        if(vpc.publicSubnets.length===0){
+            const error_msg = `VPC with tag "Name: ${vpc_name_tag}", was detected to have 0 public subnets.\n`+
+                              "This usually means:\n"+
+                              "* cdk destroy was run against this vpc, and an incomplete destroy occured.\n"+
+                              "* If you were to allow this program to continue, by commenting out the error check.\n"+
+                              "  Then you'd end up with 2 VPCs with the same name, and that'd cause EKS provisioning failures.\n"+
+                              "\n"+
+                              "So: \n"+
+                              "* The program has been stopped to show the error sooner rather than later.\n"+
+                              "\n"+
+                              "Resolution Options:\n"+
+                              "* Option 1: Manually fully delete the partially destroyed VPC, then re-run this to re-create.\n"+
+                              "* Option 2: Manage VPC outside of this program (manually or otherwise) & Import it into eks\n"+
+                              `  * In ./bin/cdk-main.ts, comment out the vpc stack named ${vpc_name_tag}\n`+
+                              "  * In ./config/eks/lower_envs_eks_config.ts  or  higher_envs_eks_config.ts\n"+
+                              '    1. Comment out config.setVpcByName("lower-envs-vpc", config, stack);\n'+
+                              '    2. Set config.setVpcById("vpc-0dbcacb511f9bac4e", config, stack);\n';
+            console.log(error_msg);
+            throw "Edge Case Error Detected: Requesting Human Intervention";
+        }
+    }
+    return;
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////

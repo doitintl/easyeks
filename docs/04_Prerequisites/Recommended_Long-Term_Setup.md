@@ -81,7 +81,7 @@ rm ~/flox-*.rpm
 4. Install node.js modules
 ```shell
 # flox [flox.dev]
-# [admin@workstation:~/eks-cdk-quickstart]
+# [admin@workstation:~/easyeks]
 npm install
 # ^-- will populate a /node_modules/, based on package.json
 ```
@@ -128,8 +128,8 @@ sudo dnf install git -y
 export TOKEN_NAME="test"
 export TOKEN_PASS="ghp_jwiZWtzLWNkay1xdWlja3N0YXJ0CgwMjQtMD"
 cd ~
-git clone https://$TOKEN_NAME:$TOKEN_PASS@github.com/doitintl/eks-cdk-quickstart.git
-cd ~/eks-cdk-quickstart
+git clone https://$TOKEN_NAME:$TOKEN_PASS@github.com/doitintl/easyeks.git
+cd ~/easyeks
 ```
 
 --------------------------------------------------------------------------------------------------------------
@@ -138,13 +138,13 @@ cd ~/eks-cdk-quickstart
 5. Change current working directory to the repo, which has a .flox folder
 ```shell
 #[ec2-user@ec2-bastion-with-iam-admin-role:~]#
-ls -lah ~/eks-cdk-quickstart | grep .flox
-cd ~/eks-cdk-quickstart
+ls -lah ~/easyeks | grep .flox
+cd ~/easyeks
 ```
 
 6. Run flox activate in that folder
 ```shell
-#[ec2-user@ec2-bastion-with-iam-admin-role:~/eks-cdk-quickstart]#
+#[ec2-user@ec2-bastion-with-iam-admin-role:~/easyeks]#
 flox activate
 # ^-- this will create a flox.dev env, where 
 #     all cli tooling dependencies (aws, cdk, node, npm, typescript, jq)
@@ -164,7 +164,7 @@ cdk bootstrap
 
 7. CDK Bootstrap and Deploy
 ```shell
-#[ec2-user@ec2-bastion-with-iam-admin-role:~/eks-cdk-quickstart]#
+#[ec2-user@ec2-bastion-with-iam-admin-role:~/easyeks]#
 aws sts get-caller-identity
 # ^-- verify you have rights
 export AWS_REGION="ca-central-1"

@@ -63,5 +63,37 @@
   },
   "key-provider:account=905418347382:aliasName=alias/eks/lower-envs:region=ca-central-1": {
     "keyId": "2c710e12-cad3-42f5-a92f-e7d7980aebea"
+  },
+  "vpc-provider:account=905418347382:filter.isDefault=false:filter.tag:Name=lower-envs-vpc:filter.vpc-id=vpc-0f79593fc83da0b82:region=ca-central-1:returnAsymmetricSubnets=true": {
+    "vpcId": "vpc-0f79593fc83da0b82",
+    "vpcCidrBlock": "10.99.0.0/16",
+    "ownerAccountId": "905418347382",
+    "availabilityZones": [],
+    "subnetGroups": [
+      {
+        "name": "Private",
+        "type": "Private",
+        "subnets": [
+          {
+            "subnetId": "subnet-05cc9568f5db856f2",
+            "cidr": "10.99.32.0/19",
+            "availabilityZone": "ca-central-1a",
+            "routeTableId": "rtb-010c7b9bdb7d1d475"
+          },
+          {
+            "subnetId": "subnet-0cc493d68888b47ca",
+            "cidr": "10.99.64.0/19",
+            "availabilityZone": "ca-central-1b",
+            "routeTableId": "rtb-010c7b9bdb7d1d475"
+          },
+          {
+            "subnetId": "subnet-00e3b357b26ccd5d0",
+            "cidr": "10.99.96.0/19",
+            "availabilityZone": "ca-central-1d",
+            "routeTableId": "rtb-010c7b9bdb7d1d475"
+          }
+        ]
+      }
+    ]
   }
 }
