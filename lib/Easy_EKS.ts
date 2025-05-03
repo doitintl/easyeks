@@ -21,7 +21,7 @@ import * as lower_envs_eks_config from '../config/eks/lower_envs_eks_config';
 import * as higher_envs_eks_config from '../config/eks/higher_envs_eks_config';
 import * as dev_eks_config from '../config/eks/dev_eks_config';
 import * as observability from './Frugal_GPL_Observability_Stack';
-import { execSync } from 'child_process'; //temporary? work around for kms UX issue
+import { execSync } from 'child_process'; //work around for kms UX issue
 import request from 'sync-request-curl'; //npm install sync-request-curl (cdk requires sync functions, async not allowed)
 
 

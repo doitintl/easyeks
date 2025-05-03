@@ -6,7 +6,7 @@ import console = require('console'); //Helps feedback loop, when manually debugg
 //     ^-- allows `console.log(dev1cfg);` to work, when `cdk list` is run.
 import * as cdk from 'aws-cdk-lib';
 /*     ^-This-^
-TS import syntax means:
+TS(TypeScript) import syntax that means:
 * Import *("all") exported items from the specified source, into a "named import".
 * The "named import" can be arbtirarily named.
 * Items in the named import can be referenced with the dot operator.
@@ -14,8 +14,9 @@ TS import syntax means:
 import { Opinionated_VPC } from '../lib/Opinionated_VPC';
 import { Easy_EKS } from '../lib/Easy_EKS'; //AWS EKS L2 construct based cluster
 /*     ^--_This---^ 
-TS import syntax means:
-* Import a "specificallyly named" exported item, (or csv items) from the specified source.
+TS import syntax that means:
+* Import a "specificallyly named" exported item, 
+  or CSV list of specificly named exported items, from the specified source.
 * Here the "specifically named" item, must be an exact match for the name of the exported
   item in the referenced file.
 * Items imported this way, can be referenced directly by name.
@@ -25,41 +26,23 @@ TS import syntax means:
 
 ////////////////////////////////////////////////////////////////////////////////////////////
 // IMPORTANT NOTE: For Conceptual Understanding and Comprehension:
-const reference_to_cdk_bootstrapped_cf_for_storing_state_of_stacks = new cdk.App(); //<-- Root AWS "Construct"
-/* https://docs.aws.amazon.com/cdk/v2/guide/constructs.html
-cdk.App & cdk.Stack classes from the AWS Construct Library are unique constructs.
-Unlike mosts constructs they don't configure AWS resources on their own.
-Their purpose is to act as an interface that provides context for your other constructs. 
-App is a root construct, and stack constructs can be stored in it.
-So app is a collection of 1 or more CDK stacks. 
-Stacks are a collection of 1 or more CDK constructs (including nested stacks) 
+const cdk_state = new cdk.App(); //<-- Root AWS "Construct"
+/* You can read more here https://docs.aws.amazon.com/cdk/v2/guide/constructs.html
+but here's a summary of how this works
+* variable "cdk_state" is a cdk.App, it's a special Construct that
+  * points to a storage refence where the "state" of any deployed infrastructure is persisted.
+  * specifically the "state" of any deployed "CDK Stacks" get stored in this storage reference.
+  * Command: `AWS_REGION="ca-central-1" cdk bootstrap` initializes cdk's state storage reference.
+  * Once initialized you can see the references backend in Cloud Formation & S3.
 
-^-- That's mostly from the docs, what follows is paraphrased elaboration:
-* cdk_construct_storage of type cdk.App:
-  * Is able to discover a Cloud Formation stack, in a region cdk bootstrap was run against.
-  * Cloud Formation is where the state of CDK managed IaC gets stored/persisted.
-  * So you can think of this as a reference point that allows cdk.Stack objects to learn
-    where to persist their state data and re-discover their persisted state data between
-    runs of the cdk CLI command.
-* Objects of type Easy_EKS_Config_Data (like dev1cfg)
-  * These objects only exists in memory between runs, and exist as a conveinent abstraction
-    layer for preparing a config, and viewing key/simplified config details.
-  * About the 1 input parameter:
-    * stackID: dev1-eks, is of type string
-    * stackID get's stored in the cdk_construct_storage to enable persistence of IaC state.
-* EKS_Blueprints_Based_Cluster.add_to_list_of_deployable_stacks(cdk_construct_storage, config);
-  * About the 2 input parameters:
-    * cdk_construct_storage: is of type cdk.App
-    * dev1cfg: is of type Easy_EKS_Config_Data
-  * What the function does:
-    1. Converts Easy EKS Config into a format EKS Blueprints can use.
-    2. Plugs the data into EKS Blueprints builder logic, which stages a deployment.
-       Specifically when you run `cdk list` (in the correct working directory and context)
-       It'll show up as an option of a deployable cluster.
-       `cdk deploy dev1-eks`
-       (where dev1-eks is a stackID, can then be used to dry-run a deployment, 
-       and prompt's y to confirm deployment. (A deployment will take about 17 minutes.)
+* variables "lower-envs-vpc" & "dev1-eks" are examples of cdk.Stack 's, which:
+  * represent "(application) stacks", which store (Infrastructure as Code) "Constructs"
+
+* So a VPC Construct, gets stored in "lower-envs-vpc" Stack, which gets persisted in cdk_state
 *///////////////////////////////////////////////////////////////////////////////////////////
+
+
+////////////////////////////////////////////////////////////////////////////////////////////
 const default_stack_config: cdk.StackProps = {
     env: {
         account: process.env.CDK_DEFAULT_ACCOUNT!, //<-- process.env pulls value from CLI env,
@@ -105,12 +88,11 @@ const low_cost_EMEA_stack_config: cdk.StackProps = {
 ///////////////////////////////////////////////////////////////////////////////////////////
 
 
-
 ///////////////////////////////////////////////////////////////////////////////////////////
-//VPC Infrastructure as Code (Use of Opinionated VPC is Recommended, yet optional)
+//VPC Infrastructure as Code (Use of Opinionated VPC is Highly Recommended, yet optional)
 //Note: 'lower-envs-vpc' is both the VPC name and the CloudFormation Stack Name
 
-const lower_envs_vpc = new Opinionated_VPC(reference_to_cdk_bootstrapped_cf_for_storing_state_of_stacks, 'lower-envs-vpc', low_co2_AMER_stack_config);
+const lower_envs_vpc = new Opinionated_VPC(cdk_state, 'lower-envs-vpc', low_co2_AMER_stack_config);
 //Note: About the below lower_envs_vpc.apply_*_config() functions
 //      The order in which you call these functions matters, because some functions set
 //      values in a way that's intended to be overridable. This is why it's
@@ -122,17 +104,17 @@ lower_envs_vpc.deploy_vpc_construct_into_this_objects_stack();
 ///////////////////////////////////////////////////////////////////////////////////////////
 
 
-
 ///////////////////////////////////////////////////////////////////////////////////////////
 //EKS Infrastructure as Code:
 //Example 1 shows convience methods
-const dev1_eks = new Easy_EKS(reference_to_cdk_bootstrapped_cf_for_storing_state_of_stacks, 'dev1-eks', low_co2_AMER_stack_config);
+const dev1_eks = new Easy_EKS(cdk_state, 'dev1-eks', low_co2_AMER_stack_config);
 dev1_eks.apply_dev_baseline_config(); //<-- conviencne method #1
 dev1_eks.deploy_eks_construct_into_this_objects_stack();
 dev1_eks.deploy_dev_baseline_workloads(); //<-- conviencne method #2
+//^-- deployment time of ~15-20m
 
 //Example 2 is equivalent to Example 1, just more explicit.
-const dev2_eks = new Easy_EKS(reference_to_cdk_bootstrapped_cf_for_storing_state_of_stacks, 'dev2-eks', low_co2_AMER_stack_config);
+const dev2_eks = new Easy_EKS(cdk_state, 'dev2-eks', low_co2_AMER_stack_config);
 dev2_eks.apply_global_baseline_eks_config();
 dev2_eks.apply_my_orgs_baseline_eks_config();
 dev2_eks.apply_lower_envs_eks_config();
@@ -142,6 +124,5 @@ dev2_eks.deploy_global_baseline_eks_workloads();
 dev2_eks.deploy_my_orgs_baseline_eks_workloads();
 dev2_eks.deploy_lower_envs_eks_workloads();
 dev2_eks.deploy_dev_eks_workloads();
-//^-- deployment time of ~15-20m
 ///////////////////////////////////////////////////////////////////////////////////////////
 

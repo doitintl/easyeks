@@ -29,16 +29,16 @@ The below needs N assumptions to be true in order to work:
   ```
 
 ```shell
-# [admin@workstation:~/eks-cdk-quickstart]
+# [admin@workstation:~/easyeks]
 # ^- The above notation is used, b/c the below command requires you to be in correct working dir.
 flox activate
 # Note after running the above, your prompt will change
 # FROM:
-# [admin@workstation:~/eks-cdk-quickstart]
+# [admin@workstation:~/easyeks]
 #
 # TO: 
 # flox [flox.dev]
-# [admin@workstation:~/eks-cdk-quickstart]
+# [admin@workstation:~/easyeks]
 #
 # ^-- This allows you to see you're in flox shell mode
 export AWS_REGION=ca-central-1
@@ -51,7 +51,7 @@ cdk list
 1. Note: The following is how `cdk` cli maps to it's program entry point /bin/cdk-main.ts.
 ```shell
 # flox [flox.dev]
-# [admin@workstation:~/eks-cdk-quickstart]
+# [admin@workstation:~/easyeks]
 head -n 2 cdk.json
 # {
 #   "app": "npx ts-node --prefer-ts-exts bin/cdk-main.ts",
@@ -64,7 +64,7 @@ head -n 2 cdk.json
 2. CDK List and Deploy vpc then cluster
 ```shell
 # flox [flox.dev]
-# [ec2-user@ec2-bastion-with-iam-admin-role:~/eks-cdk-quickstart]#
+# [ec2-user@ec2-bastion-with-iam-admin-role:~/easyeks]#
 cdk list
 time cdk list
 # ^-- needs the env var set, in order to work, (normally takes 5-25 seconds)
