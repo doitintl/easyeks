@@ -14,10 +14,15 @@ export function apply_config(config: Easy_EKS_Config_Data, stack: cdk.Stack){ //
     //config.setVpcById("vpc-0dbcacb511f9bac4e", config, stack); //Alternative pre-existing VPC deployment option
     config.setBaselineMNGSize(2);
     config.setBaselineMNGType(eks.CapacityType.SPOT);
-    //config.addClusterAdminARN(`arn:aws:iam::${process.env.CDK_DEFAULT_ACCOUNT!}:user/example`);
-    //^--Important Note: identity referenced in ARN must exist or the deployment will fail
-    //         This allows you to create a explicit list of ARNS (representing IAM roles or users)
-    //         That act as EKS Admins of all lower environments.
+    if(process.env.CDK_DEFAULT_ACCOUNT==="111122223333"){
+        config.addClusterAdminARN(`arn:aws:iam::111122223333:user/example`); 
+        /* Note: 
+           config.addClusterAdminARN('...:user/example') should only be used in an if statement,
+           Because the identity referenced in ARN must exist or the deployment will fail
+           This allows you to create a explicit list of ARNs (representing IAM roles or users)
+           That act as EKS Admins of all lower environments.
+        */
+    }
     /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     
@@ -27,7 +32,7 @@ export function apply_config(config: Easy_EKS_Config_Data, stack: cdk.Stack){ //
     config.setKubectlLayer(new KubectlV31Layer(stack, 'kubectl'));
     config.addEKSAddon('kube-proxy', { //spelling matters for all addons
         addonName: 'kube-proxy', //spelling matter & should match above
-        addonVersion: 'v1.31.3-eksbuild.2', //Commented out for default (it won't be latest)
+        addonVersion: 'v1.31.7-eksbuild.7', //Note you can comment this out, but you'll get default instead of latest.
         // Use this to look up latest
         // aws eks describe-addon-versions --kubernetes-version=1.31 --addon-name=kube-proxy --query='addons[].addonVersions[].addonVersion' | jq '.[0]'
         resolveConflicts: 'OVERWRITE',
