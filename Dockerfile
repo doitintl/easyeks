@@ -25,7 +25,7 @@ ENV AWS_PAGER=""
 WORKDIR /app
 # ^-- configure default working directory
 
-COPY cdk.json package.json package-lock.json tsconfig.json /app
+COPY cdk.json cdk.context.json package.json package-lock.json tsconfig.json /app
 RUN npm install
 ENV PATH="/app/node_modules/.bin:$PATH"
 # ^-- package.json & package-lock.json tell npm install what dependencies to install
