@@ -2,9 +2,9 @@
 
 ## What is Easy EKS?
 An opinionated bundling of automation & Infrastructure as code that aims to:
-1. Make it easy to provision EKS clusters that are production ready by default.
-2. Maintain a heavily standardized opinionated set of IaC, which makes automation easier.
-3. Apply a helm like design pattern to AWS CDK.
+1. Make it easy to provision EKS clusters that are nearly production ready by default.
+2. Maintain a heavily standardized opinionated set of IaC, which makes automation maintainable.
+3. Apply useful design patterns from Helm and Kustomize to IaC based on AWS CDK.
 
 ## What is the current status of Easy EKS?
 Pre-Alpha

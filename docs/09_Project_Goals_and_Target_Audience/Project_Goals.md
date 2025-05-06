@@ -1,5 +1,5 @@
 # Easy EKS's Project Goals
-Easy EKS = EKS + Apps + Config + Infrastructure as Code + Automation + Docs.
+Easy EKS = EKS + Kube Apps + Config + Infrastructure as Code + Automation + Docs.
 
 ## 1. Make a standardized baseline distribution of EKS
 * Standardization is a prerequisite for:
