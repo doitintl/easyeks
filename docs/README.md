@@ -3,7 +3,7 @@
 ## What is Easy EKS?
 **Here are 3 useful answers to that question based on different perspectives:**  
 (Each answer is clarified further in later sections on this page.)
-1. **A Solution:**
+1. **A Solution:**  
    Setting up and learning how to implement EKS according to best practices is often said to be hard,
    so much so that it crosses the threshold of being problematically difficult and a barrier to
    adoption. From this perspective Easy EKS can be seen as a solution to EKS's difficulty problem.
