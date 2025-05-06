@@ -3,7 +3,7 @@ import * as cdk from 'aws-cdk-lib';
 import * as eks from 'aws-cdk-lib/aws-eks';
 import * as ec2 from 'aws-cdk-lib/aws-ec2';
 import * as iam from 'aws-cdk-lib/aws-iam';
-
+import { execSync } from 'child_process';
 
 type Optional<T, K extends keyof T> = Pick<Partial<T>, K> & Omit<T, K>;
 type EKSAddOnInput = Optional<eks.CfnAddonProps, 'clusterName'>; //makes clusterName Optional parameter
@@ -43,9 +43,36 @@ export class Easy_EKS_Config_Data { //This object just holds config data.
         this.vpc = pre_existing_vpc as ec2.Vpc;
     }
     setVpcByName(vpcName: string, config: Easy_EKS_Config_Data, stack: cdk.Stack){ 
+        //Note: The following "normal cdk way of doing things" works 99% of the time
+        //      const pre_existing_vpc = ec2.Vpc.fromLookup(stack,'pre-existing-vpc', {
+        //          isDefault: false,
+        //          tags: { ["Name"]: vpcName },
+        //      });
+        // I've replaced it with an alternative that should work 99.5% of the time, 
+        // by translating name to id, then looking up by id.
+        ////////////////////////////////////////////////////////////////////////////////
+        // Explanation of Edge Case Problem: 
+        // .fromLookup() uses cdk.context.json, which functions as a cache.
+        // An edge case problem exists, where cdk destroy & re-deploy will fail, due
+        // to outdated cache value, unless the user knows to run
+        // cdk destroy --> `cdk context --clear` --> cdk re-deploy
+        // This extra logic translates vpcName to id, then looks up by name and id,
+        // which effectively eliminates the edge case and need for said specialized
+        // knowledge of how to handle the edge case.
+        ////////////////////////////////////////////////////////////////////////////////
+        const cmd = `aws ec2 describe-vpcs --filter Name=tag:Name,Values=${vpcName} --query "Vpcs[].VpcId" | tr -d '\r\n []"'`
+        const cmd_results = execSync(cmd).toString();
+        // Plausible Values to expect:
+        // case 1: cmd_results===""
+        //         ^-- Occurs when vpc name not found. Would cause an error, which is desired behavior as we assume it should be found.
+        // case 2: cmd_results==="vpc-0f79593fc83da0b82" (Note: If you console.log it you wouldn't see doublequotes)
+        //         ^-- If name is found a single valid id "should" show up.
+        //             I say "should", because a 2nd edge case of 2 VPCs having the same name is technically possible, but unlikey.
+        const potential_vpc_id=cmd_results;
         const pre_existing_vpc = ec2.Vpc.fromLookup(stack,'pre-existing-vpc', {
             isDefault: false,
             tags: { ["Name"]: vpcName },
+            vpcId: potential_vpc_id,
         });
         if(vpcName === "lower-envs-vpc" || vpcName === "higher-envs-vpc"){
             cdk.Annotations.of(stack).acknowledgeWarning('@aws-cdk/aws-eks:clusterMustManuallyTagSubnet');

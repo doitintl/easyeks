@@ -70,21 +70,14 @@
 cat /etc/os-release
 uname -r
 # ^-- The above commands say we're on an rpm based x86_64 distro of Amazon Linux 2023 
-wget https://downloads.flox.dev/by-env/stable/rpm/flox-1.3.2.x86_64-linux.rpm
+wget https://downloads.flox.dev/by-env/stable/rpm/flox-1.4.1.x86_64-linux.rpm
 sudo rpm --import https://downloads.flox.dev/by-env/stable/rpm/flox-archive-keyring.asc
 sudo rpm -ivh ~/flox-*.rpm
 flox --version
 rm ~/flox-*.rpm
-# 1.3.2
+# 1.4.1
 ```
 
-4. Install node.js modules
-```shell
-# flox [flox.dev]
-# [admin@workstation:~/easyeks]
-npm install
-# ^-- will populate a /node_modules/, based on package.json
-```
 
 --------------------------------------------------------------------------------------------------------------
 
@@ -107,7 +100,7 @@ npm install
 ## Phase 3: Git Repo Setup
 
 ### Phase 3A: Git Repo Setup (Generic Overview)
-2. Gain the ability to clone a private git repo (here's an example based on private github)
+1. Gain the ability to clone a private git repo (here's an example based on private github)
    1. create a classic readonly GitHub Token to clone private doit repo  
       * https://github.com/settings/tokens/new  
       * note = test <-- note this value represents TOKEN_NAME
@@ -119,7 +112,7 @@ npm install
       `ghp_jwiZWtzLWNkay1xdWlja3N0YXJ0CgwMjQtMD`
 
 ### Phase 3B: Git Repo Setup (Detailed Instructions for Private GitHub Repo)
-3. Copy Paste Commands (one line at a time) to clone private github repo from AWS Cloud Shell  
+1. Copy Paste Commands (one line at a time) to clone private github repo from AWS Cloud Shell  
 ```shell
 # [ec2-user@ec2-bastion-with-iam-admin-role:~]
 sudo dnf update -y
@@ -130,19 +123,22 @@ export TOKEN_PASS="ghp_jwiZWtzLWNkay1xdWlja3N0YXJ0CgwMjQtMD"
 cd ~
 git clone https://$TOKEN_NAME:$TOKEN_PASS@github.com/doitintl/easyeks.git
 cd ~/easyeks
+cdk context --clear
+# ^-- resets cdk.context.json to {}
+# (Technically not necessary, done for the sake of housekeeping / keeping things tidy.)
 ```
 
 --------------------------------------------------------------------------------------------------------------
 
 ## Phase 4: CDK Bootstrap
-5. Change current working directory to the repo, which has a .flox folder
+1. Change current working directory to the repo, which has a .flox folder
 ```shell
-#[ec2-user@ec2-bastion-with-iam-admin-role:~]#
-ls -lah ~/easyeks | grep .flox
+#[ec2-user@ec2-bastion-with-iam-admin-role:~/easyeks]#
 cd ~/easyeks
+ls -lah | grep .flox
 ```
 
-6. Run flox activate in that folder
+1. Run flox activate in that folder
 ```shell
 #[ec2-user@ec2-bastion-with-iam-admin-role:~/easyeks]#
 flox activate
@@ -156,13 +152,15 @@ cdk --version
 npm --version
 ```
 
-* Bootstrap cdk
+1. Install node.js modules
 ```shell
-export AWS_REGION=ca-central-1
-cdk bootstrap
+# flox [flox.dev]
+# [admin@workstation:~/easyeks]
+npm install
+# ^-- will populate a /node_modules/, based on package.json
 ```
 
-7. CDK Bootstrap and Deploy
+1. Bootstrap CDK
 ```shell
 #[ec2-user@ec2-bastion-with-iam-admin-role:~/easyeks]#
 aws sts get-caller-identity
@@ -171,8 +169,16 @@ export AWS_REGION="ca-central-1"
 # ^-- recommend add a region to ~/.bashrc, or `aws configure`
 export AWS_ACCOUNT_ID=$(aws sts get-caller-identity | jq .Account | tr -d '\"')
 echo $AWS_ACCOUNT_ID
-cdk bootstrap aws://$AWS_ACCOUNT_ID/ca-central-1
+time cdk bootstrap aws://$AWS_ACCOUNT_ID/$AWS_REGION
 # ^-- bootstraps the region, after which you'll see a Stack name of "CDKToolkit"
 #     in AWS Web GUI Console > CloudFormation > Stacks (for that region)
 #     Note you can only deploy into region's that have been bootstrapped
+```
+
+1. Deploy cdk stacks
+```shell
+#[ec2-user@ec2-bastion-with-iam-admin-role:~/easyeks]#
+time cdk list
+time cdk deploy lower-envs-vpc
+time cdk deploy dev1-eks
 ```
