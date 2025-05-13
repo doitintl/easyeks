@@ -65,7 +65,7 @@ export function apply_config(config: Easy_EKS_Config_Data, stack: cdk.Stack){ //
     config.addEKSAddon('vpc-cni', {
         addonName: 'vpc-cni',
         resolveConflicts: 'OVERWRITE',
-        addonVersion: "v1.19.3-eksbuild.1", //latest tends to be valid for all versions of kubernetes
+        addonVersion: "v1.19.5-eksbuild.1", //latest tends to be valid for all versions of kubernetes
         // Use this to look up latest
         // aws eks describe-addon-versions --kubernetes-version=1.31 --addon-name=kube-proxy --query='addons[].addonVersions[].addonVersion' | jq '.[0]'
         //serviceAccountRoleArn: <-- leave this blank, to use worker node's IAM role, which gives dualstack ipv4/ipv6 support
@@ -74,7 +74,7 @@ export function apply_config(config: Easy_EKS_Config_Data, stack: cdk.Stack){ //
 
     config.addEKSAddon('coredns', {
         addonName: 'coredns',
-        addonVersion: 'v1.11.4-eksbuild.2', //latest tends to be valid for all version of kubernetes
+        addonVersion: 'v1.11.4-eksbuild.10', //latest tends to be valid for all version of kubernetes
         // Use this to look up latest
         // aws eks describe-addon-versions --kubernetes-version=1.31 --addon-name=coredns --query='addons[].addonVersions[].addonVersion' | jq '.[0]'
         resolveConflicts: 'OVERWRITE',
@@ -247,7 +247,7 @@ export function deploy_workloads(config: Easy_EKS_Config_Data, stack: cdk.Stack,
     const ebs_csi_addon = new eks.CfnAddon(stack, 'aws-ebs-csi-driver', {
         clusterName: cluster.clusterName,
         addonName: 'aws-ebs-csi-driver',
-        addonVersion: 'v1.41.0-eksbuild.1', //v--query for latest
+        addonVersion: 'v1.43.0-eksbuild.1', //v--query for latest
         // aws eks describe-addon-versions --kubernetes-version=1.31 --addon-name=aws-ebs-csi-driver --query='addons[].addonVersions[].addonVersion' | jq '.[0]'
         resolveConflicts: 'OVERWRITE',
         podIdentityAssociations: [
