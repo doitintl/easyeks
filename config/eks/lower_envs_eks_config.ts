@@ -23,23 +23,9 @@ export function apply_config(config: Easy_EKS_Config_Data, stack: cdk.Stack){ //
            That act as EKS Admins of all lower environments.
         */
     }
-    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    
-    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     //Kubernetes verson and addon's that may depend on Kubernetes version / should be updated along side it should be specified here
     config.setKubernetesVersion(eks.KubernetesVersion.V1_31);
     config.setKubectlLayer(new KubectlV31Layer(stack, 'kubectl'));
-    config.addEKSAddon('kube-proxy', { //spelling matters for all addons
-        addonName: 'kube-proxy', //spelling matter & should match above
-        addonVersion: 'v1.31.7-eksbuild.7', //Note you can comment this out, but you'll get default instead of latest.
-        // Use this to look up latest
-        // aws eks describe-addon-versions --kubernetes-version=1.31 --addon-name=kube-proxy --query='addons[].addonVersions[].addonVersion' | jq '.[0]'
-        resolveConflicts: 'OVERWRITE',
-        configurationValues: '{}',
-    });
-    //NOTE! AWS LoadBalancer Controller may need to be updated along with version of Kubernetes
-    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 }//end apply_config()
 
@@ -47,7 +33,26 @@ export function apply_config(config: Easy_EKS_Config_Data, stack: cdk.Stack){ //
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-export function deploy_workloads(config: Easy_EKS_Config_Data, stack: cdk.Stack, cluster: eks.Cluster){
+export function deploy_dependencies(config: Easy_EKS_Config_Data, stack: cdk.Stack, cluster: eks.Cluster){
+
+    const kube_proxy = new eks.CfnAddon(stack, 'kube-proxy', {
+        clusterName: cluster.clusterName,
+        addonName: 'kube-proxy',
+        addonVersion: 'v1.31.7-eksbuild.7', //v--query for latest, alternatively you can comment this line out to get default version
+        // aws eks describe-addon-versions --kubernetes-version=1.31 --addon-name=kube-proxy --query='addons[].addonVersions[].addonVersion' | jq '.[0]'
+        resolveConflicts: 'OVERWRITE',
+        configurationValues: '{}',
+    });
+    //NOTE! AWS LoadBalancer Controller may occassionally need to be updated along with version of Kubernetes
+    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+}//end deploy_dependencies()
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+export function deploy_workload_dependencies(config: Easy_EKS_Config_Data, stack: cdk.Stack, cluster: eks.Cluster){
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     //Install AWS Load Balancer Controller via Helm Chart
@@ -119,5 +124,13 @@ export function deploy_workloads(config: Easy_EKS_Config_Data, stack: cdk.Stack,
     })).generate_manifests();
     Apply_Karpenter_YAMLs_with_fixes(stack, cluster, config, karpenter_helm_config, karpenter_YAMLs, awsLoadBalancerController);
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+}//end deploy_workload_dependencies()
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+export function deploy_workloads(config: Easy_EKS_Config_Data, stack: cdk.Stack, cluster: eks.Cluster){
 
 }//end deploy_workloads()
