@@ -31,38 +31,40 @@ export function apply_config(config: Easy_EKS_Config_Data, stack: cdk.Stack){ //
     */
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+}//end apply_config()
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+export function deploy_dependencies(config: Easy_EKS_Config_Data, stack: cdk.Stack, cluster: eks.Cluster){
+
     /*To see official names of all eks add-ons:
     aws eks describe-addon-versions  \
     --kubernetes-version=1.31 \
     --query 'sort_by(addons  &owner)[].{owner: owner, addonName: addonName}' \
     --output table
     */
-    //global config has lowest precedence
-    //my_orgs config replaces global config
-    //lower_envs config replaces both of the above
-    //dev env specific values overide all of the above
-    //This holds true if you use the convience methods or mimic their order.
-    //kube-proxy below is also defined in other config files, so the below config will be ignored, since the others have higher precedence.
-    //Note if you don't specify a value like below it'll use the default value, suggestion is for my_orgs config to use latest.
-    //You'll likely want to use overrides when envs are on different versions of Kubernetes.
-    config.addEKSAddon('kube-proxy', {
-      addonName: 'kube-proxy',
-      resolveConflicts: 'OVERWRITE',
-      configurationValues: '{}',
-    });
-
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    // NOTICE: Don't add eks-pod-identity-agent via config.addEKSAddon(...omitted...);
+    // NOTICE: Don't add eks-pod-identity-agent addon
     // It's purposefully left out to work around CDK bug https://github.com/aws/aws-cdk/issues/32580
     // The cdk bug relates to an error where there's a complaint about it already being present, if 2 things try to install it.
     // The AWS Load Balancer Controller installation logic, will trigger the installation of eks-pod-identity-agent addon.
     // https://github.com/aws/aws-cdk/pull/33891
-    // ^-- A WIP fix exists
+    // ^-- A fix is actively being worked on, but not yet available.
     // Note the IaC will deploy default (which isn't latest)
     // but if you manually update in GUI it'll stay updated
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-}//end apply_config()
+}//end deploy_dependencies()
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+export function deploy_workload_dependencies(config: Easy_EKS_Config_Data, stack: cdk.Stack, cluster: eks.Cluster){
+
+}//end deploy_workload_dependencies()
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

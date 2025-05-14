@@ -49,10 +49,34 @@ export class Easy_EKS{ //purposefully don't extend stack, to implement builder p
     apply_higher_envs_eks_config(){ higher_envs_eks_config.apply_config(this.config,this.stack); }
     apply_dev_eks_config(){ dev_eks_config.apply_config(this.config,this.stack); }
     apply_dev_baseline_config(){ //convenience method
-        global_baseline_eks_config.apply_config(this.config,this.stack);
-        my_orgs_baseline_eks_config.apply_config(this.config,this.stack);
-        lower_envs_eks_config.apply_config(this.config,this.stack);
-        dev_eks_config.apply_config(this.config,this.stack);
+        this.apply_global_baseline_eks_config();
+        this.apply_my_orgs_baseline_eks_config();
+        this.apply_lower_envs_eks_config();
+        this.apply_dev_eks_config();
+    }
+
+    deploy_global_baseline_eks_dependencies(){ global_baseline_eks_config.deploy_dependencies(this.config,this.stack, this.cluster); }
+    deploy_my_orgs_baseline_eks_dependencies(){ my_orgs_baseline_eks_config.deploy_dependencies(this.config,this.stack, this.cluster); }
+    deploy_lower_envs_eks_dependencies(){ lower_envs_eks_config.deploy_dependencies(this.config,this.stack, this.cluster); }
+    deploy_higher_envs_eks_dependencies(){ higher_envs_eks_config.deploy_dependencies(this.config,this.stack, this.cluster); }
+    deploy_dev_eks_dependencies(){ dev_eks_config.deploy_dependencies(this.config,this.stack, this.cluster); }
+    deploy_dev_baseline_dependencies(){ //convenience method
+        this.deploy_global_baseline_eks_dependencies();
+        this.deploy_my_orgs_baseline_eks_dependencies();
+        this.deploy_lower_envs_eks_dependencies();
+        this.deploy_dev_eks_dependencies();
+    }
+
+    deploy_global_baseline_eks_workload_dependencies(){ global_baseline_eks_config.deploy_workload_dependencies(this.config,this.stack, this.cluster); }
+    deploy_my_orgs_baseline_eks_workload_dependencies(){ my_orgs_baseline_eks_config.deploy_workload_dependencies(this.config,this.stack, this.cluster); }
+    deploy_lower_envs_eks_workload_dependencies(){ lower_envs_eks_config.deploy_workload_dependencies(this.config,this.stack, this.cluster); }
+    deploy_higher_envs_eks_workload_dependencies(){ higher_envs_eks_config.deploy_workload_dependencies(this.config,this.stack, this.cluster); }
+    deploy_dev_eks_workload_dependencies(){ dev_eks_config.deploy_workload_dependencies(this.config,this.stack, this.cluster); }
+    deploy_dev_baseline_workload_dependencies(){ //convenience method
+        this.deploy_global_baseline_eks_workload_dependencies();
+        this.deploy_my_orgs_baseline_eks_workload_dependencies();
+        this.deploy_lower_envs_eks_workload_dependencies();
+        this.deploy_dev_eks_workload_dependencies();
     }
 
     deploy_global_baseline_eks_workloads(){ global_baseline_eks_config.deploy_workloads(this.config,this.stack, this.cluster); }
@@ -61,10 +85,18 @@ export class Easy_EKS{ //purposefully don't extend stack, to implement builder p
     deploy_higher_envs_eks_workloads(){ higher_envs_eks_config.deploy_workloads(this.config,this.stack, this.cluster); }
     deploy_dev_eks_workloads(){ dev_eks_config.deploy_workloads(this.config,this.stack, this.cluster); }
     deploy_dev_baseline_workloads(){ //convenience method
-        global_baseline_eks_config.deploy_workloads(this.config,this.stack, this.cluster);
-        my_orgs_baseline_eks_config.deploy_workloads(this.config,this.stack, this.cluster);
-        lower_envs_eks_config.deploy_workloads(this.config,this.stack, this.cluster);
-        dev_eks_config.deploy_workloads(this.config,this.stack, this.cluster);
+        this.deploy_global_baseline_eks_workloads();
+        this.deploy_my_orgs_baseline_eks_workloads();
+        this.deploy_lower_envs_eks_workloads();
+        this.deploy_dev_eks_workloads();
+    }
+
+    deploy_opinionated_dev(){ //shortest convenience method
+        this.apply_dev_baseline_config();
+        this.deploy_eks_construct_into_this_objects_stack(); //<--creates eks cluster
+        this.deploy_dev_baseline_dependencies();
+        this.deploy_dev_baseline_workload_dependencies();
+        this.deploy_dev_baseline_workloads();
     }
 
     deploy_eks_construct_into_this_objects_stack(){
@@ -183,21 +215,6 @@ export class Easy_EKS{ //purposefully don't extend stack, to implement builder p
             }
         }
         ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-        ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-        //Logic to Add EKS Addons Defined in Config as Code 
-        if(this.config.eksAddOnsMap){ //JS falsy statement meaning if not empty
-            for (let [addonName, input] of this.config.eksAddOnsMap){
-                const props: eks.CfnAddonProps = { 
-                    clusterName: this.cluster.clusterName,
-                    addonName: addonName,
-                    addonVersion: input.addonVersion,
-                    configurationValues: input.configurationValues,
-                }
-                new eks.CfnAddon(this.stack, addonName, props);
-            }
-        }
-        ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     }//end deploy_cluster()
 

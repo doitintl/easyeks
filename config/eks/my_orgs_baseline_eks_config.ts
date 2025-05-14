@@ -62,20 +62,29 @@ export function apply_config(config: Easy_EKS_Config_Data, stack: cdk.Stack){ //
         * Reliability/Maintainability Improvement: It eliminates the possibility of running out of IP Addresses.
         * Cost Savings: Due to the above, it's safe to run multiple EasyEKS Clusters in 1 VPC (which saves on NAT GW Costs)*/
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    config.addEKSAddon('vpc-cni', {
+
+}//end apply_config()
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+export function deploy_dependencies(config: Easy_EKS_Config_Data, stack: cdk.Stack, cluster: eks.Cluster){
+
+    const vpc_cni = new eks.CfnAddon(stack, 'vpc-cni', {
+        clusterName: cluster.clusterName,
         addonName: 'vpc-cni',
-        resolveConflicts: 'OVERWRITE',
-        addonVersion: "v1.19.5-eksbuild.1", //latest tends to be valid for all versions of kubernetes
-        // Use this to look up latest
-        // aws eks describe-addon-versions --kubernetes-version=1.31 --addon-name=kube-proxy --query='addons[].addonVersions[].addonVersion' | jq '.[0]'
+        addonVersion: 'v1.19.5-eksbuild.1', //v--query for latest, latest of this addon tends to be valid for all versions of kubernetes
+        // aws eks describe-addon-versions --kubernetes-version=1.31 --addon-name=vpc-cni --query='addons[].addonVersions[].addonVersion' | jq '.[0]'
         //serviceAccountRoleArn: <-- leave this blank, to use worker node's IAM role, which gives dualstack ipv4/ipv6 support
+        resolveConflicts: 'OVERWRITE',
         configurationValues: '{}',
     });//end vpc-cni addon
 
-    config.addEKSAddon('coredns', {
+    const coredns = new eks.CfnAddon(stack, 'coredns', {
+        clusterName: cluster.clusterName,
         addonName: 'coredns',
-        addonVersion: 'v1.11.4-eksbuild.10', //latest tends to be valid for all version of kubernetes
-        // Use this to look up latest
+        addonVersion: 'v1.11.4-eksbuild.10', //v--query for latest, latest tends to be valid for all version of kubernetes
         // aws eks describe-addon-versions --kubernetes-version=1.31 --addon-name=coredns --query='addons[].addonVersions[].addonVersion' | jq '.[0]'
         resolveConflicts: 'OVERWRITE',
         //v-- Below represents an optimized CoreDNS deployment, based on
@@ -135,7 +144,8 @@ export function apply_config(config: Easy_EKS_Config_Data, stack: cdk.Stack){ //
         }`, //end CoreDNS configurationValues override
     });//end CoreDNS AddOn
 
-    config.addEKSAddon('metrics-server', { //allows `kubectl top nodes` to work & valid for all versions of kubernetes
+    const metrics_server = new eks.CfnAddon(stack, 'metrics-server', { //allows `kubectl top nodes` to work & valid for all versions of kubernetes
+        clusterName: cluster.clusterName,
         addonName: 'metrics-server',
         addonVersion: 'v0.7.2-eksbuild.3', //v--query for latest
         // aws eks describe-addon-versions --kubernetes-version=1.31 --addon-name=metrics-server --query='addons[].addonVersions[].addonVersion' | jq '.[0]'
@@ -190,26 +200,22 @@ export function apply_config(config: Easy_EKS_Config_Data, stack: cdk.Stack){ //
         }`, //end metrics-server configurationValues override
     });//end metrics-server addon
 
-    config.addEKSAddon('eks-node-monitoring-agent', { //latest should work with all versions of kubernetes
+    const eks_node_monitoring_agent = new eks.CfnAddon(stack, 'eks-node-monitoring-agent', {
+        clusterName: cluster.clusterName,
         addonName: 'eks-node-monitoring-agent',
         addonVersion: 'v1.2.0-eksbuild.1', //v--query for latest
         // aws eks describe-addon-versions --kubernetes-version=1.31 --addon-name=eks-node-monitoring-agent --query='addons[].addonVersions[].addonVersion' | jq '.[0]'
+        resolveConflicts: 'OVERWRITE',
         configurationValues: '{}',
     });
-    // v-- most won't need this, disabling by default
-    // config.addEKSAddon('snapshot-controller', { //latest should work with all versions of kubernetes
-    //   addonName: 'snapshot-controller',
-    //   addonVersion: 'v8.2.0-eksbuild.1', //v--query for latest
-    //   // aws eks describe-addon-versions --kubernetes-version=1.31 --addon-name=snapshot-controller --query='addons[].addonVersions[].addonVersion' | jq '.[0]'
-    //   configurationValues: '{}',
-    // });
-  }//end apply_config()
+
+}//end deploy_dependencies()
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-export function deploy_workloads(config: Easy_EKS_Config_Data, stack: cdk.Stack, cluster: eks.Cluster){
+export function deploy_workload_dependencies(config: Easy_EKS_Config_Data, stack: cdk.Stack, cluster: eks.Cluster){
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     //Install Node Local DNS Cache
@@ -232,7 +238,7 @@ export function deploy_workloads(config: Easy_EKS_Config_Data, stack: cdk.Stack,
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // Install EBS CSI Driver Addon
-    // If you try to use eks.ServiceAccount with eksAddons you'll hit an integration bug, this works around it.
+    // If you try to use eks.ServiceAccount with eksAddons you'll hit a cdk integration bug, this works around it.
     // (The gist of the bug is it'd fail, because the name would already exist because 2 things would try to create it.)
     const ebs_csi_addon_iam_role = new iam.Role(stack, 'aws-ebs-csi-driver-iam-role', {
         managedPolicies: [ iam.ManagedPolicy.fromAwsManagedPolicyName('service-role/AmazonEBSCSIDriverPolicy') ],
@@ -264,10 +270,28 @@ export function deploy_workloads(config: Easy_EKS_Config_Data, stack: cdk.Stack,
     });
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+    // v-- most won't need this, disabling by default
+    // const pvc_snapshot_controller = new eks.CfnAddon(stack, 'snapshot-controller', {
+    //     clusterName: cluster.clusterName,
+    //     addonName: 'snapshot-controller',
+    //     addonVersion: 'v8.2.0-eksbuild.1', //v--query for latest
+    //     // aws eks describe-addon-versions --kubernetes-version=1.31 --addon-name=snapshot-controller --query='addons[].addonVersions[].addonVersion' | jq '.[0]'
+    //     resolveConflicts: 'OVERWRITE',
+    //     configurationValues: '{}',
+    // });
+
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     //Install default storage class
     //File in /research/ was converted using https://onlineyamltools.com/convert-yaml-to-json
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+}//end deploy_workload_dependencies()
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+export function deploy_workloads(config: Easy_EKS_Config_Data, stack: cdk.Stack, cluster: eks.Cluster){
 
 }//end deploy_workloads()
