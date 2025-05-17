@@ -21,7 +21,6 @@ export class Easy_EKS_Config_Data { //This object just holds config data.
     ipMode: eks.IpFamily;
     clusterAdminAccessEksApiArns?: string[];
     clusterViewerAccessAwsAuthConfigmapAccounts?: string[]; //only aws-auth configmap supports accounts
-    eksAddOnsMap?: Map<string, EKSAddOnInput>; //Map enables value override between configs (global_baseline, my_orgs_baseline, lower_envs_eks, and dev)
     kmsKeyAlias: string; //kms key with this alias will be created or reused if pre-existing
     baselineNodesNumber: number;
     baselineNodesType: eks.CapacityType; //enum eks.CapacityType.SPOT or eks.CapacityType.ON_DEMAND
@@ -102,15 +101,6 @@ export class Easy_EKS_Config_Data { //This object just holds config data.
     addClusterViewerAccount(account:string){        //v--initialize if undefined
         if(this.clusterViewerAccessAwsAuthConfigmapAccounts === undefined){ this.clusterViewerAccessAwsAuthConfigmapAccounts = [account] } 
         else{ this.clusterViewerAccessAwsAuthConfigmapAccounts.push(account); } //push means add to end of array
-    }
-    addEKSAddon(name:string, EKSAddOnProps:EKSAddOnInput){
-        if(this.eksAddOnsMap === undefined){
-            this.eksAddOnsMap = new Map<string, EKSAddOnInput>(); //initialize if undefined
-            this.eksAddOnsMap.set(name, EKSAddOnProps); //<-- add Key Value Entry to Map
-        }
-        else{
-            this.eksAddOnsMap.set(name, EKSAddOnProps);  //<-- add Key Value Entry to Map
-        }
     }
     setKmsKeyAlias(kms_key_alias: string){
         /*Note (About UX improvement logic):

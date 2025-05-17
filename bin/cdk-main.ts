@@ -106,23 +106,39 @@ lower_envs_vpc.deploy_vpc_construct_into_this_objects_stack();
 
 ///////////////////////////////////////////////////////////////////////////////////////////
 //EKS Infrastructure as Code:
-//Example 1 shows convience methods
+//Example 1: Long form, showing all steps of builder pattern 
+//(This format makes it easier to understand the flow of logic and can be useful for debugging)
 const dev1_eks = new Easy_EKS(cdk_state, 'dev1-eks', low_co2_AMER_stack_config);
-dev1_eks.apply_dev_baseline_config(); //<-- conviencne method #1
+dev1_eks.apply_global_baseline_eks_config();
+dev1_eks.apply_my_orgs_baseline_eks_config();
+dev1_eks.apply_lower_envs_eks_config();
+dev1_eks.apply_dev_eks_config();
 dev1_eks.deploy_eks_construct_into_this_objects_stack();
-dev1_eks.deploy_dev_baseline_workloads(); //<-- conviencne method #2
-//^-- deployment time of ~15-20m
+dev1_eks.deploy_global_baseline_eks_dependencies();
+dev1_eks.deploy_my_orgs_baseline_eks_dependencies();
+dev1_eks.deploy_lower_envs_eks_dependencies();
+dev1_eks.deploy_dev_eks_dependencies();
+dev1_eks.deploy_global_baseline_eks_workload_dependencies();
+dev1_eks.deploy_my_orgs_baseline_eks_workload_dependencies();
+dev1_eks.deploy_lower_envs_eks_workload_dependencies();
+dev1_eks.deploy_dev_eks_workload_dependencies();
+dev1_eks.deploy_global_baseline_eks_workloads();
+dev1_eks.deploy_my_orgs_baseline_eks_workloads();
+dev1_eks.deploy_lower_envs_eks_workloads();
+dev1_eks.deploy_dev_eks_workloads();
+//^-- deployment time of ~18.6mins (~15-20mins)
 
-//Example 2 is equivalent to Example 1, just more explicit.
+//Example 2: Equivalent to Example 1, just with convenience methods as short hand
+//(This format balances usability and debugability)
 const dev2_eks = new Easy_EKS(cdk_state, 'dev2-eks', low_co2_AMER_stack_config);
-dev2_eks.apply_global_baseline_eks_config();
-dev2_eks.apply_my_orgs_baseline_eks_config();
-dev2_eks.apply_lower_envs_eks_config();
-dev2_eks.apply_dev_eks_config();
-dev2_eks.deploy_eks_construct_into_this_objects_stack();
-dev2_eks.deploy_global_baseline_eks_workloads();
-dev2_eks.deploy_my_orgs_baseline_eks_workloads();
-dev2_eks.deploy_lower_envs_eks_workloads();
-dev2_eks.deploy_dev_eks_workloads();
-///////////////////////////////////////////////////////////////////////////////////////////
+dev2_eks.apply_dev_baseline_config(); //<-- convenience method #1
+dev2_eks.deploy_eks_construct_into_this_objects_stack(); //<-- creates eks cluster
+dev2_eks.deploy_dev_baseline_dependencies(); //<-- convenience method #2
+dev2_eks.deploy_dev_baseline_workload_dependencies(); //<-- convenience method #3
+dev2_eks.deploy_dev_baseline_workloads(); //<-- convenience method #4
 
+//Example 3: Equivalent to Examples 1 & 2, just shorter
+//(This format optimizes usability, but can make debugability slightly harder)
+const dev3_eks = new Easy_EKS(cdk_state, 'dev3-eks', low_co2_AMER_stack_config);
+dev3_eks.deploy_opinionated_dev(); //<-- convenience method #5
+///////////////////////////////////////////////////////////////////////////////////////////
