@@ -1,7 +1,7 @@
 # Easy EKS (Pre-Alpha)
 Easy EKS is FOSS (free open source software), developed by engineers at doit.com, who
 believe EKS can be simple, accessible, and enjoyable to use. If you find this to be
-useful, then consider checking out [doit's FinOps Platform and Cloud Provider Support.](go.doit.com/easyeks_interest_tracker)
+useful, then consider checking out [doit's FinOps Platform and Cloud Provider Support.](https://go.doit.com/easyeks_interest_tracker)
 
 ## What is Easy EKS?
 An opinionated bundling of automation & Infrastructure as code that aims to:
