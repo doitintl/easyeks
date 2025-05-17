@@ -1,9 +1,13 @@
 # Easy EKS (Pre-Alpha)
+Easy EKS is FOSS (free open source software), developed by engineers at doit.com, who
+believe EKS can be simple, accessible, and enjoyable to use. If you find this to be
+useful, then consider checking out [doit's FinOps Platform and Cloud Provider Support.](go.doit.com/easyeks_interest_tracker)
 
 ## What is Easy EKS?
 An opinionated bundling of automation & Infrastructure as code that aims to:
 1. Make it easy to provision EKS clusters that are nearly production ready by default.
-2. Maintain a heavily standardized opinionated set of IaC, which makes automation maintainable.
+2. Maintain a heavily standardized opinionated set of IaC, which makes automation
+   maintainable.
 3. Apply useful design patterns from Helm and Kustomize to IaC based on AWS CDK.
 
 ## FAQs: Focused on Setting Expectations up Front
@@ -93,22 +97,22 @@ An opinionated bundling of automation & Infrastructure as code that aims to:
 
 ### **What features are purposefully not implemented? (and pragmatic reasons for why not)** 
 1. **Deployment of easyeks vpcs and clusters using a CICD pipeline is out of scope.**  
-  **This project project intends that a human manually cdk deploys CF stacks from a terminal.**
-  * **Why Reason #1: Avoids Problems**  
-    cdk is an abstraction layer that orchestrates AWS Cloud Formation deployments. If you
-    specify an incorrect value in the config and an error occurs, then:
-    * CICD pipelines can hide error messages, make error messages harder to find, add time
-      between feedback loop interations, add prerequisites, learning, and complexity.
-    * cdk deployments are idempotent in the case of success, but not in the case of failure.
-    * When a failure occurs, it's possible for Cloud Formation to get stuck in ways manual
-      ClickOps intervention is needed by an admin to get them back to a deployable state.
-      This means you can't manage it purely through a CICD pipeline, and since manual
-      intervention is occasionally required you may as well just do it manually.
-  * **Why Reason #2: Even if a clean pipeline implementation existed, there is little benefit
-    in implementing pipeline level automation of cdk stack deployments.**
-    * Once configured VPC and Cluster level infrastructure don't need daily updates.
-    * A more realistic and perfectly reasonable maintenance strategy, is to periodically
-      manually run updates from a workstation, once every few months is fine.
+   **This project project intends that a human manually cdk deploys CF stacks from a terminal.**
+   * **Why Reason #1: Avoids Problems**  
+     cdk is an abstraction layer that orchestrates AWS Cloud Formation deployments. If you
+     specify an incorrect value in the config and an error occurs, then:
+     * CICD pipelines can hide error messages, make error messages harder to find, add time
+       between feedback loop interations, add prerequisites, learning, and complexity.
+     * cdk deployments are idempotent in the case of success, but not in the case of failure.
+     * When a failure occurs, it's possible for Cloud Formation to get stuck in ways manual
+       ClickOps intervention is needed by an admin to get them back to a deployable state.
+       This means you can't manage it purely through a CICD pipeline, and since manual
+       intervention is occasionally required you may as well just do it manually.
+   * **Why Reason #2: Even if a clean pipeline implementation existed, there is little benefit
+     in implementing pipeline level automation of cdk stack deployments.**
+     * Once configured VPC and Cluster level infrastructure don't need daily updates.
+     * A more realistic and perfectly reasonable maintenance strategy, is to periodically
+       manually run updates from a workstation, once every few months is fine.
 1. **Easy EKS doesn't supply upstream updates and releases don't aim to be backwards compatible**
    * **Why Reason #1: There's no true need to do so**
      * Even though Easy EKS doesn't offer upstream updates, you can still receive upstream
@@ -116,19 +120,19 @@ An opinionated bundling of automation & Infrastructure as code that aims to:
      * This means that instead of updating Easy EKS v0.5.0 -> v0.6.0 -> v0.7.0 -> etc.  
        * The way Easy EKS' updates are intended to work is as follows:  
          Any version you adopt regardless of if it's v0.5.0, v0.6.0, v0.7.0, etc. They're just
-         templates representing a standardized bundling of IaC. While it's true that newer versions
-         will be better, that doesn't mean the older versions will be bad. Any version of the template
-         new or old should be updatable to latest cdk, eks, helm charts, etc.
+         templates representing a standardized bundling of IaC. While it's true that newer 
+         versions will be better, that doesn't mean the older versions will be bad. Any version
+         of the template new or old should be updatable to latest cdk, eks, helm charts, etc.
        * You're supposed to treat each release of easyeks as your own personal fork and make it
          your own, threat it as a starting point and modify it however you want.
-       * The only time you may want to consider updating to a new release of easyeks is if you have
-         the opportunity to start over from scratch, or think it's worth doing a blue green cutover.
-         One strategy you may want to use is to use early pre-alpha releases of easyeks for dev,
-         sandbox, and ephemeral cluster environments. And wait until it's at least alpha before using
-         it for production.
+       * The only time you may want to consider updating to a new release of easyeks is if you
+         have the opportunity to start over from scratch, or think it's worth doing a blue green
+         cutover. One strategy you may want to use is to use early pre-alpha releases of easyeks
+         for dev, sandbox, and ephemeral cluster environments. And wait until it's at least alpha
+         before using it for production.
    * **Why Reason #2: Attemping would place unnecessary limits and burden on easyeks's maintainers.**
-     * Easy EKS is FOSS (Free Open Source Software) developed during free time. It's not funded or
-       staffed to do advanced things like CICD pipelines and with tests for backwards compatibility.
+     * Easy EKS is FOSS developed during free time. It's not funded or staffed to implement
+       advanced things like CICD pipelines and with tests for backwards compatibility.
      * Easy EKS is free so maintainers get to develop it stress free, without needing to contemplate
        the ramifications of renaming a variable, simplifying, or altering a function.
      * Since it's IaC that you're meant to customize, there's also a greater logistical challenges
