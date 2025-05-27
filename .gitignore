@@ -8,9 +8,6 @@ node_modules
 .cdk.staging
 cdk.out
 
-# other CDK files
-cdk.context.json
-
 # IDE files
 .idea/
 .vscode/
