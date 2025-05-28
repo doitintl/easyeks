@@ -4,6 +4,7 @@ import * as eks from 'aws-cdk-lib/aws-eks';
 import * as ec2 from 'aws-cdk-lib/aws-ec2';
 import * as iam from 'aws-cdk-lib/aws-iam';
 import { execSync } from 'child_process';
+import {InvalidInputError, validateTag} from './Utilities';
 
 type Optional<T, K extends keyof T> = Pick<Partial<T>, K> & Omit<T, K>;
 type EKSAddOnInput = Optional<eks.CfnAddonProps, 'clusterName'>; //makes clusterName Optional parameter
@@ -83,9 +84,15 @@ export class Easy_EKS_Config_Data { //This object just holds config data.
     }
     setKubernetesVersion(version: KubernetesVersion){ this.kubernetesVersion = version; }
     setKubectlLayer(version: cdk.aws_lambda.ILayerVersion ){ this.kubectlLayer = version; }
-    addTag(key: string, value: string){ 
-        if(this.tags === undefined){ this.tags = { [key] : value } }
-        else{ this.tags = { ...this.tags, [key] : value }}
+    addTag(key: string, value: string){
+        try {
+            validateTag(key, value)
+            if(this.tags === undefined){ this.tags = { [key] : value } }
+            else{ this.tags = { ...this.tags, [key] : value }}
+        } catch (error: any) {
+            console.error("Error:", error.message)
+            // throw "Error: Invalid tag key or value" // Using throw here to stop the checks; otherwise an error will print out for every place this tag would be applied
+        }
     }
     setBaselineMNGSize(num_baseline_nodes: number){
         this.baselineNodesNumber = num_baseline_nodes;
