@@ -91,7 +91,7 @@ export class Easy_EKS_Config_Data { //This object just holds config data.
             else{ this.tags = { ...this.tags, [key] : value }}
         } catch (error: any) {
             console.error("Error:", error.message)
-            // throw "Error: Invalid tag key or value" // Using throw here to stop the checks; otherwise an error will print out for every place this tag would be applied
+            throw "Error validating tags. See details above"// Using throw here to stop the checks; otherwise an error will print out for every place this tag would be applied, and the process will continue
         }
     }
     setBaselineMNGSize(num_baseline_nodes: number){

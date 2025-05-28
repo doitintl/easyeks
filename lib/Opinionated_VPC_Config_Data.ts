@@ -38,7 +38,7 @@ export class Opinionated_VPC_Config_Data { //This object just holds config data.
             else{ this.tags.push({key: key, value: value}) }
         } catch (error: any) {
             console.error("Error:", error.message)
-            // throw "Error: Invalid tag key or value" // Using throw here to stop the checks; otherwise an error will print out for every place this tag would be applied
+            throw "Error validating tags. See details above"// Using throw here to stop the checks; otherwise an error will print out for every place this tag would be applied, and the process will continue
         }
     }
     setNatGatewayProviderAsFckNat(props: FckNatInstanceProps){

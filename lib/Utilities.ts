@@ -12,9 +12,9 @@ export function validateTag(key: string, value: string){
     const allowedRegex = new RegExp(allowedChars, "mu");
 
     if (!allowedRegex.test(key)){
-        throw new InvalidInputError(`Invalid tag key: "${key}"\n${allowedCharsText}`)
+        throw new InvalidInputError(`Invalid tag key: "${key}". ${allowedCharsText}`)
     } else if (!allowedRegex.test(value)){
-        throw new InvalidInputError(`Invalid tag value: "${value}"\n${allowedCharsText}`)
+        throw new InvalidInputError(`Invalid tag value: "${value}". ${allowedCharsText}`)
     } else {
         return true
     }
