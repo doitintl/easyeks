@@ -35,8 +35,20 @@ export class Opinionated_VPC{
     apply_my_orgs_baseline_vpc_config(){ my_orgs_baseline_vpc_config.apply_config(this.config,this.stack); }
     apply_lower_envs_vpc_config(){ lower_envs_vpc_config.apply_config(this.config,this.stack); }
     apply_higher_envs_vpc_config(){ higher_envs_vpc_config.apply_config(this.config,this.stack); }
-    deploy_vpc_construct_into_this_objects_stack(){
+    stage_deployment_of_opinionated_vpc_for_lower_envs(){ //convenience method
+        this.apply_global_baseline_vpc_config();
+        this.apply_my_orgs_baseline_vpc_config();
+        this.apply_lower_envs_vpc_config();
+        this.stage_deployment_of_vpc_construct_into_this_objects_stack(); //<--stages deployment of vpc
+    }
+    stage_deployment_of_opinionated_vpc_for_higher_envs(){ //convenience method
+        this.apply_global_baseline_vpc_config();
+        this.apply_my_orgs_baseline_vpc_config();
+        this.apply_higher_envs_vpc_config();
+        this.stage_deployment_of_vpc_construct_into_this_objects_stack(); //<--stages deployment of vpc
+    }
 
+    stage_deployment_of_vpc_construct_into_this_objects_stack(){
         //https://docs.aws.amazon.com/cdk/api/v2/docs/aws-cdk-lib.aws_ec2.VpcProps.html
         this.vpc = new ec2.Vpc(this.stack, this.config.id, {
             vpcName: this.config.id,
