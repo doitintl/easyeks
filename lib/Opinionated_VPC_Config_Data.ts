@@ -1,6 +1,6 @@
 import { FckNatInstanceProvider, FckNatInstanceProps } from 'cdk-fck-nat' //source: npm install cdk-fck-nat@latest
 import * as ec2 from 'aws-cdk-lib/aws-ec2';
-import {InvalidInputError, validateTag} from './Utilities';
+import { validateTag } from './Utilities';
 
 export class Opinionated_VPC_Config_Data { //This object just holds config data.
     //Typescript(TS) readability notes

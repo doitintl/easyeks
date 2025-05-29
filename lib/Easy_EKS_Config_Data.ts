@@ -4,7 +4,7 @@ import * as eks from 'aws-cdk-lib/aws-eks';
 import * as ec2 from 'aws-cdk-lib/aws-ec2';
 import * as iam from 'aws-cdk-lib/aws-iam';
 import { execSync } from 'child_process';
-import {InvalidInputError, validateTag} from './Utilities';
+import { validateTag } from './Utilities';
 
 type Optional<T, K extends keyof T> = Pick<Partial<T>, K> & Omit<T, K>;
 type EKSAddOnInput = Optional<eks.CfnAddonProps, 'clusterName'>; //makes clusterName Optional parameter
