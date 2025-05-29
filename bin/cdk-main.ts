@@ -98,8 +98,8 @@ lower_envs_vpc.stage_deployment_of_opinionated_vpc_for_lower_envs();
 //     Then stages deployment of vpc construct into lower_envs_vpc.stack
 //     Actual Deployment happens when user runs `cdk deploy lower-envs-vpc`
 
-const higher_envs_vpc = new Opinionated_VPC(cdk_state, 'higher-envs-vpc', low_cost_AMER_stack_config);
-higher_envs_vpc.stage_deployment_of_opinionated_vpc_for_higher_envs();
+// const higher_envs_vpc = new Opinionated_VPC(cdk_state, 'higher-envs-vpc', low_cost_AMER_stack_config);
+// higher_envs_vpc.stage_deployment_of_opinionated_vpc_for_higher_envs();
 /* ^-- This is commented out by default for 2 reasons:
        1. Every uncommented staged deployment makes `cdk list` take longer to finish
           (Things run faster if you wait to uncomment deployable stacks until needed.)
@@ -158,16 +158,16 @@ const dev3_eks = new Easy_EKS(cdk_state, 'dev3-eks', low_co2_AMER_stack_config);
 dev3_eks.stage_deployment_of_opinionated_eks_cluster_for_dev_envs(); //<-- convenience method #5
 
 ///////////////////////////////////////////////////////////////////////////////////////////
-const test1_eks = new Easy_EKS(cdk_state, 'test1-eks', low_co2_AMER_stack_config);
-test1_eks.stage_deployment_of_opinionated_eks_cluster_for_test_envs();
+// const test1_eks = new Easy_EKS(cdk_state, 'test1-eks', low_co2_AMER_stack_config);
+// test1_eks.stage_deployment_of_opinionated_eks_cluster_for_test_envs();
 // ^-- This is commented out, because: 
 //     Every uncommented staged deployment makes `cdk list` take longer to finish
 //     (Things run faster if you wait to uncomment deployable stacks until you need them.)
 ///////////////////////////////////////////////////////////////////////////////////////////
-const stage1_eks = new Easy_EKS(cdk_state, 'stage1-eks', low_cost_AMER_stack_config);
-stage1_eks.stage_deployment_of_opinionated_eks_cluster_for_stage_envs();
-const prod1_eks = new Easy_EKS(cdk_state, 'prod1-eks', low_cost_AMER_stack_config);
-prod1_eks.stage_deployment_of_opinionated_eks_cluster_for_prod_envs();
+// const stage1_eks = new Easy_EKS(cdk_state, 'stage1-eks', low_cost_AMER_stack_config);
+// stage1_eks.stage_deployment_of_opinionated_eks_cluster_for_stage_envs();
+// const prod1_eks = new Easy_EKS(cdk_state, 'prod1-eks', low_cost_AMER_stack_config);
+// prod1_eks.stage_deployment_of_opinionated_eks_cluster_for_prod_envs();
 // ^-- These are commented out, because: 
 //     In addition to the above reason, they also depend on higher-envs-vpc being deployed
 ///////////////////////////////////////////////////////////////////////////////////////////
