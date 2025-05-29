@@ -16,24 +16,7 @@ export function apply_config(config: Easy_EKS_Config_Data, stack: cdk.Stack){ //
     //    More details:
     //      - https://docs.aws.amazon.com/eks/latest/userguide/eks-using-tags.html#tag-restrictions
     //      - https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/Using_Tags.html#tag-restrictions
-
-    /*
-    Note it's possible when updating tags, that you could see 
-    An error like AWS::EKS::Nodegroup "Update is not supported for the following properties"
-    If that happens temporarily edit the following line in Easy_EKS.ts
-    this.cluster.addNodegroupCapacity(`default_MNG`, default_MNG);
-    to
-    this.cluster.addNodegroupCapacity(`default_MNG-1`, default_MNG);
-    redeploy and it'll go through
-    then rename it back
-    Note: 
-    After setting default_MNG-1, you may see ...is in UPDATE_ROLLBACK_FAILED state and can not be updated
-    If so, go to CloudFormation -> stack -> Stack actions -> continue update rollback for stack - Advanced troubleshooting
-    --> resources to skip - optional (check the box) --> Continue update rollback. 
-    (wait 10 sec, then retry cdk deploy stack)
-    */
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
+    
 }//end apply_config()
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
