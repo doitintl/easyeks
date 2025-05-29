@@ -93,14 +93,29 @@ const low_cost_EMEA_stack_config: cdk.StackProps = {
 //Note: 'lower-envs-vpc' is both the VPC name and the CloudFormation Stack Name
 
 const lower_envs_vpc = new Opinionated_VPC(cdk_state, 'lower-envs-vpc', low_co2_AMER_stack_config);
-//Note: About the below lower_envs_vpc.apply_*_config() functions
-//      The order in which you call these functions matters, because some functions set
-//      values in a way that's intended to be overridable. This is why it's
-//      recommended to follow the below order of application (global -> my_org -> env)
-lower_envs_vpc.apply_global_baseline_vpc_config();
-lower_envs_vpc.apply_my_orgs_baseline_vpc_config();
-lower_envs_vpc.apply_lower_envs_vpc_config();
-lower_envs_vpc.deploy_vpc_construct_into_this_objects_stack();
+lower_envs_vpc.stage_deployment_of_opinionated_vpc_for_lower_envs();
+// ^-- This applys global_baseline_vpc_config, then my_orgs_baseline_vpc_config, then lower_envs_vpc_config
+//     Then stages deployment of vpc construct into lower_envs_vpc.stack
+//     Actual Deployment happens when user runs `cdk deploy lower-envs-vpc`
+
+const higher_envs_vpc = new Opinionated_VPC(cdk_state, 'higher-envs-vpc', low_cost_AMER_stack_config);
+higher_envs_vpc.stage_deployment_of_opinionated_vpc_for_higher_envs();
+/* ^-- This is commented out by default for 2 reasons:
+       1. Every uncommented staged deployment makes `cdk list` take longer to finish
+          (Things run faster if you wait to uncomment deployable stacks until needed.)
+       2. It won't work until cdk bootstrap is run in the configured stack's region.
+          (us-east-2 is associated with low_cost_AMER_stack_config)
+
+Commands to bootstrap: 
+Note: It's recommended to copy paste each command one at a time, & read output between runs.
+```bash
+export AWS_REGION=us-east-2
+export AWS_ACCOUNT=$(aws sts get-caller-identity | jq .Account | tr -d '"')
+echo $AWS_REGION
+echo $AWS_ACCOUNT
+cdk bootstrap aws://$AWS_ACCOUNT/$AWS_REGION
+```
+*/
 ///////////////////////////////////////////////////////////////////////////////////////////
 
 
@@ -113,32 +128,46 @@ dev1_eks.apply_global_baseline_eks_config();
 dev1_eks.apply_my_orgs_baseline_eks_config();
 dev1_eks.apply_lower_envs_eks_config();
 dev1_eks.apply_dev_eks_config();
-dev1_eks.deploy_eks_construct_into_this_objects_stack();
-dev1_eks.deploy_global_baseline_eks_dependencies();
-dev1_eks.deploy_my_orgs_baseline_eks_dependencies();
-dev1_eks.deploy_lower_envs_eks_dependencies();
-dev1_eks.deploy_dev_eks_dependencies();
-dev1_eks.deploy_global_baseline_eks_workload_dependencies();
-dev1_eks.deploy_my_orgs_baseline_eks_workload_dependencies();
-dev1_eks.deploy_lower_envs_eks_workload_dependencies();
-dev1_eks.deploy_dev_eks_workload_dependencies();
-dev1_eks.deploy_global_baseline_eks_workloads();
-dev1_eks.deploy_my_orgs_baseline_eks_workloads();
-dev1_eks.deploy_lower_envs_eks_workloads();
-dev1_eks.deploy_dev_eks_workloads();
+dev1_eks.stage_deployment_of_eks_construct_into_this_objects_stack();
+dev1_eks.stage_deployment_of_global_baseline_eks_dependencies();
+dev1_eks.stage_deployment_of_my_orgs_baseline_eks_dependencies();
+dev1_eks.stage_deployment_of_lower_envs_eks_dependencies();
+dev1_eks.stage_deployment_of_dev_eks_dependencies();
+dev1_eks.stage_deployment_of_global_baseline_eks_workload_dependencies();
+dev1_eks.stage_deployment_of_my_orgs_baseline_eks_workload_dependencies();
+dev1_eks.stage_deployment_of_lower_envs_eks_workload_dependencies();
+dev1_eks.stage_deployment_of_dev_eks_workload_dependencies();
+dev1_eks.stage_deployment_of_global_baseline_eks_workloads();
+dev1_eks.stage_deployment_of_my_orgs_baseline_eks_workloads();
+dev1_eks.stage_deployment_of_lower_envs_eks_workloads();
+dev1_eks.stage_deployment_of_dev_eks_workloads();
 //^-- deployment time of ~18.6mins (~15-20mins)
 
 //Example 2: Equivalent to Example 1, just with convenience methods as short hand
 //(This format balances usability and debugability)
 const dev2_eks = new Easy_EKS(cdk_state, 'dev2-eks', low_co2_AMER_stack_config);
 dev2_eks.apply_dev_baseline_config(); //<-- convenience method #1
-dev2_eks.deploy_eks_construct_into_this_objects_stack(); //<-- creates eks cluster
-dev2_eks.deploy_dev_baseline_dependencies(); //<-- convenience method #2
-dev2_eks.deploy_dev_baseline_workload_dependencies(); //<-- convenience method #3
-dev2_eks.deploy_dev_baseline_workloads(); //<-- convenience method #4
+dev2_eks.stage_deployment_of_eks_construct_into_this_objects_stack();
+dev2_eks.stage_deployment_of_dev_baseline_dependencies(); //<-- convenience method #2
+dev2_eks.stage_deployment_of_dev_baseline_workload_dependencies(); //<-- convenience method #3
+dev2_eks.stage_deployment_of_dev_baseline_workloads(); //<-- convenience method #4
 
 //Example 3: Equivalent to Examples 1 & 2, just shorter
 //(This format optimizes usability, but can make debugability slightly harder)
 const dev3_eks = new Easy_EKS(cdk_state, 'dev3-eks', low_co2_AMER_stack_config);
-dev3_eks.deploy_opinionated_dev(); //<-- convenience method #5
+dev3_eks.stage_deployment_of_opinionated_eks_cluster_for_dev_envs(); //<-- convenience method #5
+
+///////////////////////////////////////////////////////////////////////////////////////////
+const test1_eks = new Easy_EKS(cdk_state, 'test1-eks', low_co2_AMER_stack_config);
+test1_eks.stage_deployment_of_opinionated_eks_cluster_for_test_envs();
+// ^-- This is commented out, because: 
+//     Every uncommented staged deployment makes `cdk list` take longer to finish
+//     (Things run faster if you wait to uncomment deployable stacks until you need them.)
+///////////////////////////////////////////////////////////////////////////////////////////
+const stage1_eks = new Easy_EKS(cdk_state, 'stage1-eks', low_cost_AMER_stack_config);
+stage1_eks.stage_deployment_of_opinionated_eks_cluster_for_stage_envs();
+const prod1_eks = new Easy_EKS(cdk_state, 'prod1-eks', low_cost_AMER_stack_config);
+prod1_eks.stage_deployment_of_opinionated_eks_cluster_for_prod_envs();
+// ^-- These are commented out, because: 
+//     In addition to the above reason, they also depend on higher-envs-vpc being deployed
 ///////////////////////////////////////////////////////////////////////////////////////////
