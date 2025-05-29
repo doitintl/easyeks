@@ -13,7 +13,7 @@ export function validateTag(key: string, value: string){
 
     if (!allowedRegex.test(key)){
         throw new InvalidInputError(`Invalid tag key: "${key}". ${allowedCharsText}`)
-    } else if (key.startsWith("aws:")) {
+    } else if (key.toLowerCase().startsWith("aws:")) {
         throw new InvalidInputError(`Invalid tag key "${key}". Tag keys cannot start with "aws:".`)
     } else if (!allowedRegex.test(value)){
         throw new InvalidInputError(`Invalid tag value: "${value}". ${allowedCharsText}`)
