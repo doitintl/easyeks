@@ -6,6 +6,9 @@ import * as iam from 'aws-cdk-lib/aws-iam';
 import * as kms from 'aws-cdk-lib/aws-kms';
 import request from 'sync-request-curl'; //npm install sync-request-curl (cdk requires sync functions, async not allowed)
 import cluster from 'cluster';
+
+import { Storage_YAML_Generator, Apply_Storage_Class_YAMLs } from '../../lib/Storage_Class_Manifest';
+
 //Intended Use:
 //A baseline config file (to be applied to all EasyEKS Clusters in your organization)
 //EasyEKS Admins would be expected to edit this file with defaults specific to their org. (that rarely change and are low risk to add)
@@ -268,6 +271,19 @@ export function deploy_workload_dependencies(config: Easy_EKS_Config_Data, stack
             },
         }`, //end aws-ebs-csi-driver configurationValues override
     });
+    // adding gp3 storage class
+    const storage_class_YAMLs = (new Storage_YAML_Generator({
+        cluster: cluster,
+        config: config
+    }))
+    const storage_class = storage_class_YAMLs.generate_storage_class_manifests();
+    Apply_Storage_Class_YAMLs(stack, cluster, config, "defaultEBSClassStorage",storage_class);
+
+    //test persistent volume claim: This code is to be include in the constructions of your workload
+    // manifests, including here temporally as example and for testing purposes.
+    // const volume_claim = storage_class_YAMLs.generate_volume_claim_manifests("test-claim", "10Gi");
+    // Apply_Storage_Class_YAMLs(stack, cluster, config, "testClaim",volume_claim);
+
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     // v-- most won't need this, disabling by default
