@@ -240,7 +240,7 @@ export class Easy_EKS{ //purposefully don't extend stack, to implement builder p
         // ));}
         // else { eksBlueprint.resourceProvider(blueprints.GlobalResources.KmsKey, new blueprints.LookupKmsKeyProvider(this.config.kmsKeyAlias)); }
         ensure_existance_of_aliased_kms_key(this.config.kmsKeyAlias);
-        const kms_key = kms.Key.fromLookup(this.stack, 'pre-existing-kms-key', { aliasName: this.config.kmsKeyAlias });
+        const kms_key = this.config.kmsKey;
 
         this.cluster = new eks.Cluster(this.stack, this.config.id, {
             clusterName: this.config.id,

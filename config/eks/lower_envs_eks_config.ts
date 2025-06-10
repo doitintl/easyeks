@@ -12,6 +12,7 @@ export function apply_config(config: Easy_EKS_Config_Data, stack: cdk.Stack){ //
     config.setKmsKeyAlias("eks/lower-envs"); //kms key with this alias will be created or reused if pre-existing
     config.setVpcByName("lower-envs-vpc", config, stack); //Name as in VPC's Name Tag
     //config.setVpcById("vpc-0dbcacb511f9bac4e", config, stack); //Alternative pre-existing VPC deployment option
+    config.setKmsKey(stack);
     config.setBaselineMNGSize(2);
     config.setBaselineMNGType(eks.CapacityType.SPOT);
     if(process.env.CDK_DEFAULT_ACCOUNT==="111122223333"){

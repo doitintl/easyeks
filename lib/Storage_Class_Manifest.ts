@@ -15,9 +15,7 @@ export class Storage_YAML_Generator{
     generate_storage_class_manifests(){
         let array_of_yaml_manifests_to_return: { [key:string]: any }[] = [];
         let config = this.config;
-        let cluster = this.cluster;
-        let kmsKeyAlias = config.kmsKeyAlias;
-        const kms_key = kms.Key.fromLookup(cluster, 'pre-existing-kms-key', { aliasName: this.config.kmsKeyAlias });
+        const kms_key = config.kmsKey;
         const storage_class_gp3 = {
                 "apiVersion": "storage.k8s.io/v1",
                 "kind": "StorageClass",
