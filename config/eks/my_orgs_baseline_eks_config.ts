@@ -287,8 +287,8 @@ export function deploy_workload_dependencies(config: Easy_EKS_Config_Data, stack
           "reclaimPolicy": "Delete",
           "parameters": {
               "type": "gp3",
-              //"encrypted": "true",
-              //"kmsKeyId": `${config.kmsKey.keyArn}`
+              "encrypted": "true",
+              "kmsKeyId": `${config.kmsKey.keyArn}`
           }
       }
       new eks.KubernetesManifest(stack, "StorageClassManifest",
@@ -298,7 +298,7 @@ export function deploy_workload_dependencies(config: Easy_EKS_Config_Data, stack
             overwrite: true,
             prune: true,   
         }
-    ); 
+      );
    
     //test persistent volume claim: This code is to be include in the constructions of your workload
     // manifests, including here temporally as example and for testing purposes.
