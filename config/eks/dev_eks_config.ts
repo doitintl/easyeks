@@ -23,7 +23,73 @@ export function deploy_dependencies(config: Easy_EKS_Config_Data, stack: cdk.Sta
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 export function deploy_workload_dependencies(config: Easy_EKS_Config_Data, stack: cdk.Stack, cluster: eks.Cluster){
-
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////    
+    let name="test-claim-gp3";
+    let size="10Gi";
+    const volume_claim_gp3 = {
+        "apiVersion": "v1",
+        "kind": "PersistentVolumeClaim",
+        "metadata": {
+            "name": `${name}`,
+            "namespace": "default"
+        },
+        "spec": {
+            "accessModes": [
+                "ReadWriteOnce"
+            ],
+            "storageClassName": "kms-encrypted-gp3",
+            "resources": {
+            "requests": {
+                "storage": `${size}`
+            }
+            }
+        }
+    }
+    const pod_using_volume_claim = {
+        "apiVersion": "v1",
+        "kind": "Pod",
+        "metadata": {
+            "name": "app"
+        },
+        "spec": {
+            "containers": [
+                {
+                    "name": "app",
+                    "image": "ubuntu:latest",
+                    "command": [
+                        "/bin/sh"
+                    ],
+                    "args": [
+                        "-c",
+                        "while true; do echo $(date -u) >> /data/out.txt; sleep 5; done"
+                    ],
+                    "volumeMounts": [
+                        {
+                            "name": "persistent-storage",
+                            "mountPath": "/data"
+                        }
+                    ]
+                }
+            ],
+            "volumes": [
+                {
+                    "name": "persistent-storage",
+                    "persistentVolumeClaim": {
+                        "claimName": `${name}`
+                    }
+                }
+            ]
+        }
+    }
+    new eks.KubernetesManifest(stack, "persistentVolumeClaimManifest",
+    {
+        cluster: cluster,
+        manifest: [volume_claim_gp3, pod_using_volume_claim],
+        overwrite: true,
+        prune: true,
+    });
 }//end deploy_workload_dependencies()
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

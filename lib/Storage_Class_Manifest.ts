@@ -42,25 +42,26 @@ export class Storage_YAML_Generator{
     generate_volume_claim_manifests(name: string, size: string){
         let array_of_yaml_manifests_to_return: { [key:string]: any }[] = [];
         let cluster = this.cluster;
+
         const volume_claim_gp3 = {
-                "apiVersion": "v1",
-                "kind": "PersistentVolumeClaim",
-                "metadata": {
-                    "name": `${name}`,
-                    "namespace": "default"
-                },
-                "spec": {
-                    "accessModes": [
-                    "ReadWriteMany"
-                    ],
-                    "storageClassName": "kms-encrypted-gp3",
-                    "resources": {
-                    "requests": {
-                        "storage": `${size}`
-                    }
-                    }
+            "apiVersion": "v1",
+            "kind": "PersistentVolumeClaim",
+            "metadata": {
+                "name": `${name}`,
+                "namespace": "default"
+            },
+            "spec": {
+                "accessModes": [
+                    "ReadWriteOnce"
+                ],
+                "storageClassName": "kms-encrypted-gp3",
+                "resources": {
+                "requests": {
+                    "storage": `${size}`
                 }
-            } 
+                }
+            }
+        } 
         array_of_yaml_manifests_to_return.push(volume_claim_gp3)    
         return array_of_yaml_manifests_to_return;
     } //end generate_manifests

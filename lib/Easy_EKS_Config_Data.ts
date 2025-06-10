@@ -24,7 +24,7 @@ export class Easy_EKS_Config_Data { //This object just holds config data.
     clusterAdminAccessEksApiArns?: string[];
     clusterViewerAccessAwsAuthConfigmapAccounts?: string[]; //only aws-auth configmap supports accounts
     kmsKeyAlias: string; //kms key with this alias will be created or reused if pre-existing
-    kmsKey: eks.KubernetesKey; //optional, only used if you want to use a pre-existing KMS key`
+    kmsKey: kms.IKey; //optional, only used if you want to use a pre-existing KMS key`
     baselineNodesNumber: number;
     baselineNodesType: eks.CapacityType; //enum eks.CapacityType.SPOT or eks.CapacityType.ON_DEMAND
     workerNodeRole: iam.Role; //used by baselineMNG & Karpenter

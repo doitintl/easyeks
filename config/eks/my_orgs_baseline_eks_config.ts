@@ -272,13 +272,34 @@ export function deploy_workload_dependencies(config: Easy_EKS_Config_Data, stack
         }`, //end aws-ebs-csi-driver configurationValues override
     });
     // adding gp3 storage class
-    const storage_class_YAMLs = (new Storage_YAML_Generator({
-        cluster: cluster,
-        config: config
-    }))
-    const storage_class = storage_class_YAMLs.generate_storage_class_manifests();
-    Apply_Storage_Class_YAMLs(stack, cluster, config, "defaultEBSClassStorage",storage_class);
-
+      const storage_class_gp3 = {
+          "apiVersion": "storage.k8s.io/v1",
+          "kind": "StorageClass",
+          "metadata": {
+              "name": "kms-encrypted-gp3",
+              "annotations": {
+                  "storageclass.kubernetes.io/is-default-class": "true"
+              }
+          },
+          "provisioner": "ebs.csi.aws.com",
+          "volumeBindingMode": "WaitForFirstConsumer",
+          "allowVolumeExpansion": true,
+          "reclaimPolicy": "Delete",
+          "parameters": {
+              "type": "gp3",
+              //"encrypted": "true",
+              //"kmsKeyId": `${config.kmsKey.keyArn}`
+          }
+      }
+      new eks.KubernetesManifest(stack, "StorageClassManifest",
+        {
+            cluster: cluster,
+            manifest: [storage_class_gp3],
+            overwrite: true,
+            prune: true,   
+        }
+    ); 
+   
     //test persistent volume claim: This code is to be include in the constructions of your workload
     // manifests, including here temporally as example and for testing purposes.
     // const volume_claim = storage_class_YAMLs.generate_volume_claim_manifests("test-claim", "10Gi");
@@ -311,3 +332,5 @@ export function deploy_workload_dependencies(config: Easy_EKS_Config_Data, stack
 export function deploy_workloads(config: Easy_EKS_Config_Data, stack: cdk.Stack, cluster: eks.Cluster){
 
 }//end deploy_workloads()
+
+
