@@ -240,7 +240,6 @@ export class Easy_EKS{ //purposefully don't extend stack, to implement builder p
         //     this.config.kmsKeyAlias, {description: "Easy EKS generated kms key, used to encrypt etcd and ebs-csi-driver provisioned volumes"}
         // ));}
         // else { eksBlueprint.resourceProvider(blueprints.GlobalResources.KmsKey, new blueprints.LookupKmsKeyProvider(this.config.kmsKeyAlias)); }
-        console.log(`Ensuring existence of KMS Key with alias: ${this.config.kmsKeyAlias}`);
         ensure_existance_of_aliased_kms_key(this.config.kmsKeyAlias, this.stack.stackName, this.stack.region);
         const kms_key = this.config.kmsKey;
     
@@ -645,23 +644,26 @@ function ensure_existance_of_aliased_kms_key(kmsKeyAlias: string, stackName: str
     let kms_key:kms.Key;   
     const cmd = `aws kms list-aliases --region ${region} | jq '.Aliases[] | select(.AliasName == "${kmsKeyAlias}") | .TargetKeyId'`
     const cmd_results = execSync(cmd).toString();
+    let key_id = "";
     if(cmd_results===""){ //if alias not found, then make a kms key with the alias
         const create_key_cmd = `aws kms create-key --description="Easy EKS generated kms key, used to encrypt etcd and ebs-csi-driver provisioned volumes"`
         const results = JSON.parse( execSync(create_key_cmd).toString() );
-        const key_id = results.KeyMetadata.KeyId;
+        key_id = results.KeyMetadata.KeyId;
         const add_alias_cmd = `aws kms create-alias --alias-name ${kmsKeyAlias} --target-key-id ${key_id} --region ${region}`;
         execSync(add_alias_cmd);
-        get_ebs_csi_role(stackName, region, key_id); 
         //get the ebs csi role, so it can be used to add permissions to the new key
     }
-    else { //if alias found, then get the key id
-        const key_id = cmd_results.replace(/"/g, ''); //remove quotes from string
-        get_ebs_csi_role(stackName, region, key_id); 
-    }
+    // disabled for now, as we need to test that it assigns the permissions correctly before enable customer eks 
+    // for encription.
+    //else { //if alias found, then get the key id
+    //    key_id = cmd_results.replace(/"/g, ''); //remove quotes from string
+    //}
+    //give_kms_access_to_ebs_csi_role(stackName, region, key_id); 
     
 }
 
-function get_ebs_csi_role(stackName: string, region: string, KeyId: string){
+
+/*function give_kms_access_to_ebs_csi_role(stackName: string, region: string, KeyId: string){
     const roleName = stackName + '-awsebscsidriveriamrole';
     const cdm_list_ebs_csi_role = `aws iam list-roles --query "Roles[?contains(RoleName, '${roleName}')].Arn" --output text`;
     const list_roles = execSync(cdm_list_ebs_csi_role);
@@ -704,6 +706,5 @@ function get_ebs_csi_role(stackName: string, region: string, KeyId: string){
     } else {
         console.log(`EBS CSI Role with name: ${roleName} already exists.`);
     }
-
-}
+}*/
 ///////////////////////////////////////////////////////////////////////////////////////////////////

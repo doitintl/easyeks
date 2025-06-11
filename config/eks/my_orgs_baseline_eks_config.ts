@@ -288,7 +288,7 @@ export function deploy_workload_dependencies(config: Easy_EKS_Config_Data, stack
           "parameters": {
               "type": "gp3",
               "encrypted": "true",
-              "kmsKeyId": `${config.kmsKey.keyArn}`
+              //"kmsKeyId": `${config.kmsKey.keyArn}` //commentig it out as while we test the logic to add permissions to customer's KMS key
           }
       }
       new eks.KubernetesManifest(stack, "StorageClassManifest",

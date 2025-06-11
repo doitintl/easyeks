@@ -41,9 +41,9 @@ export function deploy_workload_dependencies(config: Easy_EKS_Config_Data, stack
             ],
             "storageClassName": "kms-encrypted-gp3",
             "resources": {
-            "requests": {
-                "storage": `${size}`
-            }
+                "requests": {
+                    "storage": `${size}`
+                }
             }
         }
     }
