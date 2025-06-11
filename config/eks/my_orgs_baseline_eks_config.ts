@@ -268,6 +268,34 @@ export function deploy_workload_dependencies(config: Easy_EKS_Config_Data, stack
             },
         }`, //end aws-ebs-csi-driver configurationValues override
     });
+    // adding gp3 storage class
+      const storage_class_gp3 = {
+          "apiVersion": "storage.k8s.io/v1",
+          "kind": "StorageClass",
+          "metadata": {
+              "name": "kms-encrypted-gp3",
+              "annotations": {
+                  "storageclass.kubernetes.io/is-default-class": "true"
+              }
+          },
+          "provisioner": "ebs.csi.aws.com",
+          "volumeBindingMode": "WaitForFirstConsumer",
+          "allowVolumeExpansion": true,
+          "reclaimPolicy": "Delete",
+          "parameters": {
+              "type": "gp3",
+              "encrypted": "true",
+              //"kmsKeyId": `${config.kmsKey.keyArn}` //commentig it out as while we test the logic to add permissions to customer's KMS key
+          }
+      }
+      new eks.KubernetesManifest(stack, "StorageClassManifest",
+        {
+            cluster: cluster,
+            manifest: [storage_class_gp3],
+            overwrite: true,
+            prune: true,   
+        }
+      );
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     // v-- most won't need this, disabling by default
