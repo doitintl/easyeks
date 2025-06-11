@@ -84,13 +84,14 @@ export function deploy_workload_dependencies(config: Easy_EKS_Config_Data, stack
             ]
         }
     }
-    new eks.KubernetesManifest(stack, "persistentVolumeClaimManifest",
+    const pvc_demo_construct = new eks.KubernetesManifest(stack, "persistentVolumeClaimManifest",
     {
         cluster: cluster,
         manifest: [volume_claim_gp3, pod_using_volume_claim],
         overwrite: true,
         prune: true,
     });
+    pvc_demo_construct.node.addDependency(cluster.awsAuth);
 }//end deploy_workload_dependencies()
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
