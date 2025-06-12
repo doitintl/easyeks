@@ -3,6 +3,7 @@ import * as cdk from 'aws-cdk-lib';
 import * as eks from 'aws-cdk-lib/aws-eks';
 import * as ec2 from 'aws-cdk-lib/aws-ec2';
 import * as iam from 'aws-cdk-lib/aws-iam';
+import * as kms from 'aws-cdk-lib/aws-kms';
 import { execSync } from 'child_process';
 import { validateTag } from './Utilities';
 
@@ -23,6 +24,7 @@ export class Easy_EKS_Config_Data { //This object just holds config data.
     clusterAdminAccessEksApiArns?: string[];
     clusterViewerAccessAwsAuthConfigmapAccounts?: string[]; //only aws-auth configmap supports accounts
     kmsKeyAlias: string; //kms key with this alias will be created or reused if pre-existing
+    kmsKey: kms.IKey; //store pre-existing KMS key
     baselineNodesNumber: number;
     baselineNodesType: eks.CapacityType; //enum eks.CapacityType.SPOT or eks.CapacityType.ON_DEMAND
     workerNodeRole: iam.Role; //used by baselineMNG & Karpenter
@@ -119,5 +121,7 @@ export class Easy_EKS_Config_Data { //This object just holds config data.
         if(kms_key_alias.startsWith('alias/')){ this.kmsKeyAlias = kms_key_alias; }
         else{ this.kmsKeyAlias = `alias/${kms_key_alias}`; }
     }
-
+    setKmsKey(stack: cdk.Stack){
+        this.kmsKey = kms.Key.fromLookup(stack, 'pre-existing-kms-key', { aliasName: this.kmsKeyAlias });
+    } 
 }//end of Easy_EKS_Config_Data

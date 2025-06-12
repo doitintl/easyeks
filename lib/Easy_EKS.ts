@@ -239,9 +239,8 @@ export class Easy_EKS{ //purposefully don't extend stack, to implement builder p
         //     this.config.kmsKeyAlias, {description: "Easy EKS generated kms key, used to encrypt etcd and ebs-csi-driver provisioned volumes"}
         // ));}
         // else { eksBlueprint.resourceProvider(blueprints.GlobalResources.KmsKey, new blueprints.LookupKmsKeyProvider(this.config.kmsKeyAlias)); }
-        ensure_existance_of_aliased_kms_key(this.config.kmsKeyAlias);
-        const kms_key = kms.Key.fromLookup(this.stack, 'pre-existing-kms-key', { aliasName: this.config.kmsKeyAlias });
-
+        ensure_existance_of_aliased_kms_key(this.config.kmsKeyAlias, this.stack.stackName, this.stack.region);
+        const kms_key = this.config.kmsKey;
         this.cluster = new eks.Cluster(this.stack, this.config.id, {
             clusterName: this.config.id,
             version: this.config.kubernetesVersion,
@@ -632,7 +631,7 @@ const enhanced_viewer_cr = {
 }
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-function ensure_existance_of_aliased_kms_key(kmsKeyAlias: string){
+function ensure_existance_of_aliased_kms_key(kmsKeyAlias: string, stackName: string, region: string){
     /*UX Improvement: By default EKS Blueprint will make new KMS key everytime you make a cluster.
     This logic checks for pre-existing keys, and prefers to reuse them. Else create if needed, reuse next time.
     The intent is to achieve the following EasyEKS default: (which is overrideable):
@@ -641,15 +640,69 @@ function ensure_existance_of_aliased_kms_key(kmsKeyAlias: string){
     * prod envs share a kms key: "alias/eks/prod"
     */
     let kms_key:kms.Key;   
-    const cmd = `aws kms list-aliases | jq '.Aliases[] | select(.AliasName == "${kmsKeyAlias}") | .TargetKeyId'`
+    const cmd = `aws kms list-aliases --region ${region} | jq '.Aliases[] | select(.AliasName == "${kmsKeyAlias}") | .TargetKeyId'`
     const cmd_results = execSync(cmd).toString();
+    let key_id = "";
     if(cmd_results===""){ //if alias not found, then make a kms key with the alias
-        const create_key_cmd = `aws kms create-key --description="Easy EKS generated kms key, used to encrypt etcd and ebs-csi-driver provisioned volumes"`
+        const create_key_cmd = `aws kms create-key --region ${region} --description="Easy EKS generated kms key, used to encrypt etcd and ebs-csi-driver provisioned volumes"`
         const results = JSON.parse( execSync(create_key_cmd).toString() );
-        const key_id = results.KeyMetadata.KeyId;
-        const add_alias_cmd = `aws kms create-alias --alias-name ${kmsKeyAlias} --target-key-id ${key_id}`;
+        key_id = results.KeyMetadata.KeyId;
+        const add_alias_cmd = `aws kms create-alias --alias-name ${kmsKeyAlias} --target-key-id ${key_id} --region ${region}`;
         execSync(add_alias_cmd);
+        //get the ebs csi role, so it can be used to add permissions to the new key
     }
+    // disabled for now, as we need to test that it assigns the permissions correctly before enable customer eks 
+    // for encription.
+    //else { //if alias found, then get the key id
+    //    key_id = cmd_results.replace(/"/g, ''); //remove quotes from string
+    //}
+    //give_kms_access_to_ebs_csi_role(stackName, region, key_id); 
+    
 }
 
+
+/*function give_kms_access_to_ebs_csi_role(stackName: string, region: string, KeyId: string){
+    const roleName = stackName + '-awsebscsidriveriamrole';
+    const cdm_list_ebs_csi_role = `aws iam list-roles --query "Roles[?contains(RoleName, '${roleName}')].Arn" --output text`;
+    const list_roles = execSync(cdm_list_ebs_csi_role);
+    if (list_roles.toString() !== '') {
+        const policy = `{
+          "Version": "2012-10-17",
+          "Id": "key-default-1",
+          "Statement": [
+            {
+              "Sid": "Enable IAM User Permissions",
+              "Effect": "Allow",
+              "Principal": {
+                "AWS": "arn:aws:iam::381492072749:root"
+              },
+              "Action": "kms:*",
+              "Resource": "*"
+            },
+            {
+              "Sid": "Enable IAM User Permissions",
+              "Effect": "Allow",
+              "Principal": {
+                "AWS": "${list_roles.toString().trim()}"
+              },
+              "Action": [
+                "kms:Encrypt",
+                "kms:Decrypt",
+                "kms:ReEncrypt*",
+                "kms:GenerateDataKey*",
+                "kms:DescribeKey",
+                "kms:CreateGrant",
+                "kms:ListGrants",
+                "kms:RevokeGrant"
+              ],
+              "Resource": "*"
+            }
+          ]
+        }`;
+        const cmp_policy = `aws kms put-key-policy --policy-name default --key-id ${KeyId.trim()} --region ${region} --policy '${policy}'`;
+        execSync(cmp_policy);
+    } else {
+        console.log(`EBS CSI Role with name: ${roleName} already exists.`);
+    }
+}*/
 ///////////////////////////////////////////////////////////////////////////////////////////////////
