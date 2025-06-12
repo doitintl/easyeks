@@ -20,6 +20,9 @@ import * as my_orgs_baseline_eks_config from '../config/eks/my_orgs_baseline_eks
 import * as lower_envs_eks_config from '../config/eks/lower_envs_eks_config';
 import * as higher_envs_eks_config from '../config/eks/higher_envs_eks_config';
 import * as dev_eks_config from '../config/eks/dev_eks_config';
+import * as test_eks_config from '../config/eks/test_eks_config';
+import * as stage_eks_config from '../config/eks/stage_eks_config';
+import * as prod_eks_config from '../config/eks/prod_eks_config';
 import * as observability from './Frugal_GPL_Observability_Stack';
 import { execSync } from 'child_process'; //work around for kms UX issue
 import request from 'sync-request-curl'; //npm install sync-request-curl (cdk requires sync functions, async not allowed)
@@ -48,58 +51,163 @@ export class Easy_EKS{ //purposefully don't extend stack, to implement builder p
     apply_lower_envs_eks_config(){ lower_envs_eks_config.apply_config(this.config,this.stack); }
     apply_higher_envs_eks_config(){ higher_envs_eks_config.apply_config(this.config,this.stack); }
     apply_dev_eks_config(){ dev_eks_config.apply_config(this.config,this.stack); }
+    apply_test_eks_config(){ test_eks_config.apply_config(this.config,this.stack); }
+    apply_stage_eks_config(){ stage_eks_config.apply_config(this.config,this.stack); }
+    apply_prod_eks_config(){ prod_eks_config.apply_config(this.config,this.stack); }
     apply_dev_baseline_config(){ //convenience method
         this.apply_global_baseline_eks_config();
         this.apply_my_orgs_baseline_eks_config();
         this.apply_lower_envs_eks_config();
         this.apply_dev_eks_config();
     }
-
-    deploy_global_baseline_eks_dependencies(){ global_baseline_eks_config.deploy_dependencies(this.config,this.stack, this.cluster); }
-    deploy_my_orgs_baseline_eks_dependencies(){ my_orgs_baseline_eks_config.deploy_dependencies(this.config,this.stack, this.cluster); }
-    deploy_lower_envs_eks_dependencies(){ lower_envs_eks_config.deploy_dependencies(this.config,this.stack, this.cluster); }
-    deploy_higher_envs_eks_dependencies(){ higher_envs_eks_config.deploy_dependencies(this.config,this.stack, this.cluster); }
-    deploy_dev_eks_dependencies(){ dev_eks_config.deploy_dependencies(this.config,this.stack, this.cluster); }
-    deploy_dev_baseline_dependencies(){ //convenience method
-        this.deploy_global_baseline_eks_dependencies();
-        this.deploy_my_orgs_baseline_eks_dependencies();
-        this.deploy_lower_envs_eks_dependencies();
-        this.deploy_dev_eks_dependencies();
+    apply_test_baseline_config(){ //convenience method
+      this.apply_global_baseline_eks_config();
+      this.apply_my_orgs_baseline_eks_config();
+      this.apply_lower_envs_eks_config();
+      this.apply_test_eks_config();
+    }
+    apply_stage_baseline_config(){ //convenience method
+      this.apply_global_baseline_eks_config();
+      this.apply_my_orgs_baseline_eks_config();
+      this.apply_higher_envs_eks_config();
+      this.apply_stage_eks_config();
+    }
+    apply_prod_baseline_config(){ //convenience method
+      this.apply_global_baseline_eks_config();
+      this.apply_my_orgs_baseline_eks_config();
+      this.apply_higher_envs_eks_config();
+      this.apply_prod_eks_config();
     }
 
-    deploy_global_baseline_eks_workload_dependencies(){ global_baseline_eks_config.deploy_workload_dependencies(this.config,this.stack, this.cluster); }
-    deploy_my_orgs_baseline_eks_workload_dependencies(){ my_orgs_baseline_eks_config.deploy_workload_dependencies(this.config,this.stack, this.cluster); }
-    deploy_lower_envs_eks_workload_dependencies(){ lower_envs_eks_config.deploy_workload_dependencies(this.config,this.stack, this.cluster); }
-    deploy_higher_envs_eks_workload_dependencies(){ higher_envs_eks_config.deploy_workload_dependencies(this.config,this.stack, this.cluster); }
-    deploy_dev_eks_workload_dependencies(){ dev_eks_config.deploy_workload_dependencies(this.config,this.stack, this.cluster); }
-    deploy_dev_baseline_workload_dependencies(){ //convenience method
-        this.deploy_global_baseline_eks_workload_dependencies();
-        this.deploy_my_orgs_baseline_eks_workload_dependencies();
-        this.deploy_lower_envs_eks_workload_dependencies();
-        this.deploy_dev_eks_workload_dependencies();
+    stage_deployment_of_global_baseline_eks_dependencies(){ global_baseline_eks_config.deploy_dependencies(this.config,this.stack, this.cluster); }
+    stage_deployment_of_my_orgs_baseline_eks_dependencies(){ my_orgs_baseline_eks_config.deploy_dependencies(this.config,this.stack, this.cluster); }
+    stage_deployment_of_lower_envs_eks_dependencies(){ lower_envs_eks_config.deploy_dependencies(this.config,this.stack, this.cluster); }
+    stage_deployment_of_higher_envs_eks_dependencies(){ higher_envs_eks_config.deploy_dependencies(this.config,this.stack, this.cluster); }
+    stage_deployment_of_dev_eks_dependencies(){ dev_eks_config.deploy_dependencies(this.config,this.stack, this.cluster); }
+    stage_deployment_of_test_eks_dependencies(){ test_eks_config.deploy_dependencies(this.config,this.stack, this.cluster); }
+    stage_deployment_of_stage_eks_dependencies(){ stage_eks_config.deploy_dependencies(this.config,this.stack, this.cluster); }
+    stage_deployment_of_prod_eks_dependencies(){ prod_eks_config.deploy_dependencies(this.config,this.stack, this.cluster); }
+    stage_deployment_of_dev_baseline_dependencies(){ //convenience method
+        this.stage_deployment_of_global_baseline_eks_dependencies();
+        this.stage_deployment_of_my_orgs_baseline_eks_dependencies();
+        this.stage_deployment_of_lower_envs_eks_dependencies();
+        this.stage_deployment_of_dev_eks_dependencies();
+    }
+    stage_deployment_of_test_baseline_dependencies(){ //convenience method
+      this.stage_deployment_of_global_baseline_eks_dependencies();
+      this.stage_deployment_of_my_orgs_baseline_eks_dependencies();
+      this.stage_deployment_of_lower_envs_eks_dependencies();
+      this.stage_deployment_of_test_eks_dependencies();
+    }
+    stage_deployment_of_stage_baseline_dependencies(){ //convenience method
+      this.stage_deployment_of_global_baseline_eks_dependencies();
+      this.stage_deployment_of_my_orgs_baseline_eks_dependencies();
+      this.stage_deployment_of_higher_envs_eks_dependencies();
+      this.stage_deployment_of_stage_eks_dependencies();
+    }
+    stage_deployment_of_prod_baseline_dependencies(){ //convenience method
+      this.stage_deployment_of_global_baseline_eks_dependencies();
+      this.stage_deployment_of_my_orgs_baseline_eks_dependencies();
+      this.stage_deployment_of_higher_envs_eks_dependencies();
+      this.stage_deployment_of_prod_eks_dependencies();
     }
 
-    deploy_global_baseline_eks_workloads(){ global_baseline_eks_config.deploy_workloads(this.config,this.stack, this.cluster); }
-    deploy_my_orgs_baseline_eks_workloads(){ my_orgs_baseline_eks_config.deploy_workloads(this.config,this.stack, this.cluster); }
-    deploy_lower_envs_eks_workloads(){ lower_envs_eks_config.deploy_workloads(this.config,this.stack, this.cluster); }
-    deploy_higher_envs_eks_workloads(){ higher_envs_eks_config.deploy_workloads(this.config,this.stack, this.cluster); }
-    deploy_dev_eks_workloads(){ dev_eks_config.deploy_workloads(this.config,this.stack, this.cluster); }
-    deploy_dev_baseline_workloads(){ //convenience method
-        this.deploy_global_baseline_eks_workloads();
-        this.deploy_my_orgs_baseline_eks_workloads();
-        this.deploy_lower_envs_eks_workloads();
-        this.deploy_dev_eks_workloads();
+    stage_deployment_of_global_baseline_eks_workload_dependencies(){ global_baseline_eks_config.deploy_workload_dependencies(this.config,this.stack, this.cluster); }
+    stage_deployment_of_my_orgs_baseline_eks_workload_dependencies(){ my_orgs_baseline_eks_config.deploy_workload_dependencies(this.config,this.stack, this.cluster); }
+    stage_deployment_of_lower_envs_eks_workload_dependencies(){ lower_envs_eks_config.deploy_workload_dependencies(this.config,this.stack, this.cluster); }
+    stage_deployment_of_higher_envs_eks_workload_dependencies(){ higher_envs_eks_config.deploy_workload_dependencies(this.config,this.stack, this.cluster); }
+    stage_deployment_of_dev_eks_workload_dependencies(){ dev_eks_config.deploy_workload_dependencies(this.config,this.stack, this.cluster); }
+    stage_deployment_of_test_eks_workload_dependencies(){ test_eks_config.deploy_workload_dependencies(this.config,this.stack, this.cluster); }
+    stage_deployment_of_stage_eks_workload_dependencies(){ stage_eks_config.deploy_workload_dependencies(this.config,this.stack, this.cluster); }
+    stage_deployment_of_prod_eks_workload_dependencies(){ prod_eks_config.deploy_workload_dependencies(this.config,this.stack, this.cluster); }
+    stage_deployment_of_dev_baseline_workload_dependencies(){ //convenience method
+        this.stage_deployment_of_global_baseline_eks_workload_dependencies();
+        this.stage_deployment_of_my_orgs_baseline_eks_workload_dependencies();
+        this.stage_deployment_of_lower_envs_eks_workload_dependencies();
+        this.stage_deployment_of_dev_eks_workload_dependencies();
+    }
+    stage_deployment_of_test_baseline_workload_dependencies(){ //convenience method
+      this.stage_deployment_of_global_baseline_eks_workload_dependencies();
+      this.stage_deployment_of_my_orgs_baseline_eks_workload_dependencies();
+      this.stage_deployment_of_lower_envs_eks_workload_dependencies();
+      this.stage_deployment_of_test_eks_workload_dependencies();
+    }
+    stage_deployment_of_stage_baseline_workload_dependencies(){ //convenience method
+      this.stage_deployment_of_global_baseline_eks_workload_dependencies();
+      this.stage_deployment_of_my_orgs_baseline_eks_workload_dependencies();
+      this.stage_deployment_of_higher_envs_eks_workload_dependencies();
+      this.stage_deployment_of_stage_eks_workload_dependencies();
+    }
+    stage_deployment_of_prod_baseline_workload_dependencies(){ //convenience method
+      this.stage_deployment_of_global_baseline_eks_workload_dependencies();
+      this.stage_deployment_of_my_orgs_baseline_eks_workload_dependencies();
+      this.stage_deployment_of_higher_envs_eks_workload_dependencies();
+      this.stage_deployment_of_prod_eks_workload_dependencies();
     }
 
-    deploy_opinionated_dev(){ //shortest convenience method
+    stage_deployment_of_global_baseline_eks_workloads(){ global_baseline_eks_config.deploy_workloads(this.config,this.stack, this.cluster); }
+    stage_deployment_of_my_orgs_baseline_eks_workloads(){ my_orgs_baseline_eks_config.deploy_workloads(this.config,this.stack, this.cluster); }
+    stage_deployment_of_lower_envs_eks_workloads(){ lower_envs_eks_config.deploy_workloads(this.config,this.stack, this.cluster); }
+    stage_deployment_of_higher_envs_eks_workloads(){ higher_envs_eks_config.deploy_workloads(this.config,this.stack, this.cluster); }
+    stage_deployment_of_dev_eks_workloads(){ dev_eks_config.deploy_workloads(this.config,this.stack, this.cluster); }
+    stage_deployment_of_test_eks_workloads(){ test_eks_config.deploy_workloads(this.config,this.stack, this.cluster); }
+    stage_deployment_of_stage_eks_workloads(){ stage_eks_config.deploy_workloads(this.config,this.stack, this.cluster); }
+    stage_deployment_of_prod_eks_workloads(){ prod_eks_config.deploy_workloads(this.config,this.stack, this.cluster); }
+    stage_deployment_of_dev_baseline_workloads(){ //convenience method
+        this.stage_deployment_of_global_baseline_eks_workloads();
+        this.stage_deployment_of_my_orgs_baseline_eks_workloads();
+        this.stage_deployment_of_lower_envs_eks_workloads();
+        this.stage_deployment_of_dev_eks_workloads();
+    }
+    stage_deployment_of_test_baseline_workloads(){ //convenience method
+      this.stage_deployment_of_global_baseline_eks_workloads();
+      this.stage_deployment_of_my_orgs_baseline_eks_workloads();
+      this.stage_deployment_of_lower_envs_eks_workloads();
+      this.stage_deployment_of_test_eks_workloads();
+    }
+    stage_deployment_of_stage_baseline_workloads(){ //convenience method
+      this.stage_deployment_of_global_baseline_eks_workloads();
+      this.stage_deployment_of_my_orgs_baseline_eks_workloads();
+      this.stage_deployment_of_higher_envs_eks_workloads();
+      this.stage_deployment_of_stage_eks_workloads();
+    }
+    stage_deployment_of_prod_baseline_workloads(){ //convenience method
+      this.stage_deployment_of_global_baseline_eks_workloads();
+      this.stage_deployment_of_my_orgs_baseline_eks_workloads();
+      this.stage_deployment_of_higher_envs_eks_workloads();
+      this.stage_deployment_of_prod_eks_workloads();
+    }
+
+    stage_deployment_of_opinionated_eks_cluster_for_dev_envs(){ //shortest convenience method
         this.apply_dev_baseline_config();
-        this.deploy_eks_construct_into_this_objects_stack(); //<--creates eks cluster
-        this.deploy_dev_baseline_dependencies();
-        this.deploy_dev_baseline_workload_dependencies();
-        this.deploy_dev_baseline_workloads();
+        this.stage_deployment_of_eks_construct_into_this_objects_stack();
+        this.stage_deployment_of_dev_baseline_dependencies();
+        this.stage_deployment_of_dev_baseline_workload_dependencies();
+        this.stage_deployment_of_dev_baseline_workloads();
+    }
+    stage_deployment_of_opinionated_eks_cluster_for_test_envs(){ //shortest convenience method
+      this.apply_test_baseline_config();
+      this.stage_deployment_of_eks_construct_into_this_objects_stack();
+      this.stage_deployment_of_test_baseline_dependencies();
+      this.stage_deployment_of_test_baseline_workload_dependencies();
+      this.stage_deployment_of_test_baseline_workloads();
+    }
+    stage_deployment_of_opinionated_eks_cluster_for_stage_envs(){ //shortest convenience method
+      this.apply_stage_baseline_config();
+      this.stage_deployment_of_eks_construct_into_this_objects_stack();
+      this.stage_deployment_of_stage_baseline_dependencies();
+      this.stage_deployment_of_stage_baseline_workload_dependencies();
+      this.stage_deployment_of_stage_baseline_workloads();
+    }
+    stage_deployment_of_opinionated_eks_cluster_for_prod_envs(){ //shortest convenience method
+      this.apply_prod_baseline_config();
+      this.stage_deployment_of_eks_construct_into_this_objects_stack();
+      this.stage_deployment_of_prod_baseline_dependencies();
+      this.stage_deployment_of_prod_baseline_workload_dependencies();
+      this.stage_deployment_of_prod_baseline_workloads();
     }
 
-    deploy_eks_construct_into_this_objects_stack(){
+    stage_deployment_of_eks_construct_into_this_objects_stack(){
         ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
         //Logic to define baseline Managed Node Group
         this.config.workerNodeRole = initialize_WorkerNodeRole(this.stack);
@@ -131,9 +239,8 @@ export class Easy_EKS{ //purposefully don't extend stack, to implement builder p
         //     this.config.kmsKeyAlias, {description: "Easy EKS generated kms key, used to encrypt etcd and ebs-csi-driver provisioned volumes"}
         // ));}
         // else { eksBlueprint.resourceProvider(blueprints.GlobalResources.KmsKey, new blueprints.LookupKmsKeyProvider(this.config.kmsKeyAlias)); }
-        ensure_existance_of_aliased_kms_key(this.config.kmsKeyAlias);
-        const kms_key = kms.Key.fromLookup(this.stack, 'pre-existing-kms-key', { aliasName: this.config.kmsKeyAlias });
-
+        ensure_existance_of_aliased_kms_key(this.config.kmsKeyAlias, this.stack.stackName, this.stack.region);
+        const kms_key = this.config.kmsKey;
         this.cluster = new eks.Cluster(this.stack, this.config.id, {
             clusterName: this.config.id,
             version: this.config.kubernetesVersion,
@@ -524,7 +631,7 @@ const enhanced_viewer_cr = {
 }
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-function ensure_existance_of_aliased_kms_key(kmsKeyAlias: string){
+function ensure_existance_of_aliased_kms_key(kmsKeyAlias: string, stackName: string, region: string){
     /*UX Improvement: By default EKS Blueprint will make new KMS key everytime you make a cluster.
     This logic checks for pre-existing keys, and prefers to reuse them. Else create if needed, reuse next time.
     The intent is to achieve the following EasyEKS default: (which is overrideable):
@@ -533,15 +640,69 @@ function ensure_existance_of_aliased_kms_key(kmsKeyAlias: string){
     * prod envs share a kms key: "alias/eks/prod"
     */
     let kms_key:kms.Key;   
-    const cmd = `aws kms list-aliases | jq '.Aliases[] | select(.AliasName == "${kmsKeyAlias}") | .TargetKeyId'`
+    const cmd = `aws kms list-aliases --region ${region} | jq '.Aliases[] | select(.AliasName == "${kmsKeyAlias}") | .TargetKeyId'`
     const cmd_results = execSync(cmd).toString();
+    let key_id = "";
     if(cmd_results===""){ //if alias not found, then make a kms key with the alias
-        const create_key_cmd = `aws kms create-key --description="Easy EKS generated kms key, used to encrypt etcd and ebs-csi-driver provisioned volumes"`
+        const create_key_cmd = `aws kms create-key --region ${region} --description="Easy EKS generated kms key, used to encrypt etcd and ebs-csi-driver provisioned volumes"`
         const results = JSON.parse( execSync(create_key_cmd).toString() );
-        const key_id = results.KeyMetadata.KeyId;
-        const add_alias_cmd = `aws kms create-alias --alias-name ${kmsKeyAlias} --target-key-id ${key_id}`;
+        key_id = results.KeyMetadata.KeyId;
+        const add_alias_cmd = `aws kms create-alias --alias-name ${kmsKeyAlias} --target-key-id ${key_id} --region ${region}`;
         execSync(add_alias_cmd);
+        //get the ebs csi role, so it can be used to add permissions to the new key
     }
+    // disabled for now, as we need to test that it assigns the permissions correctly before enable customer eks 
+    // for encription.
+    //else { //if alias found, then get the key id
+    //    key_id = cmd_results.replace(/"/g, ''); //remove quotes from string
+    //}
+    //give_kms_access_to_ebs_csi_role(stackName, region, key_id); 
+    
 }
 
+
+/*function give_kms_access_to_ebs_csi_role(stackName: string, region: string, KeyId: string){
+    const roleName = stackName + '-awsebscsidriveriamrole';
+    const cdm_list_ebs_csi_role = `aws iam list-roles --query "Roles[?contains(RoleName, '${roleName}')].Arn" --output text`;
+    const list_roles = execSync(cdm_list_ebs_csi_role);
+    if (list_roles.toString() !== '') {
+        const policy = `{
+          "Version": "2012-10-17",
+          "Id": "key-default-1",
+          "Statement": [
+            {
+              "Sid": "Enable IAM User Permissions",
+              "Effect": "Allow",
+              "Principal": {
+                "AWS": "arn:aws:iam::381492072749:root"
+              },
+              "Action": "kms:*",
+              "Resource": "*"
+            },
+            {
+              "Sid": "Enable IAM User Permissions",
+              "Effect": "Allow",
+              "Principal": {
+                "AWS": "${list_roles.toString().trim()}"
+              },
+              "Action": [
+                "kms:Encrypt",
+                "kms:Decrypt",
+                "kms:ReEncrypt*",
+                "kms:GenerateDataKey*",
+                "kms:DescribeKey",
+                "kms:CreateGrant",
+                "kms:ListGrants",
+                "kms:RevokeGrant"
+              ],
+              "Resource": "*"
+            }
+          ]
+        }`;
+        const cmp_policy = `aws kms put-key-policy --policy-name default --key-id ${KeyId.trim()} --region ${region} --policy '${policy}'`;
+        execSync(cmp_policy);
+    } else {
+        console.log(`EBS CSI Role with name: ${roleName} already exists.`);
+    }
+}*/
 ///////////////////////////////////////////////////////////////////////////////////////////////////
