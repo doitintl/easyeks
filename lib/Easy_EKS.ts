@@ -272,11 +272,19 @@ export class Easy_EKS{ //purposefully don't extend stack, to implement builder p
         ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
         // Logic to allow all authenticated users in AWS account Limited Viewer Only Access by default:
         if(this.config.clusterViewerAccessAwsAuthConfigmapAccounts){ //<-- JS truthy statement to say if not empty do the following
-          for (let index = 0; index < this.config.clusterViewerAccessAwsAuthConfigmapAccounts?.length; index++) {
-              this.cluster.awsAuth.addAccount(this.config.clusterViewerAccessAwsAuthConfigmapAccounts[index]);
-          }
-          this.cluster.addManifest('viewer_only_cluster_role_binding', viewer_only_crb);
-          this.cluster.addManifest('enhanced_viewer_cluster_role', enhanced_viewer_cr);
+            for (let index = 0; index < this.config.clusterViewerAccessAwsAuthConfigmapAccounts?.length; index++) {
+                this.cluster.awsAuth.addAccount(this.config.clusterViewerAccessAwsAuthConfigmapAccounts[index]);
+            }
+            //v-- kubectl apply -f viewer_only_rbac.yaml
+            let apply_viewer_only_rbac_YAML = new eks.KubernetesManifest(this.stack, 'viewer_only_rbac_yamls',
+                {
+                    cluster: this.cluster,
+                    manifest: [viewer_only_crb, enhanced_viewer_cr],
+                    overwrite: true,
+                    prune: true,   
+                }
+            );
+            (apply_viewer_only_rbac_YAML.node.defaultChild as cdk.CfnResource).applyRemovalPolicy(cdk.RemovalPolicy.RETAIN);
         }
         /* Note: Config as Code allows this to be enabled/disabled, default config has it set to enabled.
            Intented functionality?
