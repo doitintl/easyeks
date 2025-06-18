@@ -4,7 +4,7 @@ import * as eks from 'aws-cdk-lib/aws-eks';
 import * as ec2 from 'aws-cdk-lib/aws-ec2';
 import * as iam from 'aws-cdk-lib/aws-iam';
 import * as kms from 'aws-cdk-lib/aws-kms';
-import { execSync } from 'child_process';
+import * as shell from 'shelljs'; //npm install shelljs && npm i --save-dev @types/shelljs
 import { validateTag } from './Utilities';
 
 export class Easy_EKS_Config_Data { //This object just holds config data.
@@ -59,7 +59,7 @@ export class Easy_EKS_Config_Data { //This object just holds config data.
         // knowledge of how to handle the edge case.
         ////////////////////////////////////////////////////////////////////////////////
         const cmd = `aws ec2 describe-vpcs --filter Name=tag:Name,Values=${vpcName} --query "Vpcs[].VpcId" | tr -d '\r\n []"'`
-        const cmd_results = execSync(cmd).toString();
+        const cmd_results = shell.exec(cmd, {silent:true}).stdout;
         // Plausible Values to expect:
         // case 1: cmd_results===""
         //         ^-- Occurs when vpc name not found. Would cause an error, which is desired behavior as we assume it should be found.

@@ -24,7 +24,7 @@ import * as test_eks_config from '../config/eks/test_eks_config';
 import * as stage_eks_config from '../config/eks/stage_eks_config';
 import * as prod_eks_config from '../config/eks/prod_eks_config';
 import * as observability from './Frugal_GPL_Observability_Stack';
-import { execSync } from 'child_process'; //work around for kms UX issue
+import * as shell from 'shelljs'; //npm install shelljs && npm i --save-dev @types/shelljs
 import request from 'sync-request-curl'; //npm install sync-request-curl (cdk requires sync functions, async not allowed)
 
 
@@ -647,16 +647,15 @@ function ensure_existance_of_aliased_kms_key(kmsKeyAlias: string, stackName: str
     * staging envs share a kms key: "alias/eks/stage"
     * prod envs share a kms key: "alias/eks/prod"
     */
-    let kms_key:kms.Key;   
     const cmd = `aws kms list-aliases --region ${region} | jq '.Aliases[] | select(.AliasName == "${kmsKeyAlias}") | .TargetKeyId'`
-    const cmd_results = execSync(cmd).toString();
+    const cmd_results = shell.exec(cmd,{silent:true}).stdout;
     let key_id = "";
     if(cmd_results===""){ //if alias not found, then make a kms key with the alias
         const create_key_cmd = `aws kms create-key --region ${region} --description="Easy EKS generated kms key, used to encrypt etcd and ebs-csi-driver provisioned volumes"`
-        const results = JSON.parse( execSync(create_key_cmd).toString() );
+        const results = JSON.parse( shell.exec(create_key_cmd,{silent:true}).stdout );
         key_id = results.KeyMetadata.KeyId;
         const add_alias_cmd = `aws kms create-alias --alias-name ${kmsKeyAlias} --target-key-id ${key_id} --region ${region}`;
-        execSync(add_alias_cmd);
+        shell.exec(add_alias_cmd,{silent:true});
         //get the ebs csi role, so it can be used to add permissions to the new key
     }
     // disabled for now, as we need to test that it assigns the permissions correctly before enable customer eks 
@@ -672,8 +671,8 @@ function ensure_existance_of_aliased_kms_key(kmsKeyAlias: string, stackName: str
 /*function give_kms_access_to_ebs_csi_role(stackName: string, region: string, KeyId: string){
     const roleName = stackName + '-awsebscsidriveriamrole';
     const cdm_list_ebs_csi_role = `aws iam list-roles --query "Roles[?contains(RoleName, '${roleName}')].Arn" --output text`;
-    const list_roles = execSync(cdm_list_ebs_csi_role);
-    if (list_roles.toString() !== '') {
+    const list_roles_cmd = shell.exec(cdm_list_ebs_csi_role,{silent:true}).stdout;
+    if (list_roles_cmd !== '') {
         const policy = `{
           "Version": "2012-10-17",
           "Id": "key-default-1",
@@ -691,7 +690,7 @@ function ensure_existance_of_aliased_kms_key(kmsKeyAlias: string, stackName: str
               "Sid": "Enable IAM User Permissions",
               "Effect": "Allow",
               "Principal": {
-                "AWS": "${list_roles.toString().trim()}"
+                "AWS": "${list_roles_cmd.trim()}"
               },
               "Action": [
                 "kms:Encrypt",
@@ -707,8 +706,8 @@ function ensure_existance_of_aliased_kms_key(kmsKeyAlias: string, stackName: str
             }
           ]
         }`;
-        const cmp_policy = `aws kms put-key-policy --policy-name default --key-id ${KeyId.trim()} --region ${region} --policy '${policy}'`;
-        execSync(cmp_policy);
+        const cmp_policy_cmd = `aws kms put-key-policy --policy-name default --key-id ${KeyId.trim()} --region ${region} --policy '${policy}'`;
+        shell.exec(cmp_policy_cmd,{silent:true}).stdout;
     } else {
         console.log(`EBS CSI Role with name: ${roleName} already exists.`);
     }
