@@ -7,10 +7,6 @@ import * as kms from 'aws-cdk-lib/aws-kms';
 import { execSync } from 'child_process';
 import { validateTag } from './Utilities';
 
-type Optional<T, K extends keyof T> = Pick<Partial<T>, K> & Omit<T, K>;
-type EKSAddOnInput = Optional<eks.CfnAddonProps, 'clusterName'>; //makes clusterName Optional parameter
-
-
 export class Easy_EKS_Config_Data { //This object just holds config data.
     //Typescript(TS) readability notes
     //Config_Var: Data_Type
