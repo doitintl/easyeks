@@ -86,7 +86,7 @@ export class Easy_EKS_Config_Data { //This object just holds config data.
         try {
             validateTag(key, value)
             if(this.tags === undefined){ this.tags = { [key] : value } }
-            else{ this.tags = { ...this.tags, [key] : value }}
+            else{ this.tags = { ...this.tags, [key] : value } }
         } catch (error: any) {
             console.error("Error:", error.message)
             throw "Error validating tags. See details above"// Using throw here to stop the checks; otherwise an error will print out for every place this tag would be applied, and the process will continue
@@ -100,12 +100,20 @@ export class Easy_EKS_Config_Data { //This object just holds config data.
     }
     setIpMode(ipMode: eks.IpFamily){ this.ipMode = ipMode; }
     addClusterAdminARN(arn:string){        //v--initialize if undefined
-        if(this.clusterAdminAccessEksApiArns === undefined){ this.clusterAdminAccessEksApiArns = [arn] } 
-        else{ this.clusterAdminAccessEksApiArns.push(arn); } //push means add to end of array
+        if(this.clusterAdminAccessEksApiArns === undefined){ this.clusterAdminAccessEksApiArns = [arn]; }
+        else{
+            if(!this.clusterAdminAccessEksApiArns.includes(arn)){ //if value isn't already in array
+                this.clusterAdminAccessEksApiArns.push(arn); //then push, as in add, to end of array
+            }
+        } 
     }
     addClusterViewerAccount(account:string){        //v--initialize if undefined
         if(this.clusterViewerAccessAwsAuthConfigmapAccounts === undefined){ this.clusterViewerAccessAwsAuthConfigmapAccounts = [account] } 
-        else{ this.clusterViewerAccessAwsAuthConfigmapAccounts.push(account); } //push means add to end of array
+        else{
+            if(!this.clusterViewerAccessAwsAuthConfigmapAccounts.includes(account)){ //if value isn't already in array
+            this.clusterViewerAccessAwsAuthConfigmapAccounts.push(account); //then push, as in add, to end of array
+            }
+        } 
     }
     setKmsKeyAlias(kms_key_alias: string){
         /*Note (About UX improvement logic):
