@@ -299,10 +299,10 @@ dev1-eks: creating CloudFormation changeset...
 ✨  Deployment time: 1052.74s
 
 Outputs:
-dev1-eks.dev1eksConfigCommand9B300592 = aws eks update-kubeconfig --name dev1-eks --region ca-central-1 --role-arn arn:aws:iam::905418347382:role/dev1-eks-assumableEKSAdminAccessRoleC284FA0F-F22KjKQrjLpO
-dev1-eks.dev1eksGetTokenCommandDE6D6947 = aws eks get-token --cluster-name dev1-eks --region ca-central-1 --role-arn arn:aws:iam::905418347382:role/dev1-eks-assumableEKSAdminAccessRoleC284FA0F-F22KjKQrjLpO
-Stack ARN:
-arn:aws:cloudformation:ca-central-1:905418347382:stack/dev1-eks/60d97430-27d0-11f0-ae18-0e71104456e5
+dev1-eks.iamWhitelistedKubeConfigCmd = aws eks update-kubeconfig --region ca-central-1 --name dev1-eks
+
+Note: This only works for the user/role deploying cdk and IAM Whitelisted Admins.
+      To learn more review ./easyeks/config/eks/lower_envs_eks_config.ts
 
 ✨  Total time: 1069.52s
 ```

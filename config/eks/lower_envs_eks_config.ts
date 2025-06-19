@@ -15,8 +15,12 @@ export function apply_config(config: Easy_EKS_Config_Data, stack: cdk.Stack){ //
     config.setBaselineMNGSize(2);
     config.setBaselineMNGType(eks.CapacityType.SPOT);
     if(process.env.CDK_DEFAULT_ACCOUNT==="111122223333"){
-        config.addClusterAdminARN(`arn:aws:iam::111122223333:user/example`); 
-        /* Note: 
+        config.addClusterAdminARN(`arn:aws:iam::111122223333:user/example`);
+        /* Note 1:
+           The IAM user/role running cdk deploy dev1-eks, gets added to the list of Cluster Admins by default.
+           This is done for convenience, if you want to change this default, you'll need to edit ./lib/Easy_EKS.ts
+
+           Note 2: 
            config.addClusterAdminARN('...:user/example') should only be used in an if statement,
            Because the identity referenced in ARN must exist or the deployment will fail
            This allows you to create a explicit list of ARNs (representing IAM roles or users)
