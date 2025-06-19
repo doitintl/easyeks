@@ -1,11 +1,3 @@
-// The point of this is to investigate not using eks-blueprints, which has been problematic.
-// * not as maintained as I 1st thought, https://github.com/aws-quickstart/cdk-eks-blueprints/graphs/code-frequency
-// * It's karpenter has been busted for a long time, I suspect this standalone could be more reliable https://github.com/aws-samples/cdk-eks-karpenter
-// * Many operations can only be done against object of type eks.Cluster, blueprints made that hard to get access to
-//   I found edge case limitations where even though I can access it by overriding an internal protected method I can't do things like deploy yaml
-//   due to an order of operations issue, so going to do a major refactor to get rid of EKS Blueprint in favor of L2 construct.
-//   v2 will be based on https://github.com/aws/aws-cdk/tree/main/packages/aws-cdk-lib/aws-eks#aws-iam-mapping
-
 import console = require('console'); //can help debug feedback loop, allows `console.log("hi");` to work, when `cdk list` is run.
 import { Construct, IConstruct } from 'constructs';
 import * as cdk from 'aws-cdk-lib';
@@ -26,6 +18,31 @@ import * as prod_eks_config from '../config/eks/prod_eks_config';
 import * as observability from './Frugal_GPL_Observability_Stack';
 import * as shell from 'shelljs'; //npm install shelljs && npm i --save-dev @types/shelljs
 import request from 'sync-request-curl'; //npm install sync-request-curl (cdk requires sync functions, async not allowed)
+
+
+
+class CDK_Deployer { 
+    // After cdk deploy dev1-eks is run, a kubectl population command will be displayed
+    // Example:
+    // aws eks update-kubeconfig --region ca-central-1 --name dev1-eks
+    //
+    // For good security we lock this down to whitelisted IAM access entries, defined in the Access tab of EKS's web console
+    // For convienence we make an assumption that the IAM identity running cdk deploy dev1-eks, should be auto-added to that list.
+    // A singleton pattern is used to avoid multiple lookups.
+    private static singleton: CDK_Deployer;
+    private static iam_id: string;
+    public static get_IAM_ID(): string{
+        if(!CDK_Deployer.singleton){
+            CDK_Deployer.singleton = new CDK_Deployer();
+            const cmd = `aws sts get-caller-identity | jq .Arn | tr -d '"|\n|\r'`; //translate delete (remove) double quote & new lines
+            const cmd_results = shell.exec(cmd, {silent:true});
+            if(cmd_results.code===0){
+                this.iam_id = cmd_results.stdout; //plausible value = arn:aws:iam::111122223333:user/example
+            }
+        }
+        return CDK_Deployer.iam_id; //returns IAM of user/role running `cdk deploy dev1-eks`
+    }
+} //end CDK_Deployer
 
 
 
@@ -227,13 +244,7 @@ export class Easy_EKS{ //purposefully don't extend stack, to implement builder p
         ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
         ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-        //Logic to create cluster:
-        //UX convienence similar to EKS Blueprints
-        const assumableEKSAdminAccessRole = new iam.Role(this.stack, 'assumableEKSAdminAccessRole', {
-          assumedBy: new iam.AccountRootPrincipal(), //<-- root as is root of the account,
-                                                     // so assumable by any principle/identity in the account.
-        });
-  
+        // Logic to create cluster:  
         // if (kms.Key.isLookupDummy(kms.Key.fromLookup(this.stack, "pre-existing-kms-key", { aliasName: this.config.kmsKeyAlias, returnDummyKeyOnMissing: true,  }))){
         //     eksBlueprint.resourceProvider(blueprints.GlobalResources.KmsKey, new blueprints.CreateKmsKeyProvider(
         //     this.config.kmsKeyAlias, {description: "Easy EKS generated kms key, used to encrypt etcd and ebs-csi-driver provisioned volumes"}
@@ -251,9 +262,16 @@ export class Easy_EKS{ //purposefully don't extend stack, to implement builder p
             defaultCapacity: 0,
             tags: this.config.tags,
             authenticationMode: eks.AuthenticationMode.API_AND_CONFIG_MAP,
-            mastersRole: assumableEKSAdminAccessRole, //<-- adds aws eks update-kubeconfig output
+            // mastersRole: //<-- This is the built in way to set output associated with update-kubeconfig
+            // The role specified is usually assumable by iam.AccountRootPrinciple which isn't secure
+            // so mastersRole is purposefully commented out / not implemented for improved security.
             secretsEncryptionKey: kms_key,
         });
+        //v-- This achieve similar yet better results than commented out mastersRole
+        const msg = `aws eks update-kubeconfig --region ${this.stack.region} --name ${this.config.id}\n\n` +
+        'Note: This only works for the user/role deploying cdk and IAM Whitelisted Admins.\n'+
+        '      To learn more review ./easyeks/config/eks/lower_envs_eks_config.ts';
+        const output_msg = new cdk.CfnOutput(this.stack, 'iamWhitelistedKubeConfigCmd', { value: msg });
         ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
         ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -314,6 +332,13 @@ export class Easy_EKS{ //purposefully don't extend stack, to implement builder p
         ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
         ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        // Logic to add the person running cdk deploy to the list of cluster admins
+        // This satisfies EKS IAM access entry rights prerequisite, needed to allow the output command to work
+        // aws eks update-kubeconfig --region ca-central-1 --name dev1-eks
+        this.config.addClusterAdminARN(CDK_Deployer.get_IAM_ID());
+        ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+        ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
         // Logic to add Cluster Admins Defined in Config as Code:
         const clusterAdminAccessPolicy: eks.AccessPolicy = eks.AccessPolicy.fromAccessPolicyName('AmazonEKSClusterAdminPolicy', {
           accessScopeType: eks.AccessScopeType.CLUSTER
@@ -368,7 +393,10 @@ function initialize_WorkerNodeRole(stack: cdk.Stack){
       },
   });
   EKS_Worker_Node_Role.applyRemovalPolicy(cdk.RemovalPolicy.RETAIN); //Workaround to avoid cdk destroy bug
-  return EKS_Worker_Node_Role
+  // ^--This leaves orphaned IAM roles, which isn't ideal, yet least bad option.
+  //    Shouldn't hurt anything in most cases (there is a max of 1000 IAM roles per AWS account)
+  //    It'd only be a problem after 100's of deploy & destroy operations, after which it's easy to manually clean up.
+  return EKS_Worker_Node_Role;
 }
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
