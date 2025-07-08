@@ -3,10 +3,9 @@ import * as cdk from 'aws-cdk-lib';
 import * as eks from 'aws-cdk-lib/aws-eks'
 import {
   Apply_Podinfo_Helm_Chart,
-  Apply_Podinfo_Ingress_YAML,
+  Apply_Podinfo_Http_Alb_YAML,
+  Apply_Podinfo_Https_Alb_YAML,
   Podinfo_Helm_Config,
-  Podinfo_Http_Ingress_Yaml_Generator,
-  Podinfo_Https_Ingress_Yaml_Generator,
 } from "../../lib/Podinfo_Manifests";
 
 //Intended Use: 
@@ -117,13 +116,11 @@ export function deploy_workloads(config: Easy_EKS_Config_Data, stack: cdk.Stack,
   } as Podinfo_Helm_Config
 
   // Deploy a podinfo sample application with BLUE background
-  Apply_Podinfo_Helm_Chart(cluster, BLUE_PODINFO_HELM_CONFIG);
+  Apply_Podinfo_Helm_Chart(cluster, config, stack, BLUE_PODINFO_HELM_CONFIG);
 
-  // Generate HTTP ingress manifest
-  const http_ingress_yaml = Podinfo_Http_Ingress_Yaml_Generator(BLUE_PODINFO_HELM_CONFIG);
-
-  // kubectl apply manifest
-  Apply_Podinfo_Ingress_YAML(cluster, BLUE_PODINFO_HELM_CONFIG, http_ingress_yaml)
+  // Provisioning HTTP ALB, which includes HTTP ALB, Listener, Target Group, etc.
+  Apply_Podinfo_Http_Alb_YAML(cluster, config, stack,
+    BLUE_PODINFO_HELM_CONFIG)
 
   // Define a GREEN podinfo application with secure ALB (HTTPS)
   const GREEN_PODINFO_HELM_CONFIG = {
@@ -137,7 +134,7 @@ export function deploy_workloads(config: Easy_EKS_Config_Data, stack: cdk.Stack,
   } as Podinfo_Helm_Config
 
   // Deploy a podinfo sample application with GREEN background
-  Apply_Podinfo_Helm_Chart(cluster, GREEN_PODINFO_HELM_CONFIG);
+  Apply_Podinfo_Helm_Chart(cluster, config, stack, GREEN_PODINFO_HELM_CONFIG);
 
   // Generate HTTPS ingress manifest
   /**
@@ -150,14 +147,16 @@ export function deploy_workloads(config: Easy_EKS_Config_Data, stack: cdk.Stack,
    * 5. Deploy the stack
    * 6. After ALB is provisioned, create a CNAME record of the domain/sub-domain with the value in the DNS hostname of the ALB
    */
-  const https_ingress_yaml = Podinfo_Https_Ingress_Yaml_Generator(
-    GREEN_PODINFO_HELM_CONFIG,
-    // ACME ARN
-    "arn:aws:acm:ap-southeast-2:092464092456:certificate/a2e016d5-58fb-4308-b894-f7a21f7df0b8",
-    // Sub-domain
-    "kefeng-easyeks.gcp.au-pod-1.cs.doit-playgrounds.dev",
-  )
+  // const https_ingress_yaml = Podinfo_Https_Ingress_Yaml_Generator(
+  //   GREEN_PODINFO_HELM_CONFIG,
+  //   // ACME ARN
+  //   "arn:aws:acm:ap-southeast-2:092464092456:certificate/a2e016d5-58fb-4308-b894-f7a21f7df0b8",
+  //   // Sub-domain
+  //   "kefeng-easyeks.gcp.au-pod-1.cs.doit-playgrounds.dev",
+  // )
 
   // kubectl apply manifest
-  Apply_Podinfo_Ingress_YAML(cluster, GREEN_PODINFO_HELM_CONFIG, https_ingress_yaml)
+//   Apply_Podinfo_Https_Alb_YAML(cluster, config, stack,
+//     GREEN_PODINFO_HELM_CONFIG,
+//     "arn:aws:acm:ap-southeast-2:092464092456:certificate/a2e016d5-58fb-4308-b894-f7a21f7df0b8")
 }//end deploy_workloads()
