@@ -10,5 +10,77 @@
   },
   "acknowledged-issue-numbers": [
     32775
-  ]
+  ],
+  "availability-zones:account=092464092456:region=ca-central-1": [
+    "ca-central-1a",
+    "ca-central-1b",
+    "ca-central-1d"
+  ],
+  "ami:account=092464092456:filters.image-type.0=machine:filters.name.0=fck-nat-al2023-*-arm64-ebs:filters.state.0=available:owners.0=568608671756:region=ca-central-1": "ami-045d3a84706b8feeb",
+  "availability-zones:account=092464092456:region=ap-southeast-2": [
+    "ap-southeast-2a",
+    "ap-southeast-2b",
+    "ap-southeast-2c",
+    "ap-southeast-2-akl-1a"
+  ],
+  "ami:account=092464092456:filters.image-type.0=machine:filters.name.0=fck-nat-al2023-*-arm64-ebs:filters.state.0=available:owners.0=568608671756:region=ap-southeast-2": "ami-0799b4d92d35edd4a",
+  "vpc-provider:account=092464092456:filter.isDefault=false:filter.tag:Name=lower-envs-vpc:filter.vpc-id=vpc-0b0a49daf937ebd4e:region=ap-southeast-2:returnAsymmetricSubnets=true": {
+    "vpcId": "vpc-0b0a49daf937ebd4e",
+    "vpcCidrBlock": "10.99.0.0/16",
+    "ownerAccountId": "092464092456",
+    "availabilityZones": [],
+    "subnetGroups": [
+      {
+        "name": "Public",
+        "type": "Public",
+        "subnets": [
+          {
+            "subnetId": "subnet-086ef6db7aa03a0c8",
+            "cidr": "10.99.0.0/23",
+            "availabilityZone": "ap-southeast-2a",
+            "routeTableId": "rtb-0ff297699d4ac7ad7"
+          },
+          {
+            "subnetId": "subnet-0aa59909b88944cae",
+            "cidr": "10.99.2.0/23",
+            "availabilityZone": "ap-southeast-2b",
+            "routeTableId": "rtb-006b3e4abc859c868"
+          },
+          {
+            "subnetId": "subnet-0dd9405e4884934d9",
+            "cidr": "10.99.4.0/23",
+            "availabilityZone": "ap-southeast-2c",
+            "routeTableId": "rtb-098ce61b7fa0c7c14"
+          }
+        ]
+      },
+      {
+        "name": "Private",
+        "type": "Private",
+        "subnets": [
+          {
+            "subnetId": "subnet-0c1bbe1320a8d4d4f",
+            "cidr": "10.99.32.0/19",
+            "availabilityZone": "ap-southeast-2a",
+            "routeTableId": "rtb-039cbceea7f95d542"
+          },
+          {
+            "subnetId": "subnet-048c00d9bab4574e1",
+            "cidr": "10.99.64.0/19",
+            "availabilityZone": "ap-southeast-2b",
+            "routeTableId": "rtb-09947c85e71d96615"
+          },
+          {
+            "subnetId": "subnet-0835a3d4741890dfa",
+            "cidr": "10.99.96.0/19",
+            "availabilityZone": "ap-southeast-2c",
+            "routeTableId": "rtb-0f3be7c4448dcd376"
+          }
+        ]
+      }
+    ]
+  },
+  "key-provider:account=092464092456:aliasName=alias/eks/lower-envs:region=ap-southeast-2": {
+    "keyId": "53d98ec6-3051-46b6-a9c6-bd1e4dbf8904"
+  }
 }
