@@ -156,7 +156,7 @@ export function deploy_workloads(config: Easy_EKS_Config_Data, stack: cdk.Stack,
   // )
 
   // kubectl apply manifest
-  Apply_Podinfo_Https_Alb_YAML(cluster, config, stack,
-    GREEN_PODINFO_HELM_CONFIG,
-    "arn:aws:acm:ap-southeast-2:092464092456:certificate/a2e016d5-58fb-4308-b894-f7a21f7df0b8")
+//   Apply_Podinfo_Https_Alb_YAML(cluster, config, stack,
+//     GREEN_PODINFO_HELM_CONFIG,
+//     "arn:aws:acm:ap-southeast-2:092464092456:certificate/a2e016d5-58fb-4308-b894-f7a21f7df0b8")
 }//end deploy_workloads()
