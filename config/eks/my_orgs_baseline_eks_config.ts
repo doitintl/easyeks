@@ -69,12 +69,12 @@ export function apply_config(config: Easy_EKS_Config_Data, stack: cdk.Stack){ //
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-export function deploy_dependencies(config: Easy_EKS_Config_Data, stack: cdk.Stack, cluster: eks.Cluster){
+export function deploy_addons(config: Easy_EKS_Config_Data, stack: cdk.Stack, cluster: eks.ICluster){
 
     const vpc_cni = new eks.CfnAddon(stack, 'vpc-cni', {
         clusterName: cluster.clusterName,
         addonName: 'vpc-cni',
-        addonVersion: 'v1.19.5-eksbuild.1', //v--query for latest, latest of this addon tends to be valid for all versions of kubernetes
+        addonVersion: 'v1.19.6-eksbuild.7', //v--query for latest, latest of this addon tends to be valid for all versions of kubernetes
         // aws eks describe-addon-versions --kubernetes-version=1.31 --addon-name=vpc-cni --query='addons[].addonVersions[].addonVersion' | jq '.[0]'
         //serviceAccountRoleArn: <-- leave this blank, to use worker node's IAM role, which gives dualstack ipv4/ipv6 support
         resolveConflicts: 'OVERWRITE',
@@ -84,7 +84,7 @@ export function deploy_dependencies(config: Easy_EKS_Config_Data, stack: cdk.Sta
     const coredns = new eks.CfnAddon(stack, 'coredns', {
         clusterName: cluster.clusterName,
         addonName: 'coredns',
-        addonVersion: 'v1.11.4-eksbuild.10', //v--query for latest, latest tends to be valid for all version of kubernetes
+        addonVersion: 'v1.11.4-eksbuild.14', //v--query for latest, latest tends to be valid for all version of kubernetes
         // aws eks describe-addon-versions --kubernetes-version=1.31 --addon-name=coredns --query='addons[].addonVersions[].addonVersion' | jq '.[0]'
         resolveConflicts: 'OVERWRITE',
         //v-- Below represents an optimized CoreDNS deployment, based on
@@ -147,7 +147,7 @@ export function deploy_dependencies(config: Easy_EKS_Config_Data, stack: cdk.Sta
     const metrics_server = new eks.CfnAddon(stack, 'metrics-server', { //allows `kubectl top nodes` to work & valid for all versions of kubernetes
         clusterName: cluster.clusterName,
         addonName: 'metrics-server',
-        addonVersion: 'v0.7.2-eksbuild.3', //v--query for latest
+        addonVersion: 'v0.8.0-eksbuild.1', //v--query for latest
         // aws eks describe-addon-versions --kubernetes-version=1.31 --addon-name=metrics-server --query='addons[].addonVersions[].addonVersion' | jq '.[0]'
         resolveConflicts: 'OVERWRITE',
         configurationValues: `{
@@ -203,13 +203,47 @@ export function deploy_dependencies(config: Easy_EKS_Config_Data, stack: cdk.Sta
     const eks_node_monitoring_agent = new eks.CfnAddon(stack, 'eks-node-monitoring-agent', {
         clusterName: cluster.clusterName,
         addonName: 'eks-node-monitoring-agent',
-        addonVersion: 'v1.2.0-eksbuild.1', //v--query for latest
+        addonVersion: 'v1.3.0-eksbuild.2', //v--query for latest
         // aws eks describe-addon-versions --kubernetes-version=1.31 --addon-name=eks-node-monitoring-agent --query='addons[].addonVersions[].addonVersion' | jq '.[0]'
         resolveConflicts: 'OVERWRITE',
         configurationValues: '{}',
     });
 
-}//end deploy_dependencies()
+    //////////////////////////////////////////////////////////
+    // Install EBS CSI Driver Addon
+    // If you try to use eks.ServiceAccount with eksAddons you'll hit a cdk integration bug, this works around it.
+    // (The gist of the bug is it'd fail, because the name would already exist because 2 things would try to create it.)
+    // const ebs_csi_addon_iam_role = new iam.Role(stack, 'aws-ebs-csi-driver-iam-role', {
+    //     managedPolicies: [ iam.ManagedPolicy.fromAwsManagedPolicyName('service-role/AmazonEBSCSIDriverPolicy') ],
+    //     assumedBy: (new cdk.aws_iam.ServicePrincipal("pods.eks.amazonaws.com")),
+    // });
+    // ebs_csi_addon_iam_role.assumeRolePolicy!.addStatements( //<-- ! is TypeScript for "I know this variable isn't null"
+    //     new iam.PolicyStatement({
+    //         actions: ['sts:AssumeRole', 'sts:TagSession'],
+    //         principals: [new iam.ServicePrincipal('pods.eks.amazonaws.com')],
+    //     })
+    // );
+    // const ebs_csi_addon = new eks.CfnAddon(stack, 'aws-ebs-csi-driver', {
+    //     clusterName: cluster.clusterName,
+    //     addonName: 'aws-ebs-csi-driver',
+    //     addonVersion: 'v1.45.0-eksbuild.2', //v--query for latest
+    //     // aws eks describe-addon-versions --kubernetes-version=1.31 --addon-name=aws-ebs-csi-driver --query='addons[].addonVersions[].addonVersion' | jq '.[0]'
+    //     resolveConflicts: 'OVERWRITE',
+    //     podIdentityAssociations: [
+    //         {
+    //             serviceAccount: "ebs-csi-controller-sa",
+    //             roleArn: ebs_csi_addon_iam_role.roleArn,
+    //         }
+    //     ], // (v-- replicaCount: 1, makes logs easier to read/debug, and doesn't hurt stability.)
+    //     configurationValues: `{
+    //         controller: {
+    //             "replicaCount": 1,
+    //         },
+    //     }`, //end aws-ebs-csi-driver configurationValues override
+    // }); //end EBS CSI Driver Addon
+    //////////////////////////////////////////////////////////
+
+}//end deploy_addons()
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -237,37 +271,7 @@ export function deploy_workload_dependencies(config: Easy_EKS_Config_Data, stack
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    // Install EBS CSI Driver Addon
-    // If you try to use eks.ServiceAccount with eksAddons you'll hit a cdk integration bug, this works around it.
-    // (The gist of the bug is it'd fail, because the name would already exist because 2 things would try to create it.)
-    const ebs_csi_addon_iam_role = new iam.Role(stack, 'aws-ebs-csi-driver-iam-role', {
-        managedPolicies: [ iam.ManagedPolicy.fromAwsManagedPolicyName('service-role/AmazonEBSCSIDriverPolicy') ],
-        assumedBy: (new cdk.aws_iam.ServicePrincipal("pods.eks.amazonaws.com")),
-    });
-    ebs_csi_addon_iam_role.assumeRolePolicy!.addStatements( //<-- ! is TypeScript for "I know this variable isn't null"
-        new iam.PolicyStatement({
-            actions: ['sts:AssumeRole', 'sts:TagSession'],
-            principals: [new iam.ServicePrincipal('pods.eks.amazonaws.com')],
-        })
-    );
-    const ebs_csi_addon = new eks.CfnAddon(stack, 'aws-ebs-csi-driver', {
-        clusterName: cluster.clusterName,
-        addonName: 'aws-ebs-csi-driver',
-        addonVersion: 'v1.43.0-eksbuild.1', //v--query for latest
-        // aws eks describe-addon-versions --kubernetes-version=1.31 --addon-name=aws-ebs-csi-driver --query='addons[].addonVersions[].addonVersion' | jq '.[0]'
-        resolveConflicts: 'OVERWRITE',
-        podIdentityAssociations: [
-            {
-                serviceAccount: "ebs-csi-controller-sa",
-                roleArn: ebs_csi_addon_iam_role.roleArn,
-            }
-        ], // (v-- replicaCount: 1, makes logs easier to read/debug, and doesn't hurt stability.)
-        configurationValues: `{
-            controller: {
-                "replicaCount": 1,
-            },
-        }`, //end aws-ebs-csi-driver configurationValues override
-    });
+
     // adding gp3 storage class
     const storage_class_gp3_manifest = {
         "apiVersion": "storage.k8s.io/v1",
@@ -296,7 +300,7 @@ export function deploy_workload_dependencies(config: Easy_EKS_Config_Data, stack
             prune: true,   
         }
     );
-    storage_class_gp3_construct.node.addDependency(cluster.awsAuth);
+    // storage_class_gp3_construct.node.addDependency(cluster.awsAuth);
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     // v-- most won't need this, disabling by default

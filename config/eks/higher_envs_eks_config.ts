@@ -30,27 +30,26 @@ export function apply_config(config: Easy_EKS_Config_Data, stack: cdk.Stack){ //
     //Kubernetes verson and addon's that may depend on Kubernetes version / should be updated along side it should be specified here
     config.setKubernetesVersion(eks.KubernetesVersion.V1_31);
     config.setKubectlLayer(new KubectlV31Layer(stack, 'kubectl'));
-    
+
 }//end apply_config()
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-export function deploy_dependencies(config: Easy_EKS_Config_Data, stack: cdk.Stack, cluster: eks.Cluster){
+export function deploy_addons(config: Easy_EKS_Config_Data, stack: cdk.Stack, cluster: eks.ICluster){
 
     const kube_proxy = new eks.CfnAddon(stack, 'kube-proxy', {
         clusterName: cluster.clusterName,
         addonName: 'kube-proxy',
-        addonVersion: 'v1.31.7-eksbuild.7', //v--query for latest, alternatively you can comment this line out to get default version
+        addonVersion: 'v1.31.10-eksbuild.2', //v--query for latest, alternatively you can comment this line out to get default version
         // aws eks describe-addon-versions --kubernetes-version=1.31 --addon-name=kube-proxy --query='addons[].addonVersions[].addonVersion' | jq '.[0]'
         resolveConflicts: 'OVERWRITE',
         configurationValues: '{}',
     });
     //NOTE! AWS LoadBalancer Controller may occassionally need to be updated along with version of Kubernetes
-    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-}//end deploy_dependencies()
+}//end deploy_addons()
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

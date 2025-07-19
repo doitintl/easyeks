@@ -37,30 +37,29 @@ export function apply_config(config: Easy_EKS_Config_Data, stack: cdk.Stack){ //
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-export function deploy_dependencies(config: Easy_EKS_Config_Data, stack: cdk.Stack, cluster: eks.Cluster){
+export function deploy_addons(config: Easy_EKS_Config_Data, stack: cdk.Stack, cluster: eks.ICluster){
 
     const kube_proxy = new eks.CfnAddon(stack, 'kube-proxy', {
         clusterName: cluster.clusterName,
         addonName: 'kube-proxy',
-        addonVersion: 'v1.31.7-eksbuild.7', //v--query for latest, alternatively you can comment this line out to get default version
+        addonVersion: 'v1.31.10-eksbuild.2', //v--query for latest, alternatively you can comment this line out to get default version
         // aws eks describe-addon-versions --kubernetes-version=1.31 --addon-name=kube-proxy --query='addons[].addonVersions[].addonVersion' | jq '.[0]'
         resolveConflicts: 'OVERWRITE',
         configurationValues: '{}',
     });
     //NOTE! AWS LoadBalancer Controller may occassionally need to be updated along with version of Kubernetes
-    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-}//end deploy_dependencies()
+}//end deploy_addons()
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-export function deploy_workload_dependencies(config: Easy_EKS_Config_Data, stack: cdk.Stack, cluster: eks.Cluster){
+export function deploy_workload_dependencies(config: Easy_EKS_Config_Data, stack: cdk.Stack, cluster: eks.ICluster){
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     //Install AWS Load Balancer Controller via Helm Chart
-    const ALBC_Version = 'v2.12.0'; //April 9th, 2025 latest from https://github.com/kubernetes-sigs/aws-load-balancer-controller/releases
+    const ALBC_Version = 'v2.13.3'; //July 17th, 2025 latest from https://github.com/kubernetes-sigs/aws-load-balancer-controller/releases
     const ALBC_IAM_Policy_Url = `https://raw.githubusercontent.com/kubernetes-sigs/aws-load-balancer-controller/refs/tags/${ALBC_Version}/docs/install/iam_policy.json`
     const ALBC_IAM_Policy_JSON = JSON.parse(request("GET", ALBC_IAM_Policy_Url).body.toString());
     const ALBC_IAM_Policy = new iam.Policy(stack, 'AWS_LB_Controller_IAM_policy_for_EKS', {
@@ -78,13 +77,14 @@ export function deploy_workload_dependencies(config: Easy_EKS_Config_Data, stack
         //4. The eks-pod-identity-agent addon (dependency)
     });
     ALBC_Kube_SA.role.attachInlinePolicy(ALBC_IAM_Policy);
+
     const awsLoadBalancerController = cluster.addHelmChart('AWSLoadBalancerController', {
         chart: 'aws-load-balancer-controller',
         repository: 'https://aws.github.io/eks-charts',
         namespace: "kube-system",
         release: 'aws-load-balancer-controller',
-        version: '1.11.0', //<-- helm chart version based on the following command
-        // curl https://raw.githubusercontent.com/kubernetes-sigs/aws-load-balancer-controller/refs/tags/v2.11.0/helm/aws-load-balancer-controller/Chart.yaml | grep version: | cut -d ':' -f 2
+        version: '1.13.3', //<-- helm chart version based on the following command
+        // curl https://raw.githubusercontent.com/kubernetes-sigs/aws-load-balancer-controller/refs/tags/v2.13.3/helm/aws-load-balancer-controller/Chart.yaml | grep version: | cut -d ':' -f 2
         wait: true,
         timeout: cdk.Duration.minutes(15),
         values: { //<-- helm chart values per https://github.com/kubernetes-sigs/aws-load-balancer-controller/blob/v2.11.0/helm/aws-load-balancer-controller/values.yaml
@@ -99,34 +99,34 @@ export function deploy_workload_dependencies(config: Easy_EKS_Config_Data, stack
         },
     });
     // The following help prevent timeout of install during initial cluster deployment
-    awsLoadBalancerController.node.addDependency(cluster.awsAuth);
-    awsLoadBalancerController.node.addDependency(ALBC_Kube_SA);
+    // awsLoadBalancerController.node.addDependency(cluster.awsAuth);
+    // awsLoadBalancerController.node.addDependency(ALBC_Kube_SA);
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // Install Karpenter.sh
-    const karpenter_helm_config: Karpenter_Helm_Config = {
-        helm_chart_version: '1.4.0', //https://gallery.ecr.aws/karpenter/karpenter
-        helm_chart_values: { //https://github.com/aws/karpenter-provider-aws/blob/v1.4.0/charts/karpenter/values.yaml
-            replicas: 1,
-        },
-    };
-    const karpenter_YAMLs = (new Karpenter_YAML_Generator({
-        cluster: cluster,
-        config: config,
-        amiSelectorTerms_alias: "bottlerocket@v1.31.0", /* <-- Bottlerocket alias always ends in a zero, below is proof by command output
-        export K8S_VERSION="1.31"
-        aws ssm get-parameters-by-path --path "/aws/service/bottlerocket/aws-k8s-$K8S_VERSION" --recursive | jq -cr '.Parameters[].Name' | grep -v "latest" | awk -F '/' '{print $7}' | sort | uniq
-        */
-        consolidationPolicy: "WhenEmptyOrUnderutilized", //WhenUnderutilized is more agressive cost savings / slightly worse stability
-        manifest_inputs: [ //Note highest weight = default, higher = preferred
-            { type: "spot",      arch: "arm64", nodepools_cpu_limit: 1000, weight: 4, },
-            { type: "spot",      arch: "amd64", nodepools_cpu_limit: 1000, weight: 3, },
-            { type: "on-demand", arch: "arm64", nodepools_cpu_limit: 1000, weight: 2, },
-            { type: "on-demand", arch: "amd64", nodepools_cpu_limit: 1000, weight: 1, },
-        ]
-    })).generate_manifests();
-    Apply_Karpenter_YAMLs_with_fixes(stack, cluster, config, karpenter_helm_config, karpenter_YAMLs, awsLoadBalancerController);
+    // const karpenter_helm_config: Karpenter_Helm_Config = {
+    //     helm_chart_version: '1.6.0', //https://gallery.ecr.aws/karpenter/karpenter
+    //     helm_chart_values: { //https://github.com/aws/karpenter-provider-aws/blob/v1.6.0/charts/karpenter/values.yaml
+    //         replicas: 1,
+    //     },
+    // };
+    // const karpenter_YAMLs = (new Karpenter_YAML_Generator({
+    //     cluster: cluster,
+    //     config: config,
+    //     amiSelectorTerms_alias: "bottlerocket@v1.31.0", /* <-- Bottlerocket alias always ends in a zero, below is proof by command output
+    //     export K8S_VERSION="1.31"
+    //     aws ssm get-parameters-by-path --path "/aws/service/bottlerocket/aws-k8s-$K8S_VERSION" --recursive | jq -cr '.Parameters[].Name' | grep -v "latest" | awk -F '/' '{print $7}' | sort | uniq
+    //     */
+    //     consolidationPolicy: "WhenEmptyOrUnderutilized", //WhenUnderutilized is more agressive cost savings / slightly worse stability
+    //     manifest_inputs: [ //Note highest weight = default, higher = preferred
+    //         { type: "spot",      arch: "arm64", nodepools_cpu_limit: 1000, weight: 4, },
+    //         { type: "spot",      arch: "amd64", nodepools_cpu_limit: 1000, weight: 3, },
+    //         { type: "on-demand", arch: "arm64", nodepools_cpu_limit: 1000, weight: 2, },
+    //         { type: "on-demand", arch: "amd64", nodepools_cpu_limit: 1000, weight: 1, },
+    //     ]
+    // })).generate_manifests();
+    // Apply_Karpenter_YAMLs_with_fixes(stack, cluster, config, karpenter_helm_config, karpenter_YAMLs, awsLoadBalancerController);
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 }//end deploy_workload_dependencies()

@@ -129,34 +129,72 @@ dev1_eks.apply_my_orgs_baseline_eks_config();
 dev1_eks.apply_lower_envs_eks_config();
 dev1_eks.apply_dev_eks_config();
 dev1_eks.stage_deployment_of_eks_construct_into_this_objects_stack();
-dev1_eks.stage_deployment_of_global_baseline_eks_dependencies();
-dev1_eks.stage_deployment_of_my_orgs_baseline_eks_dependencies();
-dev1_eks.stage_deployment_of_lower_envs_eks_dependencies();
-dev1_eks.stage_deployment_of_dev_eks_dependencies();
-dev1_eks.stage_deployment_of_global_baseline_eks_workload_dependencies();
-dev1_eks.stage_deployment_of_my_orgs_baseline_eks_workload_dependencies();
-dev1_eks.stage_deployment_of_lower_envs_eks_workload_dependencies();
-dev1_eks.stage_deployment_of_dev_eks_workload_dependencies();
-dev1_eks.stage_deployment_of_global_baseline_eks_workloads();
-dev1_eks.stage_deployment_of_my_orgs_baseline_eks_workloads();
-dev1_eks.stage_deployment_of_lower_envs_eks_workloads();
-dev1_eks.stage_deployment_of_dev_eks_workloads();
+//////
+dev1_eks.stage_deployment_of_global_baseline_eks_addons();
+dev1_eks.stage_deployment_of_my_orgs_baseline_eks_addons();
+dev1_eks.stage_deployment_of_lower_envs_eks_addons();
+dev1_eks.stage_deployment_of_dev_eks_addons();
+/////
+
+
+
+//dev1_eks.lookup_pre_existing_eks_cluster();
+// dev1_eks.stage_deployment_of_global_baseline_eks_workload_dependencies();
+// dev1_eks.stage_deployment_of_my_orgs_baseline_eks_workload_dependencies();
+// dev1_eks.stage_deployment_of_lower_envs_eks_workload_dependencies();
+
+///////
+
+///////
+// dev1_eks.stage_deployment_of_dev_eks_workload_dependencies();
+
+// dev1_eks.stage_deployment_of_global_baseline_eks_workloads();
+// dev1_eks.stage_deployment_of_my_orgs_baseline_eks_workloads();
+// dev1_eks.stage_deployment_of_lower_envs_eks_workloads();
+// dev1_eks.stage_deployment_of_dev_eks_workloads();
 //^-- deployment time of ~18.6mins (~15-20mins)
+
+
+const dev4_eks = new Easy_EKS(cdk_state, 'dev4-eks', low_co2_AMER_stack_config);
+dev4_eks.apply_global_baseline_eks_config();
+dev4_eks.apply_my_orgs_baseline_eks_config();
+dev4_eks.apply_lower_envs_eks_config();
+dev4_eks.apply_dev_eks_config();
+dev4_eks.stage_deployment_of_eks_construct_into_this_objects_stack();
+////////
+dev4_eks.stage_deployment_of_global_baseline_eks_addons();
+dev4_eks.stage_deployment_of_my_orgs_baseline_eks_addons();
+dev4_eks.stage_deployment_of_lower_envs_eks_addons();
+dev4_eks.stage_deployment_of_dev_eks_addons();
+
+// dev4_eks.stage_deployment_of_global_baseline_eks_workload_dependencies();
+// dev4_eks.stage_deployment_of_my_orgs_baseline_eks_workload_dependencies();
+// dev4_eks.stage_deployment_of_lower_envs_eks_workload_dependencies();
+/////////
+// dev4_eks.stage_deployment_of_dev_eks_workload_dependencies();
+
+// dev4_eks.stage_deployment_of_global_baseline_eks_workloads();
+// dev4_eks.stage_deployment_of_my_orgs_baseline_eks_workloads();
+// dev4_eks.stage_deployment_of_lower_envs_eks_workloads();
+// dev4_eks.stage_deployment_of_dev_eks_workloads();
+
+
+
 ///////////////////////////////////////////////////////////////////////////////////////////
 
 //Example 2: Equivalent to Example 1, just with convenience methods as short hand
 //(This format balances usability and debugability)
-const dev2_eks = new Easy_EKS(cdk_state, 'dev2-eks', low_co2_AMER_stack_config);
-dev2_eks.apply_dev_baseline_config(); //<-- convenience method #1
-dev2_eks.stage_deployment_of_eks_construct_into_this_objects_stack();
-dev2_eks.stage_deployment_of_dev_baseline_dependencies(); //<-- convenience method #2
-dev2_eks.stage_deployment_of_dev_baseline_workload_dependencies(); //<-- convenience method #3
-dev2_eks.stage_deployment_of_dev_baseline_workloads(); //<-- convenience method #4
+// const dev2_eks = new Easy_EKS(cdk_state, 'dev2-eks', low_co2_AMER_stack_config);
+// dev2_eks.apply_dev_baseline_config(); //<-- convenience method #1
+// dev2_eks.stage_deployment_of_eks_construct_into_this_objects_stack();
+// dev2_eks.stage_deployment_of_dev_baseline_addons(); //<-- convenience method #2
+// dev2_eks.stage_deployment_of_dev_baseline_workload_dependencies(); //<-- convenience method #3
+// dev2_eks.stage_deployment_of_dev_baseline_workloads(); //<-- convenience method #4
 
 //Example 3: Equivalent to Examples 1 & 2, just shorter
 //(This format optimizes usability, but can make debugability slightly harder)
-const dev3_eks = new Easy_EKS(cdk_state, 'dev3-eks', low_co2_AMER_stack_config);
-dev3_eks.stage_deployment_of_opinionated_eks_cluster_for_dev_envs(); //<-- convenience method #5
+// const dev3_eks = new Easy_EKS(cdk_state, 'dev3-eks', low_co2_AMER_stack_config);
+// dev3_eks.stage_deployment_of_opinionated_eks_cluster_for_dev_envs(); //<-- convenience method #5
 
 ///////////////////////////////////////////////////////////////////////////////////////////
 // const test1_eks = new Easy_EKS(cdk_state, 'test1-eks', low_co2_AMER_stack_config);
