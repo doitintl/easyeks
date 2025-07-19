@@ -28,7 +28,7 @@ export class Easy_EKS_Essentials{ //purposefully don't extend stack, to implemen
 
     //Class Constructor:
     constructor(storage_for_stacks_state: Construct, id_for_stack_and_eks_cluster: string, stack_config: cdk.StackProps) {
-        this.eks_essentials_stack = new cdk.Stack(storage_for_stacks_state, `${id_for_stack_and_eks_cluster}-essentials`, stack_config);
+        this.eks_essentials_stack = new cdk.Stack(storage_for_stacks_state, `${id_for_stack_and_eks_cluster}-essentials2`, stack_config);
         this.config = new Easy_EKS_Config_Data(id_for_stack_and_eks_cluster);
         this.pre_existing_cluster = eks.Cluster.fromClusterAttributes(this.eks_essentials_stack, `${this.config.id}-cluster`, {
               vpc: this.config.vpc,

@@ -59,45 +59,45 @@ export function deploy_essentials(config: Easy_EKS_Config_Data, stack: cdk.Stack
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     //Install AWS Load Balancer Controller via Helm Chart
-    const ALBC_Version = 'v2.13.3'; //July 17th, 2025 latest from https://github.com/kubernetes-sigs/aws-load-balancer-controller/releases
-    const ALBC_IAM_Policy_Url = `https://raw.githubusercontent.com/kubernetes-sigs/aws-load-balancer-controller/refs/tags/${ALBC_Version}/docs/install/iam_policy.json`
-    const ALBC_IAM_Policy_JSON = JSON.parse(request("GET", ALBC_IAM_Policy_Url).body.toString());
-    const ALBC_IAM_Policy = new iam.Policy(stack, 'AWS_LB_Controller_IAM_policy_for_EKS', {
-        document: iam.PolicyDocument.fromJson( ALBC_IAM_Policy_JSON ),
-    });
-    const ALBC_Kube_SA = new eks.ServiceAccount(stack, 'aws-load-balancer-controller_kube-sa', {
-        cluster: cluster,
-        name: 'aws-load-balancer-controller',
-        namespace: 'kube-system',
-        identityType: eks.IdentityType.POD_IDENTITY, //depends on eks-pod-identity-agent addon
-        //Note: It's not documented, but this generates 4 things:
-        //1. A kube SA in the namespace of the cluster
-        //2. An IAM role paired to the Kube SA
-        //3. An EKS Pod Identity Association
-        //4. The eks-pod-identity-agent addon (dependency)
-    });
-    ALBC_Kube_SA.role.attachInlinePolicy(ALBC_IAM_Policy);
+    // const ALBC_Version = 'v2.13.3'; //July 17th, 2025 latest from https://github.com/kubernetes-sigs/aws-load-balancer-controller/releases
+    // const ALBC_IAM_Policy_Url = `https://raw.githubusercontent.com/kubernetes-sigs/aws-load-balancer-controller/refs/tags/${ALBC_Version}/docs/install/iam_policy.json`
+    // const ALBC_IAM_Policy_JSON = JSON.parse(request("GET", ALBC_IAM_Policy_Url).body.toString());
+    // const ALBC_IAM_Policy = new iam.Policy(stack, 'AWS_LB_Controller_IAM_policy_for_EKS', {
+    //     document: iam.PolicyDocument.fromJson( ALBC_IAM_Policy_JSON ),
+    // });
+    // const ALBC_Kube_SA = new eks.ServiceAccount(stack, 'aws-load-balancer-controller_kube-sa', {
+    //     cluster: cluster,
+    //     name: 'aws-load-balancer-controller',
+    //     namespace: 'kube-system',
+    //     identityType: eks.IdentityType.POD_IDENTITY, //depends on eks-pod-identity-agent addon
+    //     //Note: It's not documented, but this generates 4 things:
+    //     //1. A kube SA in the namespace of the cluster
+    //     //2. An IAM role paired to the Kube SA
+    //     //3. An EKS Pod Identity Association
+    //     //4. The eks-pod-identity-agent addon (dependency)
+    // });
+    // ALBC_Kube_SA.role.attachInlinePolicy(ALBC_IAM_Policy);
 
-    const awsLoadBalancerController = cluster.addHelmChart('AWSLoadBalancerController', {
-        chart: 'aws-load-balancer-controller',
-        repository: 'https://aws.github.io/eks-charts',
-        namespace: "kube-system",
-        release: 'aws-load-balancer-controller',
-        version: '1.13.3', //<-- helm chart version based on the following command
-        // curl https://raw.githubusercontent.com/kubernetes-sigs/aws-load-balancer-controller/refs/tags/v2.13.3/helm/aws-load-balancer-controller/Chart.yaml | grep version: | cut -d ':' -f 2
-        wait: true,
-        timeout: cdk.Duration.minutes(15),
-        values: { //<-- helm chart values per https://github.com/kubernetes-sigs/aws-load-balancer-controller/blob/v2.11.0/helm/aws-load-balancer-controller/values.yaml
-            clusterName: cluster.clusterName,
-            vpcId: config.vpc.vpcId,
-            region: stack.region,
-            replicaCount: 1,
-            serviceAccount: {
-                name: "aws-load-balancer-controller",
-                create: false,
-            },
-        },
-    });
+    // const awsLoadBalancerController = cluster.addHelmChart('AWSLoadBalancerController', {
+    //     chart: 'aws-load-balancer-controller',
+    //     repository: 'https://aws.github.io/eks-charts',
+    //     namespace: "kube-system",
+    //     release: 'aws-load-balancer-controller',
+    //     version: '1.13.3', //<-- helm chart version based on the following command
+    //     // curl https://raw.githubusercontent.com/kubernetes-sigs/aws-load-balancer-controller/refs/tags/v2.13.3/helm/aws-load-balancer-controller/Chart.yaml | grep version: | cut -d ':' -f 2
+    //     wait: true,
+    //     timeout: cdk.Duration.minutes(15),
+    //     values: { //<-- helm chart values per https://github.com/kubernetes-sigs/aws-load-balancer-controller/blob/v2.11.0/helm/aws-load-balancer-controller/values.yaml
+    //         clusterName: cluster.clusterName,
+    //         vpcId: config.vpc.vpcId,
+    //         region: stack.region,
+    //         replicaCount: 1,
+    //         serviceAccount: {
+    //             name: "aws-load-balancer-controller",
+    //             create: false,
+    //         },
+    //     },
+    // });
     // The following help prevent timeout of install during initial cluster deployment
     // awsLoadBalancerController.node.addDependency(cluster.awsAuth);
     // awsLoadBalancerController.node.addDependency(ALBC_Kube_SA);

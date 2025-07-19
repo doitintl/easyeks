@@ -140,6 +140,13 @@ dev1_eks.stage_deployment_of_global_baseline_eks_essentials();
 dev1_eks.stage_deployment_of_my_orgs_baseline_eks_essentials();
 dev1_eks.stage_deployment_of_lower_envs_eks_essentials();
 dev1_eks.stage_deployment_of_dev_eks_essentials();
+
+//testing WIP logic using `cdk deploy dev1-eks-essentials2`
+const dev1_eks_essentials = new Easy_EKS_Essentials(cdk_state, 'dev1-eks', low_co2_AMER_stack_config);
+dev1_eks_essentials.stage_deployment_of_global_baseline_eks_essentials();
+dev1_eks_essentials.stage_deployment_of_my_orgs_baseline_eks_essentials();
+dev1_eks_essentials.stage_deployment_of_lower_envs_eks_essentials();
+dev1_eks_essentials.stage_deployment_of_dev_eks_essentials();
 //////////////////////////////////////////////
 
 // dev1_eks.stage_deployment_of_global_baseline_eks_workloads();

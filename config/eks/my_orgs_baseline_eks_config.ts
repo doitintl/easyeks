@@ -271,20 +271,20 @@ export function deploy_essentials(config: Easy_EKS_Config_Data, stack: cdk.Stack
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     //Install Node Local DNS Cache
-    const nodeLocalDNSCache = cluster.addHelmChart('NodeLocalDNSCache', {
-        chart: "node-local-dns", // Name of the Chart to be deployed
-        release: "node-local-dns-cache", // Name for our chart in Kubernetes (helm list -A)
-        repository: "oci://ghcr.io/deliveryhero/helm-charts/node-local-dns",  // HTTPS address of the helm chart (associated with helm repo add command)
-        namespace: "kube-system",
-        version: "2.1.5", // version of the helm chart, below can be used to look up latest
-        // curl https://raw.githubusercontent.com/deliveryhero/helm-charts/refs/heads/master/stable/node-local-dns/Chart.yaml | grep version: | cut -d ':' -f 2
-        wait: false,
-        values: { //<-- helm chart values per https://github.com/deliveryhero/helm-charts/blob/master/stable/node-local-dns/values.yaml
-          config: {
-            bindIp: true, //BottleRocket specific fix
-          },
-        },
-    });
+    // const nodeLocalDNSCache = cluster.addHelmChart('NodeLocalDNSCache', {
+    //     chart: "node-local-dns", // Name of the Chart to be deployed
+    //     release: "node-local-dns-cache", // Name for our chart in Kubernetes (helm list -A)
+    //     repository: "oci://ghcr.io/deliveryhero/helm-charts/node-local-dns",  // HTTPS address of the helm chart (associated with helm repo add command)
+    //     namespace: "kube-system",
+    //     version: "2.1.5", // version of the helm chart, below can be used to look up latest
+    //     // curl https://raw.githubusercontent.com/deliveryhero/helm-charts/refs/heads/master/stable/node-local-dns/Chart.yaml | grep version: | cut -d ':' -f 2
+    //     wait: false,
+    //     values: { //<-- helm chart values per https://github.com/deliveryhero/helm-charts/blob/master/stable/node-local-dns/values.yaml
+    //       config: {
+    //         bindIp: true, //BottleRocket specific fix
+    //       },
+    //     },
+    // });
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -293,33 +293,33 @@ export function deploy_essentials(config: Easy_EKS_Config_Data, stack: cdk.Stack
     //Install default storage class
     //File in /research/ was converted using https://onlineyamltools.com/convert-yaml-to-json
     // adding gp3 storage class
-    const storage_class_gp3_manifest = {
-        "apiVersion": "storage.k8s.io/v1",
-        "kind": "StorageClass",
-        "metadata": {
-            "name": "kms-encrypted-gp3",
-            "annotations": {
-                "storageclass.kubernetes.io/is-default-class": "true"
-            }
-        },
-        "provisioner": "ebs.csi.aws.com",
-        "volumeBindingMode": "WaitForFirstConsumer",
-        "allowVolumeExpansion": true,
-        "reclaimPolicy": "Delete",
-        "parameters": {
-            "type": "gp3",
-            "encrypted": "true",
-            //"kmsKeyId": `${config.kmsKey.keyArn}` //commentig it out as while we test the logic to add permissions to customer's KMS key
-        }
-    }
-    const storage_class_gp3_construct = new eks.KubernetesManifest(stack, "StorageClassManifest",
-        {
-            cluster: cluster,
-            manifest: [storage_class_gp3_manifest],
-            overwrite: true,
-            prune: true,   
-        }
-    );
+    // const storage_class_gp3_manifest = {
+    //     "apiVersion": "storage.k8s.io/v1",
+    //     "kind": "StorageClass",
+    //     "metadata": {
+    //         "name": "kms-encrypted-gp3",
+    //         "annotations": {
+    //             "storageclass.kubernetes.io/is-default-class": "true"
+    //         }
+    //     },
+    //     "provisioner": "ebs.csi.aws.com",
+    //     "volumeBindingMode": "WaitForFirstConsumer",
+    //     "allowVolumeExpansion": true,
+    //     "reclaimPolicy": "Delete",
+    //     "parameters": {
+    //         "type": "gp3",
+    //         "encrypted": "true",
+    //         //"kmsKeyId": `${config.kmsKey.keyArn}` //commentig it out as while we test the logic to add permissions to customer's KMS key
+    //     }
+    // }
+    // const storage_class_gp3_construct = new eks.KubernetesManifest(stack, "StorageClassManifest",
+    //     {
+    //         cluster: cluster,
+    //         manifest: [storage_class_gp3_manifest],
+    //         overwrite: true,
+    //         prune: true,   
+    //     }
+    // );
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 }//end deploy_essentials()
