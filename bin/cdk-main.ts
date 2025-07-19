@@ -13,6 +13,7 @@ TS(TypeScript) import syntax that means:
 */
 import { Opinionated_VPC } from '../lib/Opinionated_VPC';
 import { Easy_EKS } from '../lib/Easy_EKS'; //AWS EKS L2 construct based cluster
+import { Easy_EKS_Essentials } from '../lib/Easy_EKS_Essentials'; //AWS EKS L2 construct based cluster
 /*     ^--_This---^ 
 TS import syntax that means:
 * Import a "specificallyly named" exported item, 
@@ -129,24 +130,17 @@ dev1_eks.apply_my_orgs_baseline_eks_config();
 dev1_eks.apply_lower_envs_eks_config();
 dev1_eks.apply_dev_eks_config();
 dev1_eks.stage_deployment_of_eks_construct_into_this_objects_stack();
-//////
 dev1_eks.stage_deployment_of_global_baseline_eks_addons();
 dev1_eks.stage_deployment_of_my_orgs_baseline_eks_addons();
 dev1_eks.stage_deployment_of_lower_envs_eks_addons();
 dev1_eks.stage_deployment_of_dev_eks_addons();
-/////
-
-
-
-//dev1_eks.lookup_pre_existing_eks_cluster();
-// dev1_eks.stage_deployment_of_global_baseline_eks_workload_dependencies();
-// dev1_eks.stage_deployment_of_my_orgs_baseline_eks_workload_dependencies();
-// dev1_eks.stage_deployment_of_lower_envs_eks_workload_dependencies();
-
-///////
-
-///////
-// dev1_eks.stage_deployment_of_dev_eks_workload_dependencies();
+//////////////////////////////////////////////
+//WIP:
+dev1_eks.stage_deployment_of_global_baseline_eks_essentials();
+dev1_eks.stage_deployment_of_my_orgs_baseline_eks_essentials();
+dev1_eks.stage_deployment_of_lower_envs_eks_essentials();
+dev1_eks.stage_deployment_of_dev_eks_essentials();
+//////////////////////////////////////////////
 
 // dev1_eks.stage_deployment_of_global_baseline_eks_workloads();
 // dev1_eks.stage_deployment_of_my_orgs_baseline_eks_workloads();
@@ -161,17 +155,17 @@ dev4_eks.apply_my_orgs_baseline_eks_config();
 dev4_eks.apply_lower_envs_eks_config();
 dev4_eks.apply_dev_eks_config();
 dev4_eks.stage_deployment_of_eks_construct_into_this_objects_stack();
-////////
 dev4_eks.stage_deployment_of_global_baseline_eks_addons();
 dev4_eks.stage_deployment_of_my_orgs_baseline_eks_addons();
 dev4_eks.stage_deployment_of_lower_envs_eks_addons();
 dev4_eks.stage_deployment_of_dev_eks_addons();
-
-// dev4_eks.stage_deployment_of_global_baseline_eks_workload_dependencies();
-// dev4_eks.stage_deployment_of_my_orgs_baseline_eks_workload_dependencies();
-// dev4_eks.stage_deployment_of_lower_envs_eks_workload_dependencies();
-/////////
-// dev4_eks.stage_deployment_of_dev_eks_workload_dependencies();
+//////////////////////////////////////////////
+//WIP:
+dev4_eks.stage_deployment_of_global_baseline_eks_essentials();
+dev4_eks.stage_deployment_of_my_orgs_baseline_eks_essentials();
+dev4_eks.stage_deployment_of_lower_envs_eks_essentials();
+dev4_eks.stage_deployment_of_dev_eks_essentials();
+//////////////////////////////////////////////
 
 // dev4_eks.stage_deployment_of_global_baseline_eks_workloads();
 // dev4_eks.stage_deployment_of_my_orgs_baseline_eks_workloads();
@@ -188,7 +182,7 @@ dev4_eks.stage_deployment_of_dev_eks_addons();
 // dev2_eks.apply_dev_baseline_config(); //<-- convenience method #1
 // dev2_eks.stage_deployment_of_eks_construct_into_this_objects_stack();
 // dev2_eks.stage_deployment_of_dev_baseline_addons(); //<-- convenience method #2
-// dev2_eks.stage_deployment_of_dev_baseline_workload_dependencies(); //<-- convenience method #3
+// dev2_eks.stage_deployment_of_dev_baseline_essentials(); //<-- convenience method #3
 // dev2_eks.stage_deployment_of_dev_baseline_workloads(); //<-- convenience method #4
 
 //Example 3: Equivalent to Examples 1 & 2, just shorter

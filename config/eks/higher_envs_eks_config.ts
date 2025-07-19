@@ -55,7 +55,7 @@ export function deploy_addons(config: Easy_EKS_Config_Data, stack: cdk.Stack, cl
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-export function deploy_workload_dependencies(config: Easy_EKS_Config_Data, stack: cdk.Stack, cluster: eks.Cluster){
+export function deploy_essentials(config: Easy_EKS_Config_Data, stack: cdk.Stack, cluster: eks.ICluster){
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     //Install AWS Load Balancer Controller via Helm Chart
@@ -98,7 +98,6 @@ export function deploy_workload_dependencies(config: Easy_EKS_Config_Data, stack
         },
     });
     // The following help prevent timeout of install during initial cluster deployment
-    awsLoadBalancerController.node.addDependency(cluster.awsAuth);
     awsLoadBalancerController.node.addDependency(ALBC_Kube_SA);
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -110,30 +109,30 @@ export function deploy_workload_dependencies(config: Easy_EKS_Config_Data, stack
             replicas: 2,
         },
     };
-    const karpenter_YAMLs = (new Karpenter_YAML_Generator({
-        cluster: cluster,
-        config: config,
-        amiSelectorTerms_alias: "bottlerocket@v1.31.0", /* <-- Bottlerocket alias always ends in a zero, below is proof by command output
-        export K8S_VERSION="1.31"
-        aws ssm get-parameters-by-path --path "/aws/service/bottlerocket/aws-k8s-$K8S_VERSION" --recursive | jq -cr '.Parameters[].Name' | grep -v "latest" | awk -F '/' '{print $7}' | sort | uniq
-        */
-        consolidationPolicy: "WhenEmpty", //"WhenEmpty" is slightly higher cost and stability
-        manifest_inputs: [ //Note highest weight = default, higher = preferred
-            { type: "on-demand", arch: "arm64", nodepools_cpu_limit: 1000, weight: 4, },
-            { type: "on-demand", arch: "amd64", nodepools_cpu_limit: 1000, weight: 3, },
-            { type: "spot",      arch: "arm64", nodepools_cpu_limit: 1000, weight: 2, },
-            { type: "spot",      arch: "amd64", nodepools_cpu_limit: 1000, weight: 1, },
-        ]
-    })).generate_manifests();
-    Apply_Karpenter_YAMLs_with_fixes(stack, cluster, config, karpenter_helm_config, karpenter_YAMLs, awsLoadBalancerController);
+    // const karpenter_YAMLs = (new Karpenter_YAML_Generator({
+    //     cluster: cluster,
+    //     config: config,
+    //     amiSelectorTerms_alias: "bottlerocket@v1.31.0", /* <-- Bottlerocket alias always ends in a zero, below is proof by command output
+    //     export K8S_VERSION="1.31"
+    //     aws ssm get-parameters-by-path --path "/aws/service/bottlerocket/aws-k8s-$K8S_VERSION" --recursive | jq -cr '.Parameters[].Name' | grep -v "latest" | awk -F '/' '{print $7}' | sort | uniq
+    //     */
+    //     consolidationPolicy: "WhenEmpty", //"WhenEmpty" is slightly higher cost and stability
+    //     manifest_inputs: [ //Note highest weight = default, higher = preferred
+    //         { type: "on-demand", arch: "arm64", nodepools_cpu_limit: 1000, weight: 4, },
+    //         { type: "on-demand", arch: "amd64", nodepools_cpu_limit: 1000, weight: 3, },
+    //         { type: "spot",      arch: "arm64", nodepools_cpu_limit: 1000, weight: 2, },
+    //         { type: "spot",      arch: "amd64", nodepools_cpu_limit: 1000, weight: 1, },
+    //     ]
+    // })).generate_manifests();
+    // Apply_Karpenter_YAMLs_with_fixes(stack, cluster, config, karpenter_helm_config, karpenter_YAMLs, awsLoadBalancerController);
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-}//end deploy_workload_dependencies()
+}//end deploy_essentials()
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-export function deploy_workloads(config: Easy_EKS_Config_Data, stack: cdk.Stack, cluster: eks.Cluster){
+export function deploy_workloads(config: Easy_EKS_Config_Data, stack: cdk.Stack, cluster: eks.ICluster){
 
 }//end deploy_workloads()

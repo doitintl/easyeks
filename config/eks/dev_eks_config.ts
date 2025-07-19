@@ -37,7 +37,16 @@ export function deploy_addons(config: Easy_EKS_Config_Data, stack: cdk.Stack, cl
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-export function deploy_workload_dependencies(config: Easy_EKS_Config_Data, stack: cdk.Stack, cluster: eks.Cluster){
+export function deploy_essentials(config: Easy_EKS_Config_Data, stack: cdk.Stack, cluster: eks.ICluster){
+
+}//end deploy_essentials()
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+export function deploy_workloads(config: Easy_EKS_Config_Data, stack: cdk.Stack, cluster: eks.ICluster) {
+
     // This is an example of a workload that uses a PersistentVolumeClaim with a storage class that is encrypted
     // with AWS KMS key.
     // IMPORTANT: if the cdk insfrastructure is destroyed it will leave the volume orphans, and they will
@@ -106,14 +115,12 @@ export function deploy_workload_dependencies(config: Easy_EKS_Config_Data, stack
         overwrite: true,
         prune: true,
     });
-    pvc_demo_construct.node.addDependency(cluster.awsAuth);
-}//end deploy_workload_dependencies()
 
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-export function deploy_workloads(config: Easy_EKS_Config_Data, stack: cdk.Stack, cluster: eks.Cluster) {
+
+
+
+
   // Define a BLUE podinfo application with insecure ALB (HTTP)
   const BLUE_PODINFO_HELM_CONFIG = {
     helm_chart_release: "podinfo-blue",
@@ -126,11 +133,10 @@ export function deploy_workloads(config: Easy_EKS_Config_Data, stack: cdk.Stack,
   } as Podinfo_Helm_Config
 
   // Deploy a podinfo sample application with BLUE background
-  Apply_Podinfo_Helm_Chart(cluster, config, stack, BLUE_PODINFO_HELM_CONFIG);
+  // Apply_Podinfo_Helm_Chart(cluster, config, stack, BLUE_PODINFO_HELM_CONFIG);
 
   // Provisioning HTTP ALB, which includes HTTP ALB, Listener, Target Group, etc.
-  Apply_Podinfo_Http_Alb_YAML(cluster, config, stack,
-    BLUE_PODINFO_HELM_CONFIG)
+  // Apply_Podinfo_Http_Alb_YAML(cluster, config, stack, BLUE_PODINFO_HELM_CONFIG)
 
   // Define a GREEN podinfo application with secure ALB (HTTPS)
   const GREEN_PODINFO_HELM_CONFIG = {
@@ -144,7 +150,7 @@ export function deploy_workloads(config: Easy_EKS_Config_Data, stack: cdk.Stack,
   } as Podinfo_Helm_Config
 
   // Deploy a podinfo sample application with GREEN background
-  Apply_Podinfo_Helm_Chart(cluster, config, stack, GREEN_PODINFO_HELM_CONFIG);
+  // Apply_Podinfo_Helm_Chart(cluster, config, stack, GREEN_PODINFO_HELM_CONFIG);
 
   // Generate HTTPS ingress manifest
   /**
