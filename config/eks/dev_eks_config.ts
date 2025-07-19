@@ -21,6 +21,16 @@ export function apply_config(config: Easy_EKS_Config_Data, stack: cdk.Stack) { /
 
 export function deploy_addons(config: Easy_EKS_Config_Data, stack: cdk.Stack, cluster: eks.ICluster) {
 
+    // v-- most won't need this, so commented out by default
+    // const pvc_snapshot_controller = new eks.CfnAddon(stack, 'snapshot-controller', {
+    //     clusterName: cluster.clusterName,
+    //     addonName: 'snapshot-controller',
+    //     addonVersion: 'v8.2.0-eksbuild.1', //v--query for latest
+    //     // aws eks describe-addon-versions --kubernetes-version=1.31 --addon-name=snapshot-controller --query='addons[].addonVersions[].addonVersion' | jq '.[0]'
+    //     resolveConflicts: 'OVERWRITE',
+    //     configurationValues: '{}',
+    // });
+
 }//end deploy_addons()
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

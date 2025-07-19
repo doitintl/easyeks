@@ -209,39 +209,57 @@ export function deploy_addons(config: Easy_EKS_Config_Data, stack: cdk.Stack, cl
         configurationValues: '{}',
     });
 
-    //////////////////////////////////////////////////////////
-    // Install EBS CSI Driver Addon
+    ///////////////////////////////////////////////////////////////////
+    // Install Pod Identity Agent Addon (using cdk bug avoidance logic)
+    // This might look odd, it's a workaround for this bug https://github.com/aws/aws-cdk/issues/32580
+    const ALBC_Kube_SA = new eks.ServiceAccount(stack, 'pod-identity-agent-addon', {
+        cluster: cluster,
+        name: 'cdk-workaround',
+        namespace: 'kube-system',
+        identityType: eks.IdentityType.POD_IDENTITY, //depends on eks-pod-identity-agent addon
+        //Note: It's not documented, but this generates 4 things:
+        //1. A kube SA in the namespace of the cluster
+        //2. An IAM role paired to the Kube SA
+        //3. An EKS Pod Identity Association
+        //4. The eks-pod-identity-agent addon
+        //   ^<-- workaround is leveraging this 4th entry to indirectly install pod identity agent addon,
+        //        this install method avoids cdk bug.
+    });
+    ///////////////////////////////////////////////////////////////////
+
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
+    // Install EBS CSI Driver Addon (using cdk bug avoidance logic)
     // If you try to use eks.ServiceAccount with eksAddons you'll hit a cdk integration bug, this works around it.
     // (The gist of the bug is it'd fail, because the name would already exist because 2 things would try to create it.)
-    // const ebs_csi_addon_iam_role = new iam.Role(stack, 'aws-ebs-csi-driver-iam-role', {
-    //     managedPolicies: [ iam.ManagedPolicy.fromAwsManagedPolicyName('service-role/AmazonEBSCSIDriverPolicy') ],
-    //     assumedBy: (new cdk.aws_iam.ServicePrincipal("pods.eks.amazonaws.com")),
-    // });
-    // ebs_csi_addon_iam_role.assumeRolePolicy!.addStatements( //<-- ! is TypeScript for "I know this variable isn't null"
-    //     new iam.PolicyStatement({
-    //         actions: ['sts:AssumeRole', 'sts:TagSession'],
-    //         principals: [new iam.ServicePrincipal('pods.eks.amazonaws.com')],
-    //     })
-    // );
-    // const ebs_csi_addon = new eks.CfnAddon(stack, 'aws-ebs-csi-driver', {
-    //     clusterName: cluster.clusterName,
-    //     addonName: 'aws-ebs-csi-driver',
-    //     addonVersion: 'v1.45.0-eksbuild.2', //v--query for latest
-    //     // aws eks describe-addon-versions --kubernetes-version=1.31 --addon-name=aws-ebs-csi-driver --query='addons[].addonVersions[].addonVersion' | jq '.[0]'
-    //     resolveConflicts: 'OVERWRITE',
-    //     podIdentityAssociations: [
-    //         {
-    //             serviceAccount: "ebs-csi-controller-sa",
-    //             roleArn: ebs_csi_addon_iam_role.roleArn,
-    //         }
-    //     ], // (v-- replicaCount: 1, makes logs easier to read/debug, and doesn't hurt stability.)
-    //     configurationValues: `{
-    //         controller: {
-    //             "replicaCount": 1,
-    //         },
-    //     }`, //end aws-ebs-csi-driver configurationValues override
-    // }); //end EBS CSI Driver Addon
-    //////////////////////////////////////////////////////////
+    const ebs_csi_addon_iam_role = new iam.Role(stack, 'aws-ebs-csi-driver-iam-role', {
+        managedPolicies: [ iam.ManagedPolicy.fromAwsManagedPolicyName('service-role/AmazonEBSCSIDriverPolicy') ],
+        assumedBy: (new cdk.aws_iam.ServicePrincipal("pods.eks.amazonaws.com")),
+    });
+    ebs_csi_addon_iam_role.assumeRolePolicy!.addStatements( //<-- ! is TypeScript for "I know this variable isn't null"
+        new iam.PolicyStatement({
+            actions: ['sts:AssumeRole', 'sts:TagSession'],
+            principals: [new iam.ServicePrincipal('pods.eks.amazonaws.com')],
+        })
+    );
+    const ebs_csi_addon = new eks.CfnAddon(stack, 'aws-ebs-csi-driver', {
+        clusterName: cluster.clusterName,
+        addonName: 'aws-ebs-csi-driver',
+        addonVersion: 'v1.45.0-eksbuild.2', //v--query for latest
+        // aws eks describe-addon-versions --kubernetes-version=1.31 --addon-name=aws-ebs-csi-driver --query='addons[].addonVersions[].addonVersion' | jq '.[0]'
+        resolveConflicts: 'OVERWRITE',
+        podIdentityAssociations: [
+            {
+                serviceAccount: "ebs-csi-controller-sa",
+                roleArn: ebs_csi_addon_iam_role.roleArn,
+            }
+        ], // (v-- replicaCount: 1, makes logs easier to read/debug, and doesn't hurt stability.)
+        configurationValues: `{
+            controller: {
+                "replicaCount": 1,
+            },
+        }`, //end aws-ebs-csi-driver configurationValues override
+    }); //end EBS CSI Driver Addon
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
 
 }//end deploy_addons()
 
@@ -272,6 +290,9 @@ export function deploy_workload_dependencies(config: Easy_EKS_Config_Data, stack
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    //Install default storage class
+    //File in /research/ was converted using https://onlineyamltools.com/convert-yaml-to-json
     // adding gp3 storage class
     const storage_class_gp3_manifest = {
         "apiVersion": "storage.k8s.io/v1",
@@ -301,22 +322,6 @@ export function deploy_workload_dependencies(config: Easy_EKS_Config_Data, stack
         }
     );
     // storage_class_gp3_construct.node.addDependency(cluster.awsAuth);
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    // v-- most won't need this, disabling by default
-    // const pvc_snapshot_controller = new eks.CfnAddon(stack, 'snapshot-controller', {
-    //     clusterName: cluster.clusterName,
-    //     addonName: 'snapshot-controller',
-    //     addonVersion: 'v8.2.0-eksbuild.1', //v--query for latest
-    //     // aws eks describe-addon-versions --kubernetes-version=1.31 --addon-name=snapshot-controller --query='addons[].addonVersions[].addonVersion' | jq '.[0]'
-    //     resolveConflicts: 'OVERWRITE',
-    //     configurationValues: '{}',
-    // });
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    //Install default storage class
-    //File in /research/ was converted using https://onlineyamltools.com/convert-yaml-to-json
-
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 }//end deploy_workload_dependencies()

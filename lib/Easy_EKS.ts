@@ -49,13 +49,13 @@ class CDK_Deployer {
 export class Easy_EKS{ //purposefully don't extend stack, to implement builder pattern and give more flexibility for imperative logic.
 
     //Class Variables/Properties:
-    eks_cluster_stack: cdk.Stack;
-    eks_essentials_stack: cdk.Stack; //Workload dependencies that are stateless and relevant to EKS (addons, storage class, AWS LB controller, etc.)
+    eks_cluster_stack: cdk.Stack; //eks cluster + addons
+    eks_essentials_stack: cdk.Stack; //production readiness dependencies (karpenter, AWS LB Controller, node local dns cache, storage class, observability, etc.)
     eks_workloads_stack: cdk.Stack;
     config: Easy_EKS_Config_Data;
     cluster: eks.Cluster;
     //new_cluster: eks.Cluster;
-    //pre_existing_cluster: eks.ICluster;
+    // pre_existing_cluster: eks.ICluster;
 
     //Class Constructor:
     constructor(storage_for_stacks_state: Construct, id_for_stack_and_eks_cluster: string, stack_config: cdk.StackProps) {
