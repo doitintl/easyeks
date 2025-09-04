@@ -13,7 +13,7 @@ TS(TypeScript) import syntax that means:
 */
 import { Opinionated_VPC } from '../lib/Opinionated_VPC';
 import { Easy_EKS } from '../lib/Easy_EKS'; //AWS EKS L2 construct based cluster
-import { Easy_EKS_Essentials } from '../lib/Easy_EKS_Essentials'; //AWS EKS L2 construct based cluster
+import { Test_EKS } from '../lib/test'; //temporary research to debug cdk design oddity
 /*     ^--_This---^ 
 TS import syntax that means:
 * Import a "specificallyly named" exported item, 
@@ -134,50 +134,23 @@ dev1_eks.stage_deployment_of_global_baseline_eks_addons();
 dev1_eks.stage_deployment_of_my_orgs_baseline_eks_addons();
 dev1_eks.stage_deployment_of_lower_envs_eks_addons();
 dev1_eks.stage_deployment_of_dev_eks_addons();
-//////////////////////////////////////////////
-//WIP:
-dev1_eks.stage_deployment_of_global_baseline_eks_essentials();
-dev1_eks.stage_deployment_of_my_orgs_baseline_eks_essentials();
-dev1_eks.stage_deployment_of_lower_envs_eks_essentials();
-dev1_eks.stage_deployment_of_dev_eks_essentials();
-
-//testing WIP logic using `cdk deploy dev1-eks-essentials2`
-const dev1_eks_essentials = new Easy_EKS_Essentials(cdk_state, 'dev1-eks', low_co2_AMER_stack_config);
-dev1_eks_essentials.stage_deployment_of_global_baseline_eks_essentials();
-dev1_eks_essentials.stage_deployment_of_my_orgs_baseline_eks_essentials();
-dev1_eks_essentials.stage_deployment_of_lower_envs_eks_essentials();
-dev1_eks_essentials.stage_deployment_of_dev_eks_essentials();
-//////////////////////////////////////////////
-
+//^-- `cdk deploy dev1-eks-cluster has a deployment time of ???? ~18.6mins (~15-20mins)
+///////////////////////////////////////////////////////////////////////
+// dev1_eks.stage_deployment_of_global_baseline_eks_essentials();
+// dev1_eks.stage_deployment_of_my_orgs_baseline_eks_essentials();
+// dev1_eks.stage_deployment_of_lower_envs_eks_essentials();
+// dev1_eks.stage_deployment_of_dev_eks_essentials();
+//^-- `cdk deploy dev1-eks-essentials has a deployment time of ???? ~18.6mins (~15-20mins)
+///////////////////////////////////////////////////////////////////////
 // dev1_eks.stage_deployment_of_global_baseline_eks_workloads();
 // dev1_eks.stage_deployment_of_my_orgs_baseline_eks_workloads();
 // dev1_eks.stage_deployment_of_lower_envs_eks_workloads();
 // dev1_eks.stage_deployment_of_dev_eks_workloads();
-//^-- deployment time of ~18.6mins (~15-20mins)
+//^-- `cdk deploy dev1-eks-workloads has a deployment time of ???? ~18.6mins (~15-20mins)
+
+// const test = new Test_EKS(cdk_state, 'test', low_co2_AMER_stack_config);
 
 
-const dev4_eks = new Easy_EKS(cdk_state, 'dev4-eks', low_co2_AMER_stack_config);
-dev4_eks.apply_global_baseline_eks_config();
-dev4_eks.apply_my_orgs_baseline_eks_config();
-dev4_eks.apply_lower_envs_eks_config();
-dev4_eks.apply_dev_eks_config();
-dev4_eks.stage_deployment_of_eks_construct_into_this_objects_stack();
-dev4_eks.stage_deployment_of_global_baseline_eks_addons();
-dev4_eks.stage_deployment_of_my_orgs_baseline_eks_addons();
-dev4_eks.stage_deployment_of_lower_envs_eks_addons();
-dev4_eks.stage_deployment_of_dev_eks_addons();
-//////////////////////////////////////////////
-//WIP:
-dev4_eks.stage_deployment_of_global_baseline_eks_essentials();
-dev4_eks.stage_deployment_of_my_orgs_baseline_eks_essentials();
-dev4_eks.stage_deployment_of_lower_envs_eks_essentials();
-dev4_eks.stage_deployment_of_dev_eks_essentials();
-//////////////////////////////////////////////
-
-// dev4_eks.stage_deployment_of_global_baseline_eks_workloads();
-// dev4_eks.stage_deployment_of_my_orgs_baseline_eks_workloads();
-// dev4_eks.stage_deployment_of_lower_envs_eks_workloads();
-// dev4_eks.stage_deployment_of_dev_eks_workloads();
 
 
 

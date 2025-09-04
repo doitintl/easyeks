@@ -22,7 +22,7 @@ import request from 'sync-request-curl'; //npm install sync-request-curl (cdk re
 
 
 class CDK_Deployer { 
-    // After cdk deploy dev1-eks is run, a kubectl population command will be displayed
+    // After cdk deploy dev1-eks-cluster is run, a kubectl population command will be displayed
     // Example:
     // aws eks update-kubeconfig --region ca-central-1 --name dev1-eks
     //
@@ -363,7 +363,7 @@ export class Easy_EKS{ //purposefully don't extend stack, to implement builder p
 
     }//end stage_deployment_of_eks_construct_into_this_objects_stack()
 
-}//end Easy_EKS
+}//end class Easy_EKS
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 

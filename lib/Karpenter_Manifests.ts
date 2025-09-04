@@ -168,7 +168,7 @@ export function Apply_Karpenter_YAMLs_with_fixes(stack: cdk.Stack, cluster: eks.
     //v-- Patch fix for https://github.com/aws-samples/cdk-eks-karpenter/issues/231
     Patch_Karpenters_IAM_Role(stack, config);
     //v-- The following 2 lines help prevent cdk destroy issue
-    const karpenter_helm_chart_CFR = (stack.node.tryFindChild(config.id)?.node.tryFindChild('chart-karpenter')?.node.defaultChild as cdk.CfnResource);
+    const karpenter_helm_chart_CFR = (stack.node.tryFindChild(`${config.id}-cluster`)?.node.tryFindChild('chart-karpenter')?.node.defaultChild as cdk.CfnResource);
     if(karpenter_helm_chart_CFR){ karpenter_helm_chart_CFR.applyRemovalPolicy(cdk.RemovalPolicy.RETAIN); }
 
     //v-- kubectl apply -f karpenter_YAMLs
@@ -190,7 +190,7 @@ export function Apply_Karpenter_YAMLs_with_fixes(stack: cdk.Stack, cluster: eks.
 
 function Patch_Karpenters_IAM_Role(stack: cdk.Stack, config: Easy_EKS_Config_Data){
     //Patch fix for https://github.com/aws-samples/cdk-eks-karpenter/issues/231
-    let karpenter_controller_pods_role = stack.node.tryFindChild(config.id)?.node.tryFindChild('karpenter')?.node.tryFindChild('Role') as iam.Role;
+    let karpenter_controller_pods_role = stack.node.tryFindChild(`${config.id}-cluster`)?.node.tryFindChild('karpenter')?.node.tryFindChild('Role') as iam.Role;
     const karpenter_IAM_Policy_JSON = {
         "Version": "2012-10-17",
         "Statement": [
