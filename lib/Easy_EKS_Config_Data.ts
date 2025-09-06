@@ -1,17 +1,24 @@
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//AWS CDK Imports:
 import { KubernetesVersion } from 'aws-cdk-lib/aws-eks';
 import * as cdk from 'aws-cdk-lib';
 import * as eks from 'aws-cdk-lib/aws-eks';
 import * as ec2 from 'aws-cdk-lib/aws-ec2';
 import * as iam from 'aws-cdk-lib/aws-iam';
 import * as kms from 'aws-cdk-lib/aws-kms';
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//Utility Imports:
 import * as shell from 'shelljs'; //npm install shelljs && npm i --save-dev @types/shelljs
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//Local Library Imports:
 import { validateTag } from './Utilities';
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 export class Easy_EKS_Config_Data { //This object just holds config data.
     //Typescript(TS) readability notes
     //Config_Var: Data_Type
     //(var?: is TS syntax to ignore initial null value)
-    id: string; //id of cloud formation stack and eks cluster
+    cluster_name: string;
     vpc: ec2.Vpc; //populated with pre-existing VPC
     kubernetesVersion: KubernetesVersion;
     kubectlLayer: cdk.aws_lambda.ILayerVersion;
@@ -24,11 +31,11 @@ export class Easy_EKS_Config_Data { //This object just holds config data.
     baselineNodesNumber: number;
     baselineNodesType: eks.CapacityType; //enum eks.CapacityType.SPOT or eks.CapacityType.ON_DEMAND
     workerNodeRole: iam.Role; //used by baselineMNG & Karpenter
-    constructor(id_for_stack_and_eks: string){
-        this.id = id_for_stack_and_eks; /*
-        Constructor with minimal args is on purpose for desired UX of "builder pattern".
-        The idea is to add partial configuration snippets over time/as multiple operations
-        rather than populate a complete config all at once in one go.*/
+    constructor(cluster_name: string){
+        this.cluster_name=cluster_name;
+        //Constructor with minimal args is on purpose for desired UX of "builder pattern".
+        //The idea is to add partial configuration snippets over time/as multiple operations
+        //rather than populate a complete config all at once in one go.
     } 
   
   

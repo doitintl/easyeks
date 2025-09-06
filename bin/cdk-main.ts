@@ -124,20 +124,20 @@ cdk bootstrap aws://$AWS_ACCOUNT/$AWS_REGION
 //EKS Infrastructure as Code:
 //Example 1: Long form, showing all steps of builder pattern 
 //(This format makes it easier to understand the flow of logic and can be useful for debugging)
-const dev1_eks = new Easy_EKS(cdk_state, 'dev1-eks', low_co2_AMER_stack_config);
+const dev1_eks = new Easy_EKS(cdk_state, 'dev1', low_co2_AMER_stack_config);
 dev1_eks.apply_global_baseline_eks_config();
 dev1_eks.apply_my_orgs_baseline_eks_config();
 dev1_eks.apply_lower_envs_eks_config();
 dev1_eks.apply_dev_eks_config();
-dev1_eks.stage_deployment_of_eks_construct_into_this_objects_stack();
+dev1_eks.stage_deployment_of_eks_cluster();
 dev1_eks.stage_deployment_of_global_baseline_eks_addons();
 dev1_eks.stage_deployment_of_my_orgs_baseline_eks_addons();
 dev1_eks.stage_deployment_of_lower_envs_eks_addons();
 dev1_eks.stage_deployment_of_dev_eks_addons();
 //^-- `cdk deploy dev1-eks-cluster has a deployment time of ???? ~18.6mins (~15-20mins)
 ///////////////////////////////////////////////////////////////////////
-// dev1_eks.stage_deployment_of_global_baseline_eks_essentials();
-// dev1_eks.stage_deployment_of_my_orgs_baseline_eks_essentials();
+dev1_eks.stage_deployment_of_global_baseline_eks_essentials();
+dev1_eks.stage_deployment_of_my_orgs_baseline_eks_essentials();
 // dev1_eks.stage_deployment_of_lower_envs_eks_essentials();
 // dev1_eks.stage_deployment_of_dev_eks_essentials();
 //^-- `cdk deploy dev1-eks-essentials has a deployment time of ???? ~18.6mins (~15-20mins)
