@@ -17,7 +17,7 @@ export function apply_config(config: Easy_EKS_Config_Data, stack: cdk.Stack){ //
     //^-- NOTE: hashtag(#)   comma(,)   singlequote(')   doublequote(\")   parenthesis()   and more are not valid tag values
     //    https://docs.aws.amazon.com/codeguru/latest/bugbust-ug/limits-tags.html
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    config.addClusterViewerAccount(process.env.CDK_DEFAULT_ACCOUNT!); //<-- comment out to disable RO_viewer_by_default
+    config.addClusterViewerAccount(process.env.CDK_DEFAULT_ACCOUNT!); //<-- comment out to disable read_only_viewer_by_default
     /* Explanation of what this-^ does:
     It adds current account to eks cluster's aws-auth configmap
     kubectl get cm -n=kube-system aws-auth -o yaml | grep Accounts:
@@ -271,20 +271,20 @@ export function deploy_essentials(config: Easy_EKS_Config_Data, stack: cdk.Stack
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     //Install Node Local DNS Cache
-    // const nodeLocalDNSCache = cluster.addHelmChart('NodeLocalDNSCache', {
-    //     chart: "node-local-dns", // Name of the Chart to be deployed
-    //     release: "node-local-dns-cache", // Name for our chart in Kubernetes (helm list -A)
-    //     repository: "oci://ghcr.io/deliveryhero/helm-charts/node-local-dns",  // HTTPS address of the helm chart (associated with helm repo add command)
-    //     namespace: "kube-system",
-    //     version: "2.1.5", // version of the helm chart, below can be used to look up latest
-    //     // curl https://raw.githubusercontent.com/deliveryhero/helm-charts/refs/heads/master/stable/node-local-dns/Chart.yaml | grep version: | cut -d ':' -f 2
-    //     wait: false,
-    //     values: { //<-- helm chart values per https://github.com/deliveryhero/helm-charts/blob/master/stable/node-local-dns/values.yaml
-    //       config: {
-    //         bindIp: true, //BottleRocket specific fix
-    //       },
-    //     },
-    // });
+    const nodeLocalDNSCache = cluster.addHelmChart('NodeLocalDNSCache', {
+        chart: "node-local-dns", // Name of the Chart to be deployed
+        release: "node-local-dns-cache", // Name for our chart in Kubernetes (helm list -A)
+        repository: "oci://ghcr.io/deliveryhero/helm-charts/node-local-dns",  // HTTPS address of the helm chart (associated with helm repo add command)
+        namespace: "kube-system",
+        version: "2.1.5", // version of the helm chart, below can be used to look up latest
+        // curl https://raw.githubusercontent.com/deliveryhero/helm-charts/refs/heads/master/stable/node-local-dns/Chart.yaml | grep version: | cut -d ':' -f 2
+        wait: false,
+        values: { //<-- helm chart values per https://github.com/deliveryhero/helm-charts/blob/master/stable/node-local-dns/values.yaml
+          config: {
+            bindIp: true, //BottleRocket specific fix
+          },
+        },
+    });
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
