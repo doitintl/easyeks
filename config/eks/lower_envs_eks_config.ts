@@ -28,8 +28,9 @@ export function apply_config(config: Easy_EKS_Config_Data, stack: cdk.Stack){ //
         */
     }
     //Kubernetes verson and addon's that may depend on Kubernetes version / should be updated along side it should be specified here
-    config.setKubernetesVersion(eks.KubernetesVersion.V1_31);
+    config.setKubernetesVersion(eks.KubernetesVersion.V1_31); //version of eks cluster
     config.setKubectlLayer(new KubectlV31Layer(stack, 'kubectl'));
+    //^--refers to version of kubectl & helm installed in AWS Lambda Layer responsible for kubectl & helm deployments
 
 }//end apply_config()
 

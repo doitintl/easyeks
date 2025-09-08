@@ -24,7 +24,7 @@ export class Easy_EKS{ //purposefully don't extend stack, to implement builder p
         const cluster_name=`${env_name}-eks`;
         this.eks_config = new Easy_EKS_Config_Data(cluster_name);
         this.eks_cluster = new Easy_EKS_Cluster(storage_for_stacks_state, cluster_name, stack_config, this.eks_config);
-        this.eks_essentials = new Easy_EKS_Essentials(storage_for_stacks_state, cluster_name, stack_config, this.eks_config);
+        this.eks_essentials = new Easy_EKS_Essentials(storage_for_stacks_state, cluster_name, stack_config);
         //this.eks_workloads = new Easy_EKS_Workloads() //cdk.Stack(storage_for_stacks_state, `${id_for_stack_and_eks_cluster}-workloads`, stack_config);
         
         //Constructor with minimal args is on purpose for desired UX of "builder pattern".

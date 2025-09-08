@@ -11,6 +11,7 @@ TS(TypeScript) import syntax that means:
 * The "named import" can be arbtirarily named.
 * Items in the named import can be referenced with the dot operator.
 */
+import { ensure_existance_of_kubectl_helm_lambda_deployer_role_used_by_easy_eks } from '../lib/Utilities';
 import { Opinionated_VPC } from '../lib/Opinionated_VPC';
 import { Easy_EKS } from '../lib/Easy_EKS'; //AWS EKS L2 construct based cluster
 import { Test_EKS } from '../lib/test'; //temporary research to debug cdk design oddity
@@ -22,6 +23,16 @@ TS import syntax that means:
   item in the referenced file.
 * Items imported this way, can be referenced directly by name.
 */
+////////////////////////////////////////////////////////////////////////////////////////////
+
+
+////////////////////////////////////////////////////////////////////////////////////////////
+ensure_existance_of_kubectl_helm_lambda_deployer_role_used_by_easy_eks();
+// ^-- This uses aws cli and node.js shell to ensure a dependency IAM role exists.
+//     Note: 
+//     When a user first runs "cdk list" or "cdk deploy *"
+//     The code will auto-runs (without requesting permission/input from the user)
+//     This is for UX reasons, as cdk failures will occur if it's not pre-existing.
 ////////////////////////////////////////////////////////////////////////////////////////////
 
 
@@ -138,8 +149,8 @@ dev1_eks.stage_deployment_of_dev_eks_addons();
 ///////////////////////////////////////////////////////////////////////
 dev1_eks.stage_deployment_of_global_baseline_eks_essentials();
 dev1_eks.stage_deployment_of_my_orgs_baseline_eks_essentials();
-// dev1_eks.stage_deployment_of_lower_envs_eks_essentials();
-// dev1_eks.stage_deployment_of_dev_eks_essentials();
+//dev1_eks.stage_deployment_of_lower_envs_eks_essentials();
+//dev1_eks.stage_deployment_of_dev_eks_essentials();
 //^-- `cdk deploy dev1-eks-essentials has a deployment time of ???? ~18.6mins (~15-20mins)
 ///////////////////////////////////////////////////////////////////////
 // dev1_eks.stage_deployment_of_global_baseline_eks_workloads();
@@ -148,7 +159,7 @@ dev1_eks.stage_deployment_of_my_orgs_baseline_eks_essentials();
 // dev1_eks.stage_deployment_of_dev_eks_workloads();
 //^-- `cdk deploy dev1-eks-workloads has a deployment time of ???? ~18.6mins (~15-20mins)
 
-// const test = new Test_EKS(cdk_state, 'test', low_co2_AMER_stack_config);
+//const test = new Test_EKS(cdk_state, 'test', low_co2_AMER_stack_config);
 
 
 

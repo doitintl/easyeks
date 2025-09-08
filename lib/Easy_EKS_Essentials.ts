@@ -26,7 +26,7 @@ import { Easy_EKS_Config_Data } from './Easy_EKS_Config_Data';
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
-
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 export class Easy_EKS_Essentials{ //purposefully don't extend stack, to implement builder pattern and give more flexibility for imperative logic.
 
     //Class Variables/Properties:
@@ -35,13 +35,22 @@ export class Easy_EKS_Essentials{ //purposefully don't extend stack, to implemen
     cluster_exists: boolean;
     cluster: eks.ICluster;
 
+    //BUG DISCOVERED: config was only ititialized for Easy_EKS_Cluster.ts and not other classes, will need to fix that.
+    //moving config out of constructor
+    //eks_config: Easy_EKS_Config_Data
+    //this.config = eks_config;
+
     //Class Constructor:
-    constructor(storage_for_stacks_state: Construct, cluster_name: string, stack_config: cdk.StackProps, eks_config: Easy_EKS_Config_Data) {
+    constructor(storage_for_stacks_state: Construct, cluster_name: string, stack_config: cdk.StackProps) {
         this.stack = new cdk.Stack(storage_for_stacks_state, `${cluster_name}-essentials`, stack_config);
-        this.config = eks_config;
         this.cluster_exists = true_when_cluster_exists(cluster_name, this.stack.region);
         if(this.cluster_exists){
-            this.cluster = import_cluster_into_stack(this.config, this.stack); 
+            this.cluster = import_cluster_into_stack(this.config, this.stack);
+            //Note: If you're wondering why the code is implemented this way:
+            //      Easy_EKS v0.5.0 originally ran cdk equivalent kubectl apply & helm install against the created cluster
+            //      But that ran into cdk specific scalability limits around max response size and timeouts.
+            //      Easy_EKS v0.6.0 was refactored to have kubectl and helm logic run against an imported eks cluster
+            //      to avoid cdk specific scalability limits. It also mitigated other issues and lead to multiple UX improvements.
         };
     }//end constructor of Easy_EKS_Essentials
 
@@ -67,19 +76,17 @@ function import_cluster_into_stack(config: Easy_EKS_Config_Data, stack: cdk.Stac
     //Creation of cdk object of type eks.KubectlProvider requires an initialized object of type eks.ICluster
     let cluster: eks.ICluster;
     const temp_eks_construct_for_kubectl_provider = eks.Cluster.fromClusterAttributes(stack, 'eks.KubectlProvider', {
-        clusterName: "test",
-        kubectlLayer: new KubectlV31Layer(stack, 'kubectl'),
-        kubectlRoleArn: 'arn:aws:iam::090622937654:role/kubectl-helm-lambda-deployer-role-used-by-easy-eks',
+        clusterName: config.cluster_name,
+        kubectlLayer: config.kubectlLayer,
+        kubectlRoleArn: `arn:aws:iam::${process.env.CDK_DEFAULT_ACCOUNT}:role/kubectl-helm-lambda-deployer-role-used-by-easy-eks`,
     });
     const kubectl_provider = eks.KubectlProvider.getOrCreate(stack, temp_eks_construct_for_kubectl_provider);
     cdk.Tags.of(kubectl_provider.handlerRole).add('whitelisted-role-for-assuming', 'easy-eks-generated-kubectl-helm-deployer-lambda-role'); //used in a whitelist condition
     cluster = eks.Cluster.fromClusterAttributes(stack, 'imported-eks-cluster', {
-        clusterName: "test",
+        clusterName: config.cluster_name,
         kubectlProvider: kubectl_provider,
-        kubectlRoleArn: 'arn:aws:iam::090622937654:role/kubectl-helm-lambda-deployer-role-used-by-easy-eks',
+        kubectlRoleArn: `arn:aws:iam::${process.env.CDK_DEFAULT_ACCOUNT}:role/kubectl-helm-lambda-deployer-role-used-by-easy-eks`,
     });
-//    this.kubectl_helm_lambda_handler_iam_role_for_easy_eks.grantAssumeRole(kubectl_provider.handlerRole);
-
     return cluster;
 }
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

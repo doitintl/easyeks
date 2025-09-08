@@ -171,7 +171,6 @@ export class Easy_EKS_Cluster{ //purposefully don't extend stack, to implement b
         // * View YAML objects in AWS Web Console (with the exception of secrets)           
         // * If given additional IAM rights for kubectl access, can get, describe, and -o yaml most objects.
         ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
         
         ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
         // Logic to add the person running cdk deploy to the list of cluster admins

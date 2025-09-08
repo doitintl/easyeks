@@ -16,7 +16,8 @@ export function apply_config(config: Easy_EKS_Config_Data, stack: cdk.Stack){ //
     //    More details:
     //      - https://docs.aws.amazon.com/eks/latest/userguide/eks-using-tags.html#tag-restrictions
     //      - https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/Using_Tags.html#tag-restrictions
-    
+    config.addClusterAdminARN(`arn:aws:iam::${process.env.CDK_DEFAULT_ACCOUNT}:role/kubectl-helm-lambda-deployer-role-used-by-easy-eks`);
+    //^-- cdk-main.ts calls a Utility.ts library that uses aws cli to ensure this role exists (cdk errors would occur if it wasn't pre-existing.)
 }//end apply_config()
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
