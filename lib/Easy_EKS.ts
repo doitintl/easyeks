@@ -197,7 +197,7 @@ export class Easy_EKS{ //purposefully don't extend stack, to implement builder p
     //Begin Class Functions (Associated with Easy_EKS_Workloads):
     stage_deployment_of_global_baseline_eks_workloads(){
         if(this.eks_workloads){
-            this.eks_workloads.initalize_imported_cluster_in_stack(this.eks_essentials.stack, this.eks_config.cluster_name, this.eks_config.kubectlLayer);
+            this.eks_workloads.initalize_imported_cluster_in_stack(this.eks_workloads.stack, this.eks_config.cluster_name, this.eks_config.kubectlLayer);
             this.eks_workloads.stage_deployment_of_global_baseline_eks_workloads(this.eks_config); 
         }
     }
