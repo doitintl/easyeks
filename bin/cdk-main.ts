@@ -14,7 +14,6 @@ TS(TypeScript) import syntax that means:
 import { ensure_existance_of_kubectl_helm_lambda_deployer_role_used_by_easy_eks } from '../lib/Utilities';
 import { Opinionated_VPC } from '../lib/Opinionated_VPC';
 import { Easy_EKS } from '../lib/Easy_EKS'; //AWS EKS L2 construct based cluster
-import { Test_EKS } from '../lib/test'; //temporary research to debug cdk design oddity
 /*     ^--_This---^ 
 TS import syntax that means:
 * Import a "specificallyly named" exported item, 
@@ -145,7 +144,7 @@ dev1_eks.stage_deployment_of_global_baseline_eks_addons();
 dev1_eks.stage_deployment_of_my_orgs_baseline_eks_addons();
 dev1_eks.stage_deployment_of_lower_envs_eks_addons();
 dev1_eks.stage_deployment_of_dev_eks_addons();
-//^-- `cdk deploy dev1-eks-cluster has a deployment time of ???? ~17mins
+//^-- `cdk deploy dev1-eks-cluster has a deployment time of ~17mins
 ///////////////////////////////////////////////////////////////////////
 dev1_eks.stage_deployment_of_global_baseline_eks_essentials();
 dev1_eks.stage_deployment_of_my_orgs_baseline_eks_essentials();
