@@ -152,10 +152,10 @@ dev1_eks.stage_deployment_of_lower_envs_eks_essentials();
 dev1_eks.stage_deployment_of_dev_eks_essentials();
 //^-- `cdk deploy dev1-eks-essentials has a deployment time of ~2mins
 ///////////////////////////////////////////////////////////////////////
-// dev1_eks.stage_deployment_of_global_baseline_eks_workloads();
-// dev1_eks.stage_deployment_of_my_orgs_baseline_eks_workloads();
-// dev1_eks.stage_deployment_of_lower_envs_eks_workloads();
-// dev1_eks.stage_deployment_of_dev_eks_workloads();
+dev1_eks.stage_deployment_of_global_baseline_eks_workloads();
+dev1_eks.stage_deployment_of_my_orgs_baseline_eks_workloads();
+dev1_eks.stage_deployment_of_lower_envs_eks_workloads();
+dev1_eks.stage_deployment_of_dev_eks_workloads();
 //^-- `cdk deploy dev1-eks-workloads has a deployment time of ~1min
 
 
@@ -164,17 +164,17 @@ dev1_eks.stage_deployment_of_dev_eks_essentials();
 
 //Example 2: Equivalent to Example 1, just with convenience methods as short hand
 //(This format balances usability and debugability)
- const dev2_eks = new Easy_EKS(cdk_state, 'dev2-eks', low_co2_AMER_stack_config);
- dev2_eks.apply_dev_baseline_config(); //<-- convenience method #1
- dev2_eks.stage_deployment_of_eks_cluster();
- dev2_eks.stage_deployment_of_dev_baseline_addons(); //<-- convenience method #2
- dev2_eks.stage_deployment_of_dev_baseline_essentials(); //<-- convenience method #3
-// dev2_eks.stage_deployment_of_dev_baseline_workloads(); //<-- convenience method #4
+const dev2_eks = new Easy_EKS(cdk_state, 'dev2-eks', low_co2_AMER_stack_config);
+dev2_eks.apply_dev_baseline_config(); //<-- convenience method #1
+dev2_eks.stage_deployment_of_eks_cluster();
+dev2_eks.stage_deployment_of_dev_baseline_addons(); //<-- convenience method #2
+dev2_eks.stage_deployment_of_dev_baseline_essentials(); //<-- convenience method #3
+dev2_eks.stage_deployment_of_dev_baseline_workloads(); //<-- convenience method #4
 
 //Example 3: Equivalent to Examples 1 & 2, just shorter
 //(This format optimizes usability, but can make debugability slightly harder)
-// const dev3_eks = new Easy_EKS(cdk_state, 'dev3-eks', low_co2_AMER_stack_config);
-// dev3_eks.stage_deployment_of_opinionated_eks_cluster_for_dev_envs(); //<-- convenience method #5
+const dev3_eks = new Easy_EKS(cdk_state, 'dev3-eks', low_co2_AMER_stack_config);
+dev3_eks.stage_deployment_of_opinionated_eks_cluster_for_dev_envs(); //<-- convenience method #5
 
 ///////////////////////////////////////////////////////////////////////////////////////////
 // const test1_eks = new Easy_EKS(cdk_state, 'test1-eks', low_co2_AMER_stack_config);

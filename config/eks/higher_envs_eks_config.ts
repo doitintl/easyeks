@@ -2,9 +2,11 @@ import { Easy_EKS_Config_Data } from '../../lib/Easy_EKS_Config_Data';
 import * as cdk from 'aws-cdk-lib';
 import * as eks from 'aws-cdk-lib/aws-eks';
 import * as iam from 'aws-cdk-lib/aws-iam';
-import { KubectlV31Layer } from '@aws-cdk/lambda-layer-kubectl-v31'; //npm install @aws-cdk/lambda-layer-kubectl-v31
 import request from 'sync-request-curl'; //npm install sync-request-curl (cdk requires sync functions, async not allowed)
 import { Karpenter_Helm_Config, Karpenter_YAML_Generator, Apply_Karpenter_YAMLs_with_fixes } from '../../lib/Karpenter_Manifests';
+import { KubectlV31Layer } from '@aws-cdk/lambda-layer-kubectl-v31'; //npm install @aws-cdk/lambda-layer-kubectl-v31
+import { KubectlV32Layer } from '@aws-cdk/lambda-layer-kubectl-v32'; //npm install @aws-cdk/lambda-layer-kubectl-v32
+import { KubectlV33Layer } from '@aws-cdk/lambda-layer-kubectl-v33'; //npm install @aws-cdk/lambda-layer-kubectl-v33
 //Intended Use: 
 //EasyEKS Admins: edit this file with config to apply to all lower environment eks cluster's in your org.
 
@@ -28,8 +30,8 @@ export function apply_config(config: Easy_EKS_Config_Data, stack: cdk.Stack){ //
         */
     }
     //Kubernetes verson and addon's that may depend on Kubernetes version / should be updated along side it should be specified here
-    config.setKubernetesVersion(eks.KubernetesVersion.V1_31);
-    config.setKubectlLayer(new KubectlV31Layer(stack, 'kubectl'));
+    config.setKubernetesVersion(eks.KubernetesVersion.V1_33);
+    config.setKubectlLayer(new KubectlV33Layer(stack, 'kubectl'));
 
 }//end apply_config()
 
@@ -42,8 +44,8 @@ export function deploy_addons(config: Easy_EKS_Config_Data, stack: cdk.Stack, cl
     const kube_proxy = new eks.CfnAddon(stack, 'kube-proxy', {
         clusterName: cluster.clusterName,
         addonName: 'kube-proxy',
-        addonVersion: 'v1.31.10-eksbuild.2', //v--query for latest, alternatively you can comment this line out to get default version
-        // aws eks describe-addon-versions --kubernetes-version=1.31 --addon-name=kube-proxy --query='addons[].addonVersions[].addonVersion' | jq '.[0]'
+        addonVersion: 'v1.33.3-eksbuild.6', //v--query for latest, alternatively you can comment this line out to get default version
+        // aws eks describe-addon-versions --kubernetes-version=1.33 --addon-name=kube-proxy --query='addons[].addonVersions[].addonVersion' | jq '.[0]'
         resolveConflicts: 'OVERWRITE',
         configurationValues: '{}',
     });
@@ -62,8 +64,8 @@ export function deploy_addons(config: Easy_EKS_Config_Data, stack: cdk.Stack, cl
     const karpenter_YAMLs = (new Karpenter_YAML_Generator({
         cluster: cluster,
         config: config,
-        amiSelectorTerms_alias: "bottlerocket@v1.31.0", /* <-- Bottlerocket alias always ends in a zero, below is proof by command output
-        export K8S_VERSION="1.31"
+        amiSelectorTerms_alias: "bottlerocket@v1.33.0", /* <-- Bottlerocket alias always ends in a zero, below is proof by command output
+        export K8S_VERSION="1.33"
         aws ssm get-parameters-by-path --path "/aws/service/bottlerocket/aws-k8s-$K8S_VERSION" --recursive | jq -cr '.Parameters[].Name' | grep -v "latest" | awk -F '/' '{print $7}' | sort | uniq
         */
         consolidationPolicy: "WhenEmpty", //"WhenEmpty" is slightly higher cost and stability
@@ -87,7 +89,7 @@ export function deploy_essentials(config: Easy_EKS_Config_Data, stack: cdk.Stack
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     //Install AWS Load Balancer Controller via Helm Chart
-    const ALBC_Version = 'v2.12.0'; //April 9th, 2025 latest from https://github.com/kubernetes-sigs/aws-load-balancer-controller/releases
+    const ALBC_Version = 'v2.13.4'; //latest as of Sept 9th, 2025 per https://github.com/kubernetes-sigs/aws-load-balancer-controller/releases
     const ALBC_IAM_Policy_Url = `https://raw.githubusercontent.com/kubernetes-sigs/aws-load-balancer-controller/refs/tags/${ALBC_Version}/docs/install/iam_policy.json`
     const ALBC_IAM_Policy_JSON = JSON.parse(request("GET", ALBC_IAM_Policy_Url).body.toString());
     const ALBC_IAM_Policy = new iam.Policy(stack, 'AWS_LB_Controller_IAM_policy_for_EKS', {
@@ -110,11 +112,11 @@ export function deploy_essentials(config: Easy_EKS_Config_Data, stack: cdk.Stack
         repository: 'https://aws.github.io/eks-charts',
         namespace: "kube-system",
         release: 'aws-load-balancer-controller',
-        version: '1.11.0', //<-- helm chart version based on the following command
-        // curl https://raw.githubusercontent.com/kubernetes-sigs/aws-load-balancer-controller/refs/tags/v2.11.0/helm/aws-load-balancer-controller/Chart.yaml | grep version: | cut -d ':' -f 2
+        version: '1.13.4', //<-- helm chart version based on the following command
+        // curl https://raw.githubusercontent.com/kubernetes-sigs/aws-load-balancer-controller/refs/tags/v2.13.4/helm/aws-load-balancer-controller/Chart.yaml | grep version: | cut -d ':' -f 2
         wait: true,
         timeout: cdk.Duration.minutes(15),
-        values: { //<-- helm chart values per https://github.com/kubernetes-sigs/aws-load-balancer-controller/blob/v2.11.0/helm/aws-load-balancer-controller/values.yaml
+        values: { //<-- helm chart values per https://github.com/kubernetes-sigs/aws-load-balancer-controller/blob/v2.13.4/helm/aws-load-balancer-controller/values.yaml
             clusterName: cluster.clusterName,
             vpcId: config.vpc.vpcId,
             region: stack.region,
@@ -125,7 +127,7 @@ export function deploy_essentials(config: Easy_EKS_Config_Data, stack: cdk.Stack
             },
         },
     });
-    // The following help prevent timeout of install during initial cluster deployment
+    // The following should help prevent temporary errors in logs of ALBC
     awsLoadBalancerController.node.addDependency(ALBC_Kube_SA);
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
