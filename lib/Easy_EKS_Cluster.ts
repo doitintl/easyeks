@@ -19,9 +19,8 @@ import * as stage_eks_config from '../config/eks/stage_eks_config';
 import * as prod_eks_config from '../config/eks/prod_eks_config';
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //Utility Imports:
-import console = require('console'); //can help debug feedback loop, allows `console.log("hi");` to work, when `cdk list` is run.
 import * as shell from 'shelljs'; //npm install shelljs && npm i --save-dev @types/shelljs
-import request from 'sync-request-curl'; //npm install sync-request-curl (cdk requires sync functions, async not allowed)
+import console = require('console'); //can help debug feedback loop, allows `console.log("hi");` to work, when `cdk list` is run.
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //Local Library Imports:
 import { Easy_EKS_Config_Data } from './Easy_EKS_Config_Data';
@@ -34,49 +33,69 @@ export class Easy_EKS_Cluster{ //purposefully don't extend stack, to implement b
 
     //Class Variables/Properties:
     stack: cdk.Stack;
-    config: Easy_EKS_Config_Data;
     cluster: eks.Cluster;
 
     //Class Constructor:
-    constructor(storage_for_stacks_state: Construct, cluster_name: string, stack_config: cdk.StackProps, eks_config: Easy_EKS_Config_Data) {
+    constructor(storage_for_stacks_state: Construct, cluster_name: string, stack_config: cdk.StackProps) {
         this.stack = new cdk.Stack(storage_for_stacks_state, `${cluster_name}-cluster`, stack_config);
-        this.config = eks_config;
     }//end constructor of Easy_EKS_Cluster
 
     //Class Functions:
-    apply_global_baseline_eks_config(){ global_baseline_eks_config.apply_config(this.config, this.stack); }
-    apply_my_orgs_baseline_eks_config(){ my_orgs_baseline_eks_config.apply_config(this.config, this.stack); }
-    apply_lower_envs_eks_config(){ lower_envs_eks_config.apply_config(this.config, this.stack); }
-    apply_higher_envs_eks_config(){ higher_envs_eks_config.apply_config(this.config, this.stack); }
-    apply_dev_eks_config(){ dev_eks_config.apply_config(this.config, this.stack); }
-    apply_test_eks_config(){ test_eks_config.apply_config(this.config, this.stack); }
-    apply_stage_eks_config(){ stage_eks_config.apply_config(this.config, this.stack); }
-    apply_prod_eks_config(){ prod_eks_config.apply_config(this.config, this.stack); }
+    stage_deployment_of_global_baseline_eks_addons(config: Easy_EKS_Config_Data){ global_baseline_eks_config.deploy_addons(config, this.stack, this.cluster); }
+    stage_deployment_of_my_orgs_baseline_eks_addons(config: Easy_EKS_Config_Data){ my_orgs_baseline_eks_config.deploy_addons(config, this.stack, this.cluster); }
+    stage_deployment_of_lower_envs_eks_addons(config: Easy_EKS_Config_Data){ lower_envs_eks_config.deploy_addons(config, this.stack, this.cluster); }
+    stage_deployment_of_higher_envs_eks_addons(config: Easy_EKS_Config_Data){ higher_envs_eks_config.deploy_addons(config, this.stack, this.cluster); }
+    stage_deployment_of_dev_eks_addons(config: Easy_EKS_Config_Data){ dev_eks_config.deploy_addons(config, this.stack, this.cluster); }
+    stage_deployment_of_test_eks_addons(config: Easy_EKS_Config_Data){ test_eks_config.deploy_addons(config, this.stack, this.cluster); }
+    stage_deployment_of_stage_eks_addons(config: Easy_EKS_Config_Data){ stage_eks_config.deploy_addons(config, this.stack, this.cluster); }
+    stage_deployment_of_prod_eks_addons(config: Easy_EKS_Config_Data){ prod_eks_config.deploy_addons(config, this.stack, this.cluster); }
 
-    stage_deployment_of_global_baseline_eks_addons(){ global_baseline_eks_config.deploy_addons(this.config, this.stack, this.cluster); }
-    stage_deployment_of_my_orgs_baseline_eks_addons(){ my_orgs_baseline_eks_config.deploy_addons(this.config, this.stack, this.cluster); }
-    stage_deployment_of_lower_envs_eks_addons(){ lower_envs_eks_config.deploy_addons(this.config, this.stack, this.cluster); }
-    stage_deployment_of_higher_envs_eks_addons(){ higher_envs_eks_config.deploy_addons(this.config, this.stack, this.cluster); }
-    stage_deployment_of_dev_eks_addons(){ dev_eks_config.deploy_addons(this.config, this.stack, this.cluster); }
-    stage_deployment_of_test_eks_addons(){ test_eks_config.deploy_addons(this.config, this.stack, this.cluster); }
-    stage_deployment_of_stage_eks_addons(){ stage_eks_config.deploy_addons(this.config, this.stack, this.cluster); }
-    stage_deployment_of_prod_eks_addons(){ prod_eks_config.deploy_addons(this.config, this.stack, this.cluster); }
+    initialize_WorkerNodeRole(stack: cdk.Stack){
+        const ipv6_support_iam_policy = new iam.PolicyDocument({
+            statements: [
+                new iam.PolicyStatement({
+                    effect: iam.Effect.ALLOW,
+                    resources: ['arn:aws:ec2:*:*:network-interface/*'],
+                    actions: [
+                        'ec2:AssignIpv6Addresses',
+                        'ec2:UnassignIpv6Addresses',
+                    ],
+                }),
+            ],
+        });
+        const EKS_Worker_Node_Role = new iam.Role(stack, 'EKS_Worker_Node_Role', {
+            //roleName: //cdk isn't great about cleaning up resources, so leting it generate name is more reliable
+            assumedBy: new iam.ServicePrincipal('ec2.amazonaws.com'),
+            managedPolicies: [
+                iam.ManagedPolicy.fromAwsManagedPolicyName('AmazonEKSWorkerNodePolicy'),
+                iam.ManagedPolicy.fromAwsManagedPolicyName('AmazonEC2ContainerRegistryReadOnly'),
+                iam.ManagedPolicy.fromAwsManagedPolicyName('AmazonEKS_CNI_Policy'),
+                iam.ManagedPolicy.fromAwsManagedPolicyName('AmazonSSMManagedInstanceCore'),
+                //^-- allows aws managed browser based shell access to private nodes, can be useful for debuging
+                //^-- AWS Systems Manager --> Session Manager --> Start Session
+            ],
+            inlinePolicies: {
+                ipv6_support_iam_policy,
+            },
+        });
+        EKS_Worker_Node_Role.applyRemovalPolicy(cdk.RemovalPolicy.RETAIN); //Workaround to avoid cdk destroy bug
+        // ^--This leaves orphaned IAM roles, which isn't ideal, yet least bad option.
+        //    Shouldn't hurt anything in most cases (there is a max of 1000 IAM roles per AWS account)
+        //    It'd only be a problem after 100's of deploy & destroy operations, after which it's easy to manually clean up.
+        return EKS_Worker_Node_Role;
+    }
 
-    stage_deployment_of_eks_cluster(){
-        ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-        //Logic to define baseline Managed Node Group
-        this.config.workerNodeRole = initialize_WorkerNodeRole(this.stack);
-        //^-- Both have the same IAM rights, but 2 objects were needed to avoid a cdk destroy error
-        const baseline_LT_Spec = initalize_baseline_LT_Spec(this.stack, this.config);
+    stage_deployment_of_eks_cluster(config: Easy_EKS_Config_Data){
+        const baseline_LT_Spec = initalize_baseline_LT_Spec(this.stack, config);
         const baseline_MNG: eks.NodegroupOptions = {
             subnets: { subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS },
             amiType: eks.NodegroupAmiType.BOTTLEROCKET_ARM_64,
             instanceTypes: [new ec2.InstanceType('t4g.small')], //t4g.small = 2cpu, 2gb ram, 11pod max
             capacityType: eks.CapacityType.SPOT,
-            desiredSize: this.config.baselineNodesNumber,
+            desiredSize: config.baselineNodesNumber,
             minSize: 0,
             maxSize: 50,
-            nodeRole: this.config.workerNodeRole,
+            nodeRole: config.workerNodeRole,
             launchTemplateSpec: baseline_LT_Spec, //<-- necessary to add tags to EC2 instances
         };
         ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -88,17 +107,17 @@ export class Easy_EKS_Cluster{ //purposefully don't extend stack, to implement b
         //     this.config.kmsKeyAlias, {description: "Easy EKS generated kms key, used to encrypt etcd and ebs-csi-driver provisioned volumes"}
         // ));}
         // else { eksBlueprint.resourceProvider(blueprints.GlobalResources.KmsKey, new blueprints.LookupKmsKeyProvider(this.config.kmsKeyAlias)); }
-        ensure_existance_of_aliased_kms_key(this.config.kmsKeyAlias, this.stack.stackName, this.stack.region);
-        const kms_key = this.config.kmsKey;
-        this.cluster = new eks.Cluster(this.stack, this.config.cluster_name, {
-            clusterName: this.config.cluster_name,
-            version: this.config.kubernetesVersion,
-            kubectlLayer: this.config.kubectlLayer,
-            vpc: this.config.vpc,
-            ipFamily: this.config.ipMode,
+        ensure_existance_of_aliased_kms_key(config.kmsKeyAlias, this.stack.stackName, this.stack.region);
+        const kms_key = config.kmsKey;
+        this.cluster = new eks.Cluster(this.stack, config.cluster_name, {
+            clusterName: config.cluster_name,
+            version: config.kubernetesVersion,
+            kubectlLayer: config.kubectlLayer,
+            vpc: config.vpc,
+            ipFamily: config.ipMode,
             vpcSubnets: [{ subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS }],
             defaultCapacity: 0,
-            tags: this.config.tags,
+            tags: config.tags,
             authenticationMode: eks.AuthenticationMode.API_AND_CONFIG_MAP,
             // mastersRole: //<-- This is the built in way to set output associated with update-kubeconfig
             //                    The role specified is usually assumable by iam.AccountRootPrinciple which isn't secure,
@@ -107,7 +126,7 @@ export class Easy_EKS_Cluster{ //purposefully don't extend stack, to implement b
             secretsEncryptionKey: kms_key,
         });
         //v-- This achieve similar yet better results than commented out mastersRole
-        const msg = `aws eks update-kubeconfig --region ${this.stack.region} --name ${this.config.cluster_name}\n\n` +
+        const msg = `aws eks update-kubeconfig --region ${this.stack.region} --name ${config.cluster_name}\n\n` +
         'Note: This only works for the user/role deploying cdk and IAM Whitelisted Admins.\n'+
         '      To learn more review ./easyeks/config/eks/lower_envs_eks_config.ts';
         const output_msg = new cdk.CfnOutput(this.stack, 'iamWhitelistedKubeConfigCmd', { value: msg });
@@ -131,9 +150,9 @@ export class Easy_EKS_Cluster{ //purposefully don't extend stack, to implement b
 
         ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
         // Logic to allow all authenticated users in AWS account Limited Viewer Only Access by default:
-        if(this.config.clusterViewerAccessAwsAuthConfigmapAccounts){ //<-- JS truthy statement to say if not empty do the following
-            for (let index = 0; index < this.config.clusterViewerAccessAwsAuthConfigmapAccounts?.length; index++) {
-                this.cluster.awsAuth.addAccount(this.config.clusterViewerAccessAwsAuthConfigmapAccounts[index]);
+        if(config.clusterViewerAccessAwsAuthConfigmapAccounts){ //<-- JS truthy statement to say if not empty do the following
+            for (let index = 0; index < config.clusterViewerAccessAwsAuthConfigmapAccounts?.length; index++) {
+                this.cluster.awsAuth.addAccount(config.clusterViewerAccessAwsAuthConfigmapAccounts[index]);
             }
             //v-- kubectl apply -f viewer_only_rbac.yaml
             let apply_viewer_only_rbac_YAML = new eks.KubernetesManifest(this.stack, 'viewer_only_rbac_yamls',
@@ -176,7 +195,7 @@ export class Easy_EKS_Cluster{ //purposefully don't extend stack, to implement b
         // Logic to add the person running cdk deploy to the list of cluster admins
         // This satisfies EKS IAM access entry rights prerequisite, needed to allow the output command to work
         // aws eks update-kubeconfig --region ca-central-1 --name dev1-eks
-        this.config.addClusterAdminARN(CDK_Deployer.get_ARN_of_CDK_Deployers_IAM_ID());
+        config.addClusterAdminARN(CDK_Deployer.get_ARN_of_CDK_Deployers_IAM_ID());
         ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
         ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -184,14 +203,14 @@ export class Easy_EKS_Cluster{ //purposefully don't extend stack, to implement b
         const clusterAdminAccessPolicy: eks.AccessPolicy = eks.AccessPolicy.fromAccessPolicyName('AmazonEKSClusterAdminPolicy', {
           accessScopeType: eks.AccessScopeType.CLUSTER
         });
-        if(this.config.clusterAdminAccessEksApiArns){ //<-- JS truthy statement to say if not empty do the following
-            for (let index = 0; index < this.config.clusterAdminAccessEksApiArns?.length; index++) {
-                new eks.AccessEntry( this.stack, this.config.clusterAdminAccessEksApiArns[index], //<-- using ARN as a unique subStack id
+        if(config.clusterAdminAccessEksApiArns){ //<-- JS truthy statement to say if not empty do the following
+            for (let index = 0; index < config.clusterAdminAccessEksApiArns?.length; index++) {
+                new eks.AccessEntry( this.stack, config.clusterAdminAccessEksApiArns[index], //<-- using ARN as a unique subStack id
                 {
                     accessPolicies: [clusterAdminAccessPolicy],
                     cluster: this.cluster,
-                    principal: this.config.clusterAdminAccessEksApiArns[index],
-                    accessEntryName: this.config.clusterAdminAccessEksApiArns[index]
+                    principal: config.clusterAdminAccessEksApiArns[index],
+                    accessEntryName: config.clusterAdminAccessEksApiArns[index]
                 });
             }
         }
@@ -447,45 +466,6 @@ const enhanced_viewer_cr = {
       },
     ]
 }
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-
-
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-function initialize_WorkerNodeRole(stack: cdk.Stack){
-    const ipv6_support_iam_policy = new iam.PolicyDocument({
-        statements: [
-            new iam.PolicyStatement({
-                effect: iam.Effect.ALLOW,
-                resources: ['arn:aws:ec2:*:*:network-interface/*'],
-                actions: [
-                    'ec2:AssignIpv6Addresses',
-                    'ec2:UnassignIpv6Addresses',
-                ],
-            }),
-        ],
-    });
-    const EKS_Worker_Node_Role = new iam.Role(stack, 'EKS_Worker_Node_Role', {
-        //roleName: //cdk isn't great about cleaning up resources, so leting it generate name is more reliable
-        assumedBy: new iam.ServicePrincipal('ec2.amazonaws.com'),
-        managedPolicies: [
-            iam.ManagedPolicy.fromAwsManagedPolicyName('AmazonEKSWorkerNodePolicy'),
-            iam.ManagedPolicy.fromAwsManagedPolicyName('AmazonEC2ContainerRegistryReadOnly'),
-            iam.ManagedPolicy.fromAwsManagedPolicyName('AmazonEKS_CNI_Policy'),
-            iam.ManagedPolicy.fromAwsManagedPolicyName('AmazonSSMManagedInstanceCore'),
-            //^-- allows aws managed browser based shell access to private nodes, can be useful for debuging
-            //^-- AWS Systems Manager --> Session Manager --> Start Session
-        ],
-        inlinePolicies: {
-            ipv6_support_iam_policy,
-        },
-    });
-    EKS_Worker_Node_Role.applyRemovalPolicy(cdk.RemovalPolicy.RETAIN); //Workaround to avoid cdk destroy bug
-    // ^--This leaves orphaned IAM roles, which isn't ideal, yet least bad option.
-    //    Shouldn't hurt anything in most cases (there is a max of 1000 IAM roles per AWS account)
-    //    It'd only be a problem after 100's of deploy & destroy operations, after which it's easy to manually clean up.
-    return EKS_Worker_Node_Role;
-  }
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 

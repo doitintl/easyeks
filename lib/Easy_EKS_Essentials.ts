@@ -31,85 +31,62 @@ export class Easy_EKS_Essentials{ //purposefully don't extend stack, to implemen
 
     //Class Variables/Properties:
     stack: cdk.Stack;
-    config: Easy_EKS_Config_Data;
-    cluster_exists: boolean;
     cluster: eks.ICluster;
-
-    //BUG DISCOVERED: config was only ititialized for Easy_EKS_Cluster.ts and not other classes, will need to fix that.
-    //moving config out of constructor
-    //eks_config: Easy_EKS_Config_Data
-    //this.config = eks_config;
 
     //Class Constructor:
     constructor(storage_for_stacks_state: Construct, cluster_name: string, stack_config: cdk.StackProps) {
         this.stack = new cdk.Stack(storage_for_stacks_state, `${cluster_name}-essentials`, stack_config);
-        this.cluster_exists = true_when_cluster_exists(cluster_name, this.stack.region);
-        if(this.cluster_exists){
-            this.cluster = import_cluster_into_stack(this.config, this.stack);
-            //Note: If you're wondering why the code is implemented this way:
-            //      Easy_EKS v0.5.0 originally ran cdk equivalent kubectl apply & helm install against the created cluster
-            //      But that ran into cdk specific scalability limits around max response size and timeouts.
-            //      Easy_EKS v0.6.0 was refactored to have kubectl and helm logic run against an imported eks cluster
-            //      to avoid cdk specific scalability limits. It also mitigated other issues and lead to multiple UX improvements.
-        };
     }//end constructor of Easy_EKS_Essentials
 
     //Class Functions:
-    stage_deployment_of_global_baseline_eks_essentials(){ global_baseline_eks_config.deploy_essentials(this.config, this.stack, this.cluster); }
-    stage_deployment_of_my_orgs_baseline_eks_essentials(){ my_orgs_baseline_eks_config.deploy_essentials(this.config, this.stack, this.cluster); }
-    stage_deployment_of_lower_envs_eks_essentials(){ lower_envs_eks_config.deploy_essentials(this.config, this.stack, this.cluster); }
-    stage_deployment_of_higher_envs_eks_essentials(){ higher_envs_eks_config.deploy_essentials(this.config, this.stack, this.cluster); }
-    stage_deployment_of_dev_eks_essentials(){ dev_eks_config.deploy_essentials(this.config, this.stack, this.cluster); }
-    stage_deployment_of_test_eks_essentials(){ test_eks_config.deploy_essentials(this.config, this.stack, this.cluster); }
-    stage_deployment_of_stage_eks_essentials(){ stage_eks_config.deploy_essentials(this.config, this.stack, this.cluster); }
-    stage_deployment_of_prod_eks_essentials(){ prod_eks_config.deploy_essentials(this.config, this.stack, this.cluster); }
-
+    initalize_imported_cluster_in_stack(stack: cdk.Stack, cluster_name: string, aws_lambda_layer_with_kubectl_and_helm: cdk.aws_lambda.ILayerVersion){//better for decoupling & separation of concerns
+        //Workaround for CDK Oddity:
+        //An imported eks.ICluster must be created with a eks.KubectlProvider, in order to run kubectl & helm against the imported cluster
+        //Creation of cdk object of type eks.KubectlProvider requires an initialized object of type eks.ICluster
+        if(!aws_lambda_layer_with_kubectl_and_helm){
+            console.log('* Error Context:');
+            console.log('  * Where:');
+            console.log('    Easy_EKS_Essentials.import_cluster_into_stack(stack, cluster_name, aws_lambda_layer_with_kubectl_and_helm)');
+            console.log('  * What:');
+            console.log('    Variable aws_lambda_layer_with_kubectl_and_helm was detected to have an undefined value');
+            console.log('  * Why:');
+            console.log('    You are seeing this clear and left shifted (fast feedback error), instead of a delayed cryptic cdk errors like:');
+            console.log('    No such file or directory: \'kubectl\'');
+            console.log('    No such file or directory: \'helm\'');
+            console.log('  * Possible Reason:');
+            console.log('    Did you pass in the variable from a config object?');
+            console.log('    as in: config.kubectlLayer, if so, then you may have called this method too soon.');
+            console.log('    Specifically before Easy_EKS_Config_Data config object was fully initialized.');
+            throw "User fixable error detected, see notes above."
+        }
+        let imported_cluster: eks.ICluster;
+        const temp_eks_construct_for_kubectl_provider = eks.Cluster.fromClusterAttributes(stack, 'eks.KubectlProvider', {
+            clusterName: cluster_name,
+            kubectlLayer: aws_lambda_layer_with_kubectl_and_helm,
+            kubectlRoleArn: `arn:aws:iam::${process.env.CDK_DEFAULT_ACCOUNT}:role/kubectl-helm-lambda-deployer-role-used-by-easy-eks`,
+        });
+        const kubectl_provider = eks.KubectlProvider.getOrCreate(stack, temp_eks_construct_for_kubectl_provider);
+        cdk.Tags.of(kubectl_provider.handlerRole).add('whitelisted-role-for-assuming', 'easy-eks-generated-kubectl-helm-deployer-lambda-role'); //used in a whitelist condition
+        imported_cluster = eks.Cluster.fromClusterAttributes(stack, 'imported-eks-cluster', {
+            clusterName: cluster_name,
+            kubectlProvider: kubectl_provider,
+            kubectlRoleArn: `arn:aws:iam::${process.env.CDK_DEFAULT_ACCOUNT}:role/kubectl-helm-lambda-deployer-role-used-by-easy-eks`,
+        });
+        this.cluster = imported_cluster;
+        //Note: If you're wondering why this code is implemented with an imported_cluster:
+        //      Easy_EKS v0.5.0 originally ran cdk equivalent kubectl apply & helm install against the created cluster
+        //      During development, cdk specific scalability limits around max response size and timeouts, were frequently hit.
+        //      So Easy_EKS v0.6.0 was refactored to have kubectl and helm logic run against an imported eks cluster, in order
+        //      to avoid cdk specific scalability limits. It also mitigated other issues and lead to multiple UX improvements.
+    }    
+    //v-- these depend on config being initialized (must be called after the above, Easy_EKS.ts's global_baseline was tweaked to make this less of an issue.)
+    stage_deployment_of_global_baseline_eks_essentials(config: Easy_EKS_Config_Data){ global_baseline_eks_config.deploy_essentials(config, this.stack, this.cluster); }
+    stage_deployment_of_my_orgs_baseline_eks_essentials(config: Easy_EKS_Config_Data){ my_orgs_baseline_eks_config.deploy_essentials(config, this.stack, this.cluster); }
+    stage_deployment_of_lower_envs_eks_essentials(config: Easy_EKS_Config_Data){ lower_envs_eks_config.deploy_essentials(config, this.stack, this.cluster); }
+    stage_deployment_of_higher_envs_eks_essentials(config: Easy_EKS_Config_Data){ higher_envs_eks_config.deploy_essentials(config, this.stack, this.cluster); }
+    stage_deployment_of_dev_eks_essentials(config: Easy_EKS_Config_Data){ dev_eks_config.deploy_essentials(config, this.stack, this.cluster); }
+    stage_deployment_of_test_eks_essentials(config: Easy_EKS_Config_Data){ test_eks_config.deploy_essentials(config, this.stack, this.cluster); }
+    stage_deployment_of_stage_eks_essentials(config: Easy_EKS_Config_Data){ stage_eks_config.deploy_essentials(config, this.stack, this.cluster); }
+    stage_deployment_of_prod_eks_essentials(config: Easy_EKS_Config_Data){ prod_eks_config.deploy_essentials(config, this.stack, this.cluster); }
 }//end class Easy_EKS_Essentials
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-
-
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-function import_cluster_into_stack(config: Easy_EKS_Config_Data, stack: cdk.Stack){//better for decoupling & separation of concerns
-    //Workaround for CDK Oddity:
-    //An imported eks.ICluster must be created with a eks.KubectlProvider, in order to run kubectl & helm against the imported cluster
-    //Creation of cdk object of type eks.KubectlProvider requires an initialized object of type eks.ICluster
-    let cluster: eks.ICluster;
-    const temp_eks_construct_for_kubectl_provider = eks.Cluster.fromClusterAttributes(stack, 'eks.KubectlProvider', {
-        clusterName: config.cluster_name,
-        kubectlLayer: config.kubectlLayer,
-        kubectlRoleArn: `arn:aws:iam::${process.env.CDK_DEFAULT_ACCOUNT}:role/kubectl-helm-lambda-deployer-role-used-by-easy-eks`,
-    });
-    const kubectl_provider = eks.KubectlProvider.getOrCreate(stack, temp_eks_construct_for_kubectl_provider);
-    cdk.Tags.of(kubectl_provider.handlerRole).add('whitelisted-role-for-assuming', 'easy-eks-generated-kubectl-helm-deployer-lambda-role'); //used in a whitelist condition
-    cluster = eks.Cluster.fromClusterAttributes(stack, 'imported-eks-cluster', {
-        clusterName: config.cluster_name,
-        kubectlProvider: kubectl_provider,
-        kubectlRoleArn: `arn:aws:iam::${process.env.CDK_DEFAULT_ACCOUNT}:role/kubectl-helm-lambda-deployer-role-used-by-easy-eks`,
-    });
-    return cluster;
-}
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-
-
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-function true_when_cluster_exists(cluster_name: string, region: string){
-    const cmd = `aws eks describe-cluster --name=${cluster_name} --region=${region}`
-    const cmd_return_code = shell.exec(cmd, {silent:true}).code;
-    if(cmd_return_code===0){ return true; } //return code 0 = pre-existing cluster found
-    else{ return false; } //return code 254 = cluster not found
-}
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-
-
-
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-
-        // //v-- This achieve similar yet better results than commented out mastersRole
-        // const msg = `aws eks update-kubeconfig --region ${this.stack.region} --name ${this.config.cluster_name}\n\n` +
-        // 'Note: This only works for the user/role deploying cdk and IAM Whitelisted Admins.\n'+
-        // '      To learn more review ./easyeks/config/eks/lower_envs_eks_config.ts';
-        // const output_msg = new cdk.CfnOutput(this.stack, 'iamWhitelistedKubeConfigCmd', { value: msg });
