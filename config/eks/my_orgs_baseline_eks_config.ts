@@ -69,7 +69,7 @@ export function apply_config(config: Easy_EKS_Config_Data, stack: cdk.Stack){ //
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-export function deploy_addons(config: Easy_EKS_Config_Data, stack: cdk.Stack, cluster: eks.ICluster){
+export function deploy_addons(config: Easy_EKS_Config_Data, stack: cdk.Stack, cluster: eks.Cluster){
 
     const vpc_cni = new eks.CfnAddon(stack, 'vpc-cni', {
         clusterName: cluster.clusterName,

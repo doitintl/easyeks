@@ -24,7 +24,7 @@ export function apply_config(config: Easy_EKS_Config_Data, stack: cdk.Stack){ //
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-export function deploy_addons(config: Easy_EKS_Config_Data, stack: cdk.Stack, cluster: eks.ICluster){
+export function deploy_addons(config: Easy_EKS_Config_Data, stack: cdk.Stack, cluster: eks.Cluster){
 
     /*To see official names of all eks add-ons:
     aws eks describe-addon-versions  \

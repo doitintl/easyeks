@@ -5,6 +5,8 @@ import * as cdk from 'aws-cdk-lib';
 import * as eks from 'aws-cdk-lib/aws-eks';
 import * as iam from 'aws-cdk-lib/aws-iam';
 import { KubectlV31Layer } from '@aws-cdk/lambda-layer-kubectl-v31'; //npm install @aws-cdk/lambda-layer-kubectl-v31
+import { KubectlV32Layer } from '@aws-cdk/lambda-layer-kubectl-v32'; //npm install @aws-cdk/lambda-layer-kubectl-v32
+import { KubectlV33Layer } from '@aws-cdk/lambda-layer-kubectl-v33'; //npm install @aws-cdk/lambda-layer-kubectl-v33
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //Config Library Imports:
 import * as global_baseline_eks_config from '../config/eks/global_baseline_eks_config';
@@ -26,6 +28,7 @@ import { Easy_EKS_Config_Data } from './Easy_EKS_Config_Data';
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
+
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 export class Easy_EKS_Essentials{ //purposefully don't extend stack, to implement builder pattern and give more flexibility for imperative logic.
 
@@ -39,7 +42,8 @@ export class Easy_EKS_Essentials{ //purposefully don't extend stack, to implemen
     }//end constructor of Easy_EKS_Essentials
 
     //Class Functions:
-    initalize_imported_cluster_in_stack(stack: cdk.Stack, cluster_name: string, aws_lambda_layer_with_kubectl_and_helm: cdk.aws_lambda.ILayerVersion){//better for decoupling & separation of concerns
+    initalize_imported_cluster_in_stack(stack: cdk.Stack, cluster_name: string, aws_lambda_layer_with_kubectl_and_helm: cdk.aws_lambda.ILayerVersion){
+    //^-- better for decoupling & separation of concerns
         //Workaround for CDK Oddity:
         //An imported eks.ICluster must be created with a eks.KubectlProvider, in order to run kubectl & helm against the imported cluster
         //Creation of cdk object of type eks.KubectlProvider requires an initialized object of type eks.ICluster
@@ -78,7 +82,7 @@ export class Easy_EKS_Essentials{ //purposefully don't extend stack, to implemen
         //      During development, cdk specific scalability limits around max response size and timeouts, were frequently hit.
         //      So Easy_EKS v0.6.0 was refactored to have kubectl and helm logic run against an imported eks cluster, in order
         //      to avoid cdk specific scalability limits. It also mitigated other issues and lead to multiple UX improvements.
-    }    
+    }
     //v-- these depend on config being initialized (must be called after the above, Easy_EKS.ts's global_baseline was tweaked to make this less of an issue.)
     stage_deployment_of_global_baseline_eks_essentials(config: Easy_EKS_Config_Data){ global_baseline_eks_config.deploy_essentials(config, this.stack, this.cluster); }
     stage_deployment_of_my_orgs_baseline_eks_essentials(config: Easy_EKS_Config_Data){ my_orgs_baseline_eks_config.deploy_essentials(config, this.stack, this.cluster); }

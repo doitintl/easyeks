@@ -19,7 +19,7 @@ export function apply_config(config: Easy_EKS_Config_Data, stack: cdk.Stack) { /
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-export function deploy_addons(config: Easy_EKS_Config_Data, stack: cdk.Stack, cluster: eks.ICluster) {
+export function deploy_addons(config: Easy_EKS_Config_Data, stack: cdk.Stack, cluster: eks.Cluster) {
 
     // v-- most won't need this, so commented out by default
     // const pvc_snapshot_controller = new eks.CfnAddon(stack, 'snapshot-controller', {

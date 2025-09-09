@@ -27,6 +27,7 @@ import { Easy_EKS_Workloads } from './Easy_EKS_Workloads';
 
 
 
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 export class Easy_EKS{ //purposefully don't extend stack, to implement builder pattern and give more flexibility for imperative logic.
 
     //Class Variables/Properties:
@@ -37,8 +38,7 @@ export class Easy_EKS{ //purposefully don't extend stack, to implement builder p
     eks_workloads: Easy_EKS_Workloads; //imports eks cluster + deploys workloads
 
     //Class Constructor:
-    constructor(storage_for_stacks_state: Construct, env_name: string, stack_config: cdk.StackProps) {
-        const cluster_name=`${env_name}-eks`;
+    constructor(storage_for_stacks_state: Construct, cluster_name: string, stack_config: cdk.StackProps) {
         this.eks_config = new Easy_EKS_Config_Data(cluster_name);
         this.eks_cluster = new Easy_EKS_Cluster(storage_for_stacks_state, cluster_name, stack_config);
         this.cluster_exists = true_when_cluster_exists(cluster_name, this.eks_cluster.stack.region);
@@ -47,9 +47,10 @@ export class Easy_EKS{ //purposefully don't extend stack, to implement builder p
         //rather than populate a complete config all at once in one go.
         if(this.cluster_exists){
             this.eks_essentials = new Easy_EKS_Essentials(storage_for_stacks_state, cluster_name, stack_config);
-            this.eks_workloads = new Easy_EKS_Workloads(); //PLACEHOLDER - not yet implemented
+            this.eks_workloads = new Easy_EKS_Workloads(storage_for_stacks_state, cluster_name, stack_config);
         }
     }//end constructor of Easy_EKS
+
 
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -86,6 +87,7 @@ export class Easy_EKS{ //purposefully don't extend stack, to implement builder p
       this.apply_higher_envs_eks_config();
       this.apply_prod_eks_config();
     }
+    //End Class Functions (Associated with Easy_EKS)
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
   
@@ -128,7 +130,7 @@ export class Easy_EKS{ //purposefully don't extend stack, to implement builder p
       this.stage_deployment_of_higher_envs_eks_addons();
       this.stage_deployment_of_prod_eks_addons();
     }
-    //End Class Functions (Associated with Easy_EKS_Cluster):
+    //End Class Functions (Associated with Easy_EKS_Cluster)
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
@@ -186,74 +188,101 @@ export class Easy_EKS{ //purposefully don't extend stack, to implement builder p
       this.stage_deployment_of_higher_envs_eks_essentials();
       this.stage_deployment_of_prod_eks_essentials();
     }
-    //End Class Functions (Associated with Easy_EKS_Essentials):
+    //End Class Functions (Associated with Easy_EKS_Essentials)
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
 
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    //Begin Class Functions (Associated with Easy_EKS_Workloads):
+    stage_deployment_of_global_baseline_eks_workloads(){
+        if(this.eks_workloads){
+            this.eks_workloads.initalize_imported_cluster_in_stack(this.eks_essentials.stack, this.eks_config.cluster_name, this.eks_config.kubectlLayer);
+            this.eks_workloads.stage_deployment_of_global_baseline_eks_workloads(this.eks_config); 
+        }
+    }
+    stage_deployment_of_my_orgs_baseline_eks_workloads(){
+        if(this.eks_workloads){ this.eks_workloads.stage_deployment_of_my_orgs_baseline_eks_workloads(this.eks_config); }
+    }
+    stage_deployment_of_lower_envs_eks_workloads(){
+        if(this.eks_workloads){ this.eks_workloads.stage_deployment_of_lower_envs_eks_workloads(this.eks_config); }
+    }
+    stage_deployment_of_higher_envs_eks_workloads(){
+        if(this.eks_workloads){ this.eks_workloads.stage_deployment_of_higher_envs_eks_workloads(this.eks_config); }
+    }
+    stage_deployment_of_dev_eks_workloads(){
+        if(this.eks_workloads){ this.eks_workloads.stage_deployment_of_dev_eks_workloads(this.eks_config); }
+    }
+    stage_deployment_of_test_eks_workloads(){
+        if(this.eks_workloads){ this.eks_workloads.stage_deployment_of_test_eks_workloads(this.eks_config); }
+    }
+    stage_deployment_of_stage_eks_workloads(){
+        if(this.eks_workloads){ this.eks_workloads.stage_deployment_of_stage_eks_workloads(this.eks_config); }
+    }
+    stage_deployment_of_prod_eks_workloads(){
+        if(this.eks_workloads){ this.eks_workloads.stage_deployment_of_prod_eks_workloads(this.eks_config); }      
+    }
+    stage_deployment_of_dev_baseline_workloads(){ //convenience method
+        this.stage_deployment_of_global_baseline_eks_workloads();
+        this.stage_deployment_of_my_orgs_baseline_eks_workloads();
+        this.stage_deployment_of_lower_envs_eks_workloads();
+        this.stage_deployment_of_dev_eks_workloads();
+    }
+    stage_deployment_of_test_baseline_workloads(){ //convenience method
+      this.stage_deployment_of_global_baseline_eks_workloads();
+      this.stage_deployment_of_my_orgs_baseline_eks_workloads();
+      this.stage_deployment_of_lower_envs_eks_workloads();
+      this.stage_deployment_of_test_eks_workloads();
+    }
+    stage_deployment_of_stage_baseline_workloads(){ //convenience method
+      this.stage_deployment_of_global_baseline_eks_workloads();
+      this.stage_deployment_of_my_orgs_baseline_eks_workloads();
+      this.stage_deployment_of_higher_envs_eks_workloads();
+      this.stage_deployment_of_stage_eks_workloads();
+    }
+    stage_deployment_of_prod_baseline_workloads(){ //convenience method
+      this.stage_deployment_of_global_baseline_eks_workloads();
+      this.stage_deployment_of_my_orgs_baseline_eks_workloads();
+      this.stage_deployment_of_higher_envs_eks_workloads();
+      this.stage_deployment_of_prod_eks_workloads();
+    }
+    //End Class Functions (Associated with Easy_EKS_Workloads)
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    // stage_deployment_of_global_baseline_eks_workloads(){ global_baseline_eks_config.deploy_workloads(this.config,this.eks_workloads_stack, this.cluster); }
-    // stage_deployment_of_my_orgs_baseline_eks_workloads(){ my_orgs_baseline_eks_config.deploy_workloads(this.config,this.eks_workloads_stack, this.cluster); }
-    // stage_deployment_of_lower_envs_eks_workloads(){ lower_envs_eks_config.deploy_workloads(this.config,this.eks_workloads_stack, this.cluster); }
-    // stage_deployment_of_higher_envs_eks_workloads(){ higher_envs_eks_config.deploy_workloads(this.config,this.eks_workloads_stack, this.cluster); }
-    // stage_deployment_of_dev_eks_workloads(){ dev_eks_config.deploy_workloads(this.config,this.eks_workloads_stack, this.cluster); }
-    // stage_deployment_of_test_eks_workloads(){ test_eks_config.deploy_workloads(this.config,this.eks_workloads_stack, this.cluster); }
-    // stage_deployment_of_stage_eks_workloads(){ stage_eks_config.deploy_workloads(this.config,this.eks_workloads_stack, this.cluster); }
-    // stage_deployment_of_prod_eks_workloads(){ prod_eks_config.deploy_workloads(this.config,this.eks_workloads_stack, this.cluster); }
-    // stage_deployment_of_dev_baseline_workloads(){ //convenience method
-    //     this.stage_deployment_of_global_baseline_eks_workloads();
-    //     this.stage_deployment_of_my_orgs_baseline_eks_workloads();
-    //     this.stage_deployment_of_lower_envs_eks_workloads();
-    //     this.stage_deployment_of_dev_eks_workloads();
-    // }
-    // stage_deployment_of_test_baseline_workloads(){ //convenience method
-    //   this.stage_deployment_of_global_baseline_eks_workloads();
-    //   this.stage_deployment_of_my_orgs_baseline_eks_workloads();
-    //   this.stage_deployment_of_lower_envs_eks_workloads();
-    //   this.stage_deployment_of_test_eks_workloads();
-    // }
-    // stage_deployment_of_stage_baseline_workloads(){ //convenience method
-    //   this.stage_deployment_of_global_baseline_eks_workloads();
-    //   this.stage_deployment_of_my_orgs_baseline_eks_workloads();
-    //   this.stage_deployment_of_higher_envs_eks_workloads();
-    //   this.stage_deployment_of_stage_eks_workloads();
-    // }
-    // stage_deployment_of_prod_baseline_workloads(){ //convenience method
-    //   this.stage_deployment_of_global_baseline_eks_workloads();
-    //   this.stage_deployment_of_my_orgs_baseline_eks_workloads();
-    //   this.stage_deployment_of_higher_envs_eks_workloads();
-    //   this.stage_deployment_of_prod_eks_workloads();
-    // }
 
-    // stage_deployment_of_opinionated_eks_cluster_for_dev_envs(){ //shortest convenience method
-    //     this.apply_dev_baseline_config();
-    //     this.stage_deployment_of_eks_construct_into_this_objects_stack();
-    //     this.stage_deployment_of_dev_baseline_addons();
-    //     this.stage_deployment_of_dev_baseline_essentials();
-    //     this.stage_deployment_of_dev_baseline_workloads();
-    // }
-    // stage_deployment_of_opinionated_eks_cluster_for_test_envs(){ //shortest convenience method
-    //   this.apply_test_baseline_config();
-    //   this.stage_deployment_of_eks_construct_into_this_objects_stack();
-    //   this.stage_deployment_of_test_baseline_addons();
-    //   this.stage_deployment_of_test_baseline_essentials();
-    //   this.stage_deployment_of_test_baseline_workloads();
-    // }
-    // stage_deployment_of_opinionated_eks_cluster_for_stage_envs(){ //shortest convenience method
-    //   this.apply_stage_baseline_config();
-    //   this.stage_deployment_of_eks_construct_into_this_objects_stack();
-    //   this.stage_deployment_of_stage_baseline_addons();
-    //   this.stage_deployment_of_stage_baseline_essentials();
-    //   this.stage_deployment_of_stage_baseline_workloads();
-    // }
-    // stage_deployment_of_opinionated_eks_cluster_for_prod_envs(){ //shortest convenience method
-    //   this.apply_prod_baseline_config();
-    //   this.stage_deployment_of_eks_construct_into_this_objects_stack();
-    //   this.stage_deployment_of_prod_baseline_addons();
-    //   this.stage_deployment_of_prod_baseline_essentials();
-    //   this.stage_deployment_of_prod_baseline_workloads();
-    // }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    //Begin Class Functions (Associated with shortest convenience method for each env):
+    stage_deployment_of_opinionated_eks_cluster_for_dev_envs(){
+        this.apply_dev_baseline_config();
+        this.stage_deployment_of_eks_cluster();
+        this.stage_deployment_of_dev_baseline_addons();
+        this.stage_deployment_of_dev_baseline_essentials();
+        this.stage_deployment_of_dev_baseline_workloads();
+    }
+    stage_deployment_of_opinionated_eks_cluster_for_test_envs(){
+      this.apply_test_baseline_config();
+      this.stage_deployment_of_eks_cluster();
+      this.stage_deployment_of_test_baseline_addons();
+      this.stage_deployment_of_test_baseline_essentials();
+      this.stage_deployment_of_test_baseline_workloads();
+    }
+    stage_deployment_of_opinionated_eks_cluster_for_stage_envs(){
+      this.apply_stage_baseline_config();
+      this.stage_deployment_of_eks_cluster();
+      this.stage_deployment_of_stage_baseline_addons();
+      this.stage_deployment_of_stage_baseline_essentials();
+      this.stage_deployment_of_stage_baseline_workloads();
+    }
+    stage_deployment_of_opinionated_eks_cluster_for_prod_envs(){
+      this.apply_prod_baseline_config();
+      this.stage_deployment_of_eks_cluster();
+      this.stage_deployment_of_prod_baseline_addons();
+      this.stage_deployment_of_prod_baseline_essentials();
+      this.stage_deployment_of_prod_baseline_workloads();
+    }
+    //End Class Functions (Associated with shortest convenience method for each env)
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 }//end class Easy_EKS
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

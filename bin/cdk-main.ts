@@ -134,7 +134,7 @@ cdk bootstrap aws://$AWS_ACCOUNT/$AWS_REGION
 //EKS Infrastructure as Code:
 //Example 1: Long form, showing all steps of builder pattern 
 //(This format makes it easier to understand the flow of logic and can be useful for debugging)
-const dev1_eks = new Easy_EKS(cdk_state, 'dev1', low_co2_AMER_stack_config);
+const dev1_eks = new Easy_EKS(cdk_state, 'dev1-eks', low_co2_AMER_stack_config);
 dev1_eks.apply_global_baseline_eks_config();
 dev1_eks.apply_my_orgs_baseline_eks_config();
 dev1_eks.apply_lower_envs_eks_config();

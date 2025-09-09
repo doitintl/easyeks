@@ -37,7 +37,7 @@ export function apply_config(config: Easy_EKS_Config_Data, stack: cdk.Stack){ //
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-export function deploy_addons(config: Easy_EKS_Config_Data, stack: cdk.Stack, cluster: eks.ICluster){
+export function deploy_addons(config: Easy_EKS_Config_Data, stack: cdk.Stack, cluster: eks.Cluster){
 
     const kube_proxy = new eks.CfnAddon(stack, 'kube-proxy', {
         clusterName: cluster.clusterName,
@@ -47,7 +47,35 @@ export function deploy_addons(config: Easy_EKS_Config_Data, stack: cdk.Stack, cl
         resolveConflicts: 'OVERWRITE',
         configurationValues: '{}',
     });
-    //NOTE! AWS LoadBalancer Controller may occassionally need to be updated along with version of Kubernetes
+    //NOTE! AWS LoadBalancer Controller and karpenter may occassionally need to be updated along with version of Kubernetes
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // Install Karpenter.sh
+    // Note: Karpenter leverages a 3rd party cdk construct so it needs do be implemented in the scope of cluster creation
+    // as in against type eks.Cluster. It can't be installed on imported clusters of type eks.ICluster (I stands for interface)
+    const karpenter_helm_config: Karpenter_Helm_Config = {
+        helm_chart_version: '1.6.0', //https://gallery.ecr.aws/karpenter/karpenter
+        helm_chart_values: { //https://github.com/aws/karpenter-provider-aws/blob/v1.6.0/charts/karpenter/values.yaml
+            replicas: 2,
+        },
+    };
+    const karpenter_YAMLs = (new Karpenter_YAML_Generator({
+        cluster: cluster,
+        config: config,
+        amiSelectorTerms_alias: "bottlerocket@v1.31.0", /* <-- Bottlerocket alias always ends in a zero, below is proof by command output
+        export K8S_VERSION="1.31"
+        aws ssm get-parameters-by-path --path "/aws/service/bottlerocket/aws-k8s-$K8S_VERSION" --recursive | jq -cr '.Parameters[].Name' | grep -v "latest" | awk -F '/' '{print $7}' | sort | uniq
+        */
+        consolidationPolicy: "WhenEmpty", //"WhenEmpty" is slightly higher cost and stability
+        manifest_inputs: [ //Note highest weight = default, higher = preferred
+            { type: "on-demand", arch: "arm64", nodepools_cpu_limit: 1000, weight: 4, },
+            { type: "on-demand", arch: "amd64", nodepools_cpu_limit: 1000, weight: 3, },
+            { type: "spot",      arch: "arm64", nodepools_cpu_limit: 1000, weight: 2, },
+            { type: "spot",      arch: "amd64", nodepools_cpu_limit: 1000, weight: 1, },
+        ]
+    })).generate_manifests();
+    Apply_Karpenter_YAMLs_with_fixes(stack, cluster, config, karpenter_helm_config, karpenter_YAMLs);
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 }//end deploy_addons()
 
@@ -99,32 +127,6 @@ export function deploy_essentials(config: Easy_EKS_Config_Data, stack: cdk.Stack
     });
     // The following help prevent timeout of install during initial cluster deployment
     awsLoadBalancerController.node.addDependency(ALBC_Kube_SA);
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    // Install Karpenter.sh
-    const karpenter_helm_config: Karpenter_Helm_Config = {
-        helm_chart_version: '1.4.0', //https://gallery.ecr.aws/karpenter/karpenter
-        helm_chart_values: { //https://github.com/aws/karpenter-provider-aws/blob/v1.4.0/charts/karpenter/values.yaml
-            replicas: 2,
-        },
-    };
-    // const karpenter_YAMLs = (new Karpenter_YAML_Generator({
-    //     cluster: cluster,
-    //     config: config,
-    //     amiSelectorTerms_alias: "bottlerocket@v1.31.0", /* <-- Bottlerocket alias always ends in a zero, below is proof by command output
-    //     export K8S_VERSION="1.31"
-    //     aws ssm get-parameters-by-path --path "/aws/service/bottlerocket/aws-k8s-$K8S_VERSION" --recursive | jq -cr '.Parameters[].Name' | grep -v "latest" | awk -F '/' '{print $7}' | sort | uniq
-    //     */
-    //     consolidationPolicy: "WhenEmpty", //"WhenEmpty" is slightly higher cost and stability
-    //     manifest_inputs: [ //Note highest weight = default, higher = preferred
-    //         { type: "on-demand", arch: "arm64", nodepools_cpu_limit: 1000, weight: 4, },
-    //         { type: "on-demand", arch: "amd64", nodepools_cpu_limit: 1000, weight: 3, },
-    //         { type: "spot",      arch: "arm64", nodepools_cpu_limit: 1000, weight: 2, },
-    //         { type: "spot",      arch: "amd64", nodepools_cpu_limit: 1000, weight: 1, },
-    //     ]
-    // })).generate_manifests();
-    // Apply_Karpenter_YAMLs_with_fixes(stack, cluster, config, karpenter_helm_config, karpenter_YAMLs, awsLoadBalancerController);
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 }//end deploy_essentials()
