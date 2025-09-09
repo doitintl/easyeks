@@ -31,8 +31,11 @@ export function apply_config(config: Easy_EKS_Config_Data, stack: cdk.Stack){ //
     }
     //Kubernetes verson and addon's that may depend on Kubernetes version / should be updated along side it should be specified here
     config.setKubernetesVersion(eks.KubernetesVersion.V1_33); //version of eks cluster
-    config.setKubectlLayer(new KubectlV33Layer(stack, 'kubectl'));
+    config.setKubectlLayer(new KubectlV32Layer(stack, 'kubectl')); //<--It's fine for this to stay on an old version
     //^--refers to version of kubectl & helm installed in AWS Lambda Layer responsible for kubectl & helm deployments
+    //Note: As of Sept 9th, 2025 KubectlV33Layer (which currently has latest available versions of kubectl & helm)
+    //      results in error 'Error: media type "application/vnd.cncf.helm.chart.provenance.v1.prov" is not allowed'
+    //It's safe to permanently use old versions of both apps.
 
 }//end apply_config()
 
