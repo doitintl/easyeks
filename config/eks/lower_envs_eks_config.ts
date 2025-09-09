@@ -99,9 +99,6 @@ export function deploy_essentials(config: Easy_EKS_Config_Data, stack: cdk.Stack
             },
         },
     });
-    // The following help prevent timeout of install during initial cluster deployment
-    // awsLoadBalancerController.node.addDependency(cluster.awsAuth);
-    // awsLoadBalancerController.node.addDependency(ALBC_Kube_SA);
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

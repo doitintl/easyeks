@@ -145,23 +145,19 @@ dev1_eks.stage_deployment_of_global_baseline_eks_addons();
 dev1_eks.stage_deployment_of_my_orgs_baseline_eks_addons();
 dev1_eks.stage_deployment_of_lower_envs_eks_addons();
 dev1_eks.stage_deployment_of_dev_eks_addons();
-//^-- `cdk deploy dev1-eks-cluster has a deployment time of ???? ~18.6mins (~15-20mins)
+//^-- `cdk deploy dev1-eks-cluster has a deployment time of ???? ~17mins
 ///////////////////////////////////////////////////////////////////////
 dev1_eks.stage_deployment_of_global_baseline_eks_essentials();
 dev1_eks.stage_deployment_of_my_orgs_baseline_eks_essentials();
-//dev1_eks.stage_deployment_of_lower_envs_eks_essentials();
-//dev1_eks.stage_deployment_of_dev_eks_essentials();
-//^-- `cdk deploy dev1-eks-essentials has a deployment time of ???? ~18.6mins (~15-20mins)
+dev1_eks.stage_deployment_of_lower_envs_eks_essentials();
+dev1_eks.stage_deployment_of_dev_eks_essentials();
+//^-- `cdk deploy dev1-eks-essentials has a deployment time of ~2mins
 ///////////////////////////////////////////////////////////////////////
 // dev1_eks.stage_deployment_of_global_baseline_eks_workloads();
 // dev1_eks.stage_deployment_of_my_orgs_baseline_eks_workloads();
 // dev1_eks.stage_deployment_of_lower_envs_eks_workloads();
 // dev1_eks.stage_deployment_of_dev_eks_workloads();
-//^-- `cdk deploy dev1-eks-workloads has a deployment time of ???? ~18.6mins (~15-20mins)
-
-//const test = new Test_EKS(cdk_state, 'test', low_co2_AMER_stack_config);
-
-
+//^-- `cdk deploy dev1-eks-workloads has a deployment time of ~1min
 
 
 
