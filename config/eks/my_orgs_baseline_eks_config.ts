@@ -1,11 +1,11 @@
 import { Easy_EKS_Config_Data } from '../../lib/Easy_EKS_Config_Data';
+import { Easy_EKS_Dynamic_Config } from '../../lib/Easy_EKS_Dynamic_Config';
 import { KubernetesVersion } from 'aws-cdk-lib/aws-eks';
 import * as cdk from 'aws-cdk-lib';
 import * as eks from 'aws-cdk-lib/aws-eks';
 import * as iam from 'aws-cdk-lib/aws-iam';
 import * as kms from 'aws-cdk-lib/aws-kms';
 import request from 'sync-request-curl'; //npm install sync-request-curl (cdk requires sync functions, async not allowed)
-import cluster from 'cluster';
 //Intended Use:
 //A baseline config file (to be applied to all EasyEKS Clusters in your organization)
 //EasyEKS Admins would be expected to edit this file with defaults specific to their org. (that rarely change and are low risk to add)
@@ -276,6 +276,7 @@ export function deploy_essentials(config: Easy_EKS_Config_Data, stack: cdk.Stack
         release: "node-local-dns-cache", // Name for our chart in Kubernetes (helm list -A)
         repository: "oci://ghcr.io/deliveryhero/helm-charts/node-local-dns",  // HTTPS address of the helm chart (associated with helm repo add command)
         namespace: "kube-system",
+        //Easy_EKS_Dynamic_Config.get_latest_version_of_node_local_dns_cache_helm_chart()
         version: "2.1.10", // version of the helm chart, below can be used to look up latest
         // curl https://raw.githubusercontent.com/deliveryhero/helm-charts/refs/heads/master/stable/node-local-dns/Chart.yaml | grep version: | cut -d ':' -f 2
         wait: false,

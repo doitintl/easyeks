@@ -6,9 +6,6 @@ import * as eks from 'aws-cdk-lib/aws-eks';
 import * as ec2 from 'aws-cdk-lib/aws-ec2';
 import * as iam from 'aws-cdk-lib/aws-iam';
 import * as kms from 'aws-cdk-lib/aws-kms';
-import { KubectlV31Layer } from '@aws-cdk/lambda-layer-kubectl-v31'; //npm install @aws-cdk/lambda-layer-kubectl-v31
-import { KubectlV32Layer } from '@aws-cdk/lambda-layer-kubectl-v32'; //npm install @aws-cdk/lambda-layer-kubectl-v32
-import { KubectlV33Layer } from '@aws-cdk/lambda-layer-kubectl-v33'; //npm install @aws-cdk/lambda-layer-kubectl-v33
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //Config Library Imports:
 import * as global_baseline_eks_config from '../config/eks/global_baseline_eks_config';
@@ -26,6 +23,7 @@ import console = require('console'); //can help debug feedback loop, allows `con
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //Local Library Imports:
 import { Easy_EKS_Config_Data } from './Easy_EKS_Config_Data';
+import { Easy_EKS_Dynamic_Config } from './Easy_EKS_Dynamic_Config';
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
@@ -197,7 +195,10 @@ export class Easy_EKS_Cluster{ //purposefully don't extend stack, to implement b
         // Logic to add the person running cdk deploy to the list of cluster admins
         // This satisfies EKS IAM access entry rights prerequisite, needed to allow the output command to work
         // aws eks update-kubeconfig --region ca-central-1 --name dev1-eks
-        config.addClusterAdminARN(CDK_Deployer.get_ARN_of_CDK_Deployers_IAM_ID());
+        // For good security we lock this down to whitelisted IAM access entries, defined in the Access tab of EKS's web console
+        // For convienence we make an assumption that the IAM identity running cdk deploy dev1-eks, should be auto-added to that list.
+        // A singleton pattern is used to avoid multiple lookups.
+        config.addClusterAdminARN(Easy_EKS_Dynamic_Config.get_ARN_of_IAM_Identity_running_CDK_Deploy());
         ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
         ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -219,35 +220,7 @@ export class Easy_EKS_Cluster{ //purposefully don't extend stack, to implement b
         ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     }//end of stage_deployment_of_eks_cluster()
 
-
 }//end class Easy_EKS_Cluster
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-
-
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-class CDK_Deployer { 
-    // After cdk deploy dev1-eks-cluster is run, a kubectl population command will be displayed
-    // Example:
-    // aws eks update-kubeconfig --region ca-central-1 --name dev1-eks
-    //
-    // For good security we lock this down to whitelisted IAM access entries, defined in the Access tab of EKS's web console
-    // For convienence we make an assumption that the IAM identity running cdk deploy dev1-eks, should be auto-added to that list.
-    // A singleton pattern is used to avoid multiple lookups.
-    private static singleton: CDK_Deployer;
-    private static iam_id: string;
-    public static get_ARN_of_CDK_Deployers_IAM_ID(): string{
-        if(!CDK_Deployer.singleton){
-            CDK_Deployer.singleton = new CDK_Deployer();
-            const cmd = `aws sts get-caller-identity | jq .Arn | tr -d '"|\n|\r'`; //translate delete (remove) double quote & new lines
-            const cmd_results = shell.exec(cmd, {silent:true});
-            if(cmd_results.code===0){
-                this.iam_id = cmd_results.stdout; //plausible value = arn:aws:iam::111122223333:user/example
-            }
-        }
-        return CDK_Deployer.iam_id; //returns arn of IAM user/role identity that ran `cdk deploy dev1-eks-cluster`
-    }
-} //end CDK_Deployer
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
