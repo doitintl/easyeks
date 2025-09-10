@@ -1,11 +1,11 @@
 import { Easy_EKS_Config_Data } from '../../lib/Easy_EKS_Config_Data';
+import { Easy_EKS_Dynamic_Config } from '../../lib/Easy_EKS_Dynamic_Config';
 import { KubernetesVersion } from 'aws-cdk-lib/aws-eks';
 import * as cdk from 'aws-cdk-lib';
 import * as eks from 'aws-cdk-lib/aws-eks';
 import * as iam from 'aws-cdk-lib/aws-iam';
 import * as kms from 'aws-cdk-lib/aws-kms';
 import request from 'sync-request-curl'; //npm install sync-request-curl (cdk requires sync functions, async not allowed)
-import cluster from 'cluster';
 //Intended Use:
 //A baseline config file (to be applied to all EasyEKS Clusters in your organization)
 //EasyEKS Admins would be expected to edit this file with defaults specific to their org. (that rarely change and are low risk to add)
@@ -74,8 +74,7 @@ export function deploy_addons(config: Easy_EKS_Config_Data, stack: cdk.Stack, cl
     const vpc_cni = new eks.CfnAddon(stack, 'vpc-cni', {
         clusterName: cluster.clusterName,
         addonName: 'vpc-cni',
-        addonVersion: 'v1.19.6-eksbuild.7', //v--query for latest, latest of this addon tends to be valid for all versions of kubernetes
-        // aws eks describe-addon-versions --kubernetes-version=1.31 --addon-name=vpc-cni --query='addons[].addonVersions[].addonVersion' | jq '.[0]'
+        addonVersion: Easy_EKS_Dynamic_Config.get_latest_version_of_vpc_cni_eks_addon(), //OR 'v1.20.1-eksbuild.3'
         //serviceAccountRoleArn: <-- leave this blank, to use worker node's IAM role, which gives dualstack ipv4/ipv6 support
         resolveConflicts: 'OVERWRITE',
         configurationValues: '{}',
@@ -84,8 +83,7 @@ export function deploy_addons(config: Easy_EKS_Config_Data, stack: cdk.Stack, cl
     const coredns = new eks.CfnAddon(stack, 'coredns', {
         clusterName: cluster.clusterName,
         addonName: 'coredns',
-        addonVersion: 'v1.11.4-eksbuild.14', //v--query for latest, latest tends to be valid for all version of kubernetes
-        // aws eks describe-addon-versions --kubernetes-version=1.31 --addon-name=coredns --query='addons[].addonVersions[].addonVersion' | jq '.[0]'
+        addonVersion: Easy_EKS_Dynamic_Config.get_latest_version_of_coredns_eks_addon(), //OR 'v1.12.3-eksbuild.1'
         resolveConflicts: 'OVERWRITE',
         //v-- Below represents an optimized CoreDNS deployment, based on
         //    https://aws.amazon.com/blogs/containers/amazon-eks-add-ons-advanced-configuration/
@@ -147,8 +145,7 @@ export function deploy_addons(config: Easy_EKS_Config_Data, stack: cdk.Stack, cl
     const metrics_server = new eks.CfnAddon(stack, 'metrics-server', { //allows `kubectl top nodes` to work & valid for all versions of kubernetes
         clusterName: cluster.clusterName,
         addonName: 'metrics-server',
-        addonVersion: 'v0.8.0-eksbuild.1', //v--query for latest
-        // aws eks describe-addon-versions --kubernetes-version=1.31 --addon-name=metrics-server --query='addons[].addonVersions[].addonVersion' | jq '.[0]'
+        addonVersion: Easy_EKS_Dynamic_Config.get_latest_version_of_metrics_server_eks_addon(), //OR 'v0.8.0-eksbuild.2'
         resolveConflicts: 'OVERWRITE',
         configurationValues: `{
             "replicas": 2,
@@ -203,8 +200,7 @@ export function deploy_addons(config: Easy_EKS_Config_Data, stack: cdk.Stack, cl
     const eks_node_monitoring_agent = new eks.CfnAddon(stack, 'eks-node-monitoring-agent', {
         clusterName: cluster.clusterName,
         addonName: 'eks-node-monitoring-agent',
-        addonVersion: 'v1.3.0-eksbuild.2', //v--query for latest
-        // aws eks describe-addon-versions --kubernetes-version=1.31 --addon-name=eks-node-monitoring-agent --query='addons[].addonVersions[].addonVersion' | jq '.[0]'
+        addonVersion: Easy_EKS_Dynamic_Config.get_latest_version_of_eks_node_monitoring_agent_eks_addon(), //or 'v1.4.0-eksbuild.2'
         resolveConflicts: 'OVERWRITE',
         configurationValues: '{}',
     });
@@ -244,8 +240,7 @@ export function deploy_addons(config: Easy_EKS_Config_Data, stack: cdk.Stack, cl
     const ebs_csi_addon = new eks.CfnAddon(stack, 'aws-ebs-csi-driver', {
         clusterName: cluster.clusterName,
         addonName: 'aws-ebs-csi-driver',
-        addonVersion: 'v1.45.0-eksbuild.2', //v--query for latest
-        // aws eks describe-addon-versions --kubernetes-version=1.31 --addon-name=aws-ebs-csi-driver --query='addons[].addonVersions[].addonVersion' | jq '.[0]'
+        addonVersion: Easy_EKS_Dynamic_Config.get_latest_version_of_ebs_csi_eks_addon(), //OR 'v1.48.0-eksbuild.2'
         resolveConflicts: 'OVERWRITE',
         podIdentityAssociations: [
             {
@@ -276,8 +271,7 @@ export function deploy_essentials(config: Easy_EKS_Config_Data, stack: cdk.Stack
         release: "node-local-dns-cache", // Name for our chart in Kubernetes (helm list -A)
         repository: "oci://ghcr.io/deliveryhero/helm-charts/node-local-dns",  // HTTPS address of the helm chart (associated with helm repo add command)
         namespace: "kube-system",
-        version: "2.1.10", // version of the helm chart, below can be used to look up latest
-        // curl https://raw.githubusercontent.com/deliveryhero/helm-charts/refs/heads/master/stable/node-local-dns/Chart.yaml | grep version: | cut -d ':' -f 2
+        version: Easy_EKS_Dynamic_Config.get_latest_version_of_node_local_dns_cache_helm_chart(), //OR "2.1.10"
         wait: false,
         values: { //<-- helm chart values per https://github.com/deliveryhero/helm-charts/blob/master/stable/node-local-dns/values.yaml
           config: {

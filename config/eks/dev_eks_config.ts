@@ -1,4 +1,5 @@
 import { Easy_EKS_Config_Data } from '../../lib/Easy_EKS_Config_Data';
+import { Easy_EKS_Dynamic_Config } from '../../lib/Easy_EKS_Dynamic_Config';
 import * as cdk from 'aws-cdk-lib';
 import * as eks from 'aws-cdk-lib/aws-eks'
 import {

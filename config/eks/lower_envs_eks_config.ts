@@ -1,4 +1,5 @@
 import { Easy_EKS_Config_Data } from '../../lib/Easy_EKS_Config_Data';
+import { Easy_EKS_Dynamic_Config } from '../../lib/Easy_EKS_Dynamic_Config';
 import * as cdk from 'aws-cdk-lib';
 import * as eks from 'aws-cdk-lib/aws-eks';
 import * as iam from 'aws-cdk-lib/aws-iam';
@@ -48,8 +49,7 @@ export function deploy_addons(config: Easy_EKS_Config_Data, stack: cdk.Stack, cl
     const kube_proxy = new eks.CfnAddon(stack, 'kube-proxy', {
         clusterName: cluster.clusterName,
         addonName: 'kube-proxy',
-        addonVersion: 'v1.33.3-eksbuild.6', //v--query for latest, alternatively you can comment this line out to get default version
-        // aws eks describe-addon-versions --kubernetes-version=1.33 --addon-name=kube-proxy --query='addons[].addonVersions[].addonVersion' | jq '.[0]'
+        addonVersion: Easy_EKS_Dynamic_Config.get_latest_version_of_kube_proxy_1_33_eks_addon(), // or 'v1.33.3-eksbuild.6'
         resolveConflicts: 'OVERWRITE',
         configurationValues: '{}',
     });
