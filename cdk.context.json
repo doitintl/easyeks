@@ -1,14 +1,1 @@
-{
-  "availability-zones:account=905418347382:region=ca-central-1": [
-    "ca-central-1a",
-    "ca-central-1b",
-    "ca-central-1d"
-  ],
-  "ami:account=905418347382:filters.image-type.0=machine:filters.name.0=fck-nat-al2023-*-arm64-ebs:filters.state.0=available:owners.0=568608671756:region=ca-central-1": "ami-045d3a84706b8feeb",
-  "key-provider:account=905418347382:aliasName=alias/eks/lower-envs:region=ca-central-1": {
-    "keyId": "2c710e12-cad3-42f5-a92f-e7d7980aebea"
-  },
-  "acknowledged-issue-numbers": [
-    32775
-  ]
-}
+{}

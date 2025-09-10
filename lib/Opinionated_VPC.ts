@@ -63,8 +63,8 @@ export class Opinionated_VPC{
                     name: "Public", 
                     subnetType: ec2.SubnetType.PUBLIC,
                     cidrMask: this.config.publicSubNetCIDRSlash,
-                    mapPublicIpOnLaunch: true, //<--this is temporarily needed for fck-NAT to work,
-                    //until the following is resolved https://github.com/AndrewGuenther/cdk-fck-nat/issues/344
+                    // mapPublicIpOnLaunch: true, //<--this is temporarily needed for fck-NAT to work,
+                    // //until the following is resolved https://github.com/AndrewGuenther/cdk-fck-nat/issues/344
                     ipv6AssignAddressOnCreation: true,
                 },
                 { 

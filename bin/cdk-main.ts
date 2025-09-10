@@ -11,6 +11,7 @@ TS(TypeScript) import syntax that means:
 * The "named import" can be arbtirarily named.
 * Items in the named import can be referenced with the dot operator.
 */
+import { ensure_existance_of_kubectl_helm_lambda_deployer_role_used_by_easy_eks } from '../lib/Utilities';
 import { Opinionated_VPC } from '../lib/Opinionated_VPC';
 import { Easy_EKS } from '../lib/Easy_EKS'; //AWS EKS L2 construct based cluster
 /*     ^--_This---^ 
@@ -21,6 +22,16 @@ TS import syntax that means:
   item in the referenced file.
 * Items imported this way, can be referenced directly by name.
 */
+////////////////////////////////////////////////////////////////////////////////////////////
+
+
+////////////////////////////////////////////////////////////////////////////////////////////
+ensure_existance_of_kubectl_helm_lambda_deployer_role_used_by_easy_eks();
+// ^-- This uses aws cli and node.js shell to ensure a dependency IAM role exists.
+//     Note: 
+//     When a user first runs "cdk list" or "cdk deploy *"
+//     The code will auto-runs (without requesting permission/input from the user)
+//     This is for UX reasons, as cdk failures will occur if it's not pre-existing.
 ////////////////////////////////////////////////////////////////////////////////////////////
 
 
@@ -128,28 +139,36 @@ dev1_eks.apply_global_baseline_eks_config();
 dev1_eks.apply_my_orgs_baseline_eks_config();
 dev1_eks.apply_lower_envs_eks_config();
 dev1_eks.apply_dev_eks_config();
-dev1_eks.stage_deployment_of_eks_construct_into_this_objects_stack();
-dev1_eks.stage_deployment_of_global_baseline_eks_dependencies();
-dev1_eks.stage_deployment_of_my_orgs_baseline_eks_dependencies();
-dev1_eks.stage_deployment_of_lower_envs_eks_dependencies();
-dev1_eks.stage_deployment_of_dev_eks_dependencies();
-dev1_eks.stage_deployment_of_global_baseline_eks_workload_dependencies();
-dev1_eks.stage_deployment_of_my_orgs_baseline_eks_workload_dependencies();
-dev1_eks.stage_deployment_of_lower_envs_eks_workload_dependencies();
-dev1_eks.stage_deployment_of_dev_eks_workload_dependencies();
+dev1_eks.stage_deployment_of_eks_cluster();
+dev1_eks.stage_deployment_of_global_baseline_eks_addons();
+dev1_eks.stage_deployment_of_my_orgs_baseline_eks_addons();
+dev1_eks.stage_deployment_of_lower_envs_eks_addons();
+dev1_eks.stage_deployment_of_dev_eks_addons();
+//^-- `cdk deploy dev1-eks-cluster has a deployment time of ~17mins
+///////////////////////////////////////////////////////////////////////
+dev1_eks.stage_deployment_of_global_baseline_eks_essentials();
+dev1_eks.stage_deployment_of_my_orgs_baseline_eks_essentials();
+dev1_eks.stage_deployment_of_lower_envs_eks_essentials();
+dev1_eks.stage_deployment_of_dev_eks_essentials();
+//^-- `cdk deploy dev1-eks-essentials has a deployment time of ~2mins
+///////////////////////////////////////////////////////////////////////
 dev1_eks.stage_deployment_of_global_baseline_eks_workloads();
 dev1_eks.stage_deployment_of_my_orgs_baseline_eks_workloads();
 dev1_eks.stage_deployment_of_lower_envs_eks_workloads();
 dev1_eks.stage_deployment_of_dev_eks_workloads();
-//^-- deployment time of ~18.6mins (~15-20mins)
+//^-- `cdk deploy dev1-eks-workloads has a deployment time of ~1min
+
+
+
+///////////////////////////////////////////////////////////////////////////////////////////
 
 //Example 2: Equivalent to Example 1, just with convenience methods as short hand
 //(This format balances usability and debugability)
 const dev2_eks = new Easy_EKS(cdk_state, 'dev2-eks', low_co2_AMER_stack_config);
 dev2_eks.apply_dev_baseline_config(); //<-- convenience method #1
-dev2_eks.stage_deployment_of_eks_construct_into_this_objects_stack();
-dev2_eks.stage_deployment_of_dev_baseline_dependencies(); //<-- convenience method #2
-dev2_eks.stage_deployment_of_dev_baseline_workload_dependencies(); //<-- convenience method #3
+dev2_eks.stage_deployment_of_eks_cluster();
+dev2_eks.stage_deployment_of_dev_baseline_addons(); //<-- convenience method #2
+dev2_eks.stage_deployment_of_dev_baseline_essentials(); //<-- convenience method #3
 dev2_eks.stage_deployment_of_dev_baseline_workloads(); //<-- convenience method #4
 
 //Example 3: Equivalent to Examples 1 & 2, just shorter

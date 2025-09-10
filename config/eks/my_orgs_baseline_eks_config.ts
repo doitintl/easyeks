@@ -17,7 +17,7 @@ export function apply_config(config: Easy_EKS_Config_Data, stack: cdk.Stack){ //
     //^-- NOTE: hashtag(#)   comma(,)   singlequote(')   doublequote(\")   parenthesis()   and more are not valid tag values
     //    https://docs.aws.amazon.com/codeguru/latest/bugbust-ug/limits-tags.html
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    config.addClusterViewerAccount(process.env.CDK_DEFAULT_ACCOUNT!); //<-- comment out to disable RO_viewer_by_default
+    config.addClusterViewerAccount(process.env.CDK_DEFAULT_ACCOUNT!); //<-- comment out to disable read_only_viewer_by_default
     /* Explanation of what this-^ does:
     It adds current account to eks cluster's aws-auth configmap
     kubectl get cm -n=kube-system aws-auth -o yaml | grep Accounts:
@@ -69,12 +69,12 @@ export function apply_config(config: Easy_EKS_Config_Data, stack: cdk.Stack){ //
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-export function deploy_dependencies(config: Easy_EKS_Config_Data, stack: cdk.Stack, cluster: eks.Cluster){
+export function deploy_addons(config: Easy_EKS_Config_Data, stack: cdk.Stack, cluster: eks.Cluster){
 
     const vpc_cni = new eks.CfnAddon(stack, 'vpc-cni', {
         clusterName: cluster.clusterName,
         addonName: 'vpc-cni',
-        addonVersion: 'v1.19.5-eksbuild.1', //v--query for latest, latest of this addon tends to be valid for all versions of kubernetes
+        addonVersion: 'v1.19.6-eksbuild.7', //v--query for latest, latest of this addon tends to be valid for all versions of kubernetes
         // aws eks describe-addon-versions --kubernetes-version=1.31 --addon-name=vpc-cni --query='addons[].addonVersions[].addonVersion' | jq '.[0]'
         //serviceAccountRoleArn: <-- leave this blank, to use worker node's IAM role, which gives dualstack ipv4/ipv6 support
         resolveConflicts: 'OVERWRITE',
@@ -84,7 +84,7 @@ export function deploy_dependencies(config: Easy_EKS_Config_Data, stack: cdk.Sta
     const coredns = new eks.CfnAddon(stack, 'coredns', {
         clusterName: cluster.clusterName,
         addonName: 'coredns',
-        addonVersion: 'v1.11.4-eksbuild.10', //v--query for latest, latest tends to be valid for all version of kubernetes
+        addonVersion: 'v1.11.4-eksbuild.14', //v--query for latest, latest tends to be valid for all version of kubernetes
         // aws eks describe-addon-versions --kubernetes-version=1.31 --addon-name=coredns --query='addons[].addonVersions[].addonVersion' | jq '.[0]'
         resolveConflicts: 'OVERWRITE',
         //v-- Below represents an optimized CoreDNS deployment, based on
@@ -147,7 +147,7 @@ export function deploy_dependencies(config: Easy_EKS_Config_Data, stack: cdk.Sta
     const metrics_server = new eks.CfnAddon(stack, 'metrics-server', { //allows `kubectl top nodes` to work & valid for all versions of kubernetes
         clusterName: cluster.clusterName,
         addonName: 'metrics-server',
-        addonVersion: 'v0.7.2-eksbuild.3', //v--query for latest
+        addonVersion: 'v0.8.0-eksbuild.1', //v--query for latest
         // aws eks describe-addon-versions --kubernetes-version=1.31 --addon-name=metrics-server --query='addons[].addonVersions[].addonVersion' | jq '.[0]'
         resolveConflicts: 'OVERWRITE',
         configurationValues: `{
@@ -203,41 +203,32 @@ export function deploy_dependencies(config: Easy_EKS_Config_Data, stack: cdk.Sta
     const eks_node_monitoring_agent = new eks.CfnAddon(stack, 'eks-node-monitoring-agent', {
         clusterName: cluster.clusterName,
         addonName: 'eks-node-monitoring-agent',
-        addonVersion: 'v1.2.0-eksbuild.1', //v--query for latest
+        addonVersion: 'v1.3.0-eksbuild.2', //v--query for latest
         // aws eks describe-addon-versions --kubernetes-version=1.31 --addon-name=eks-node-monitoring-agent --query='addons[].addonVersions[].addonVersion' | jq '.[0]'
         resolveConflicts: 'OVERWRITE',
         configurationValues: '{}',
     });
 
-}//end deploy_dependencies()
-
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-export function deploy_workload_dependencies(config: Easy_EKS_Config_Data, stack: cdk.Stack, cluster: eks.Cluster){
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    //Install Node Local DNS Cache
-    const nodeLocalDNSCache = cluster.addHelmChart('NodeLocalDNSCache', {
-        chart: "node-local-dns", // Name of the Chart to be deployed
-        release: "node-local-dns-cache", // Name for our chart in Kubernetes (helm list -A)
-        repository: "oci://ghcr.io/deliveryhero/helm-charts/node-local-dns",  // HTTPS address of the helm chart (associated with helm repo add command)
-        namespace: "kube-system",
-        version: "2.1.5", // version of the helm chart, below can be used to look up latest
-        // curl https://raw.githubusercontent.com/deliveryhero/helm-charts/refs/heads/master/stable/node-local-dns/Chart.yaml | grep version: | cut -d ':' -f 2
-        wait: false,
-        values: { //<-- helm chart values per https://github.com/deliveryhero/helm-charts/blob/master/stable/node-local-dns/values.yaml
-          config: {
-            bindIp: true, //BottleRocket specific fix
-          },
-        },
+    ///////////////////////////////////////////////////////////////////
+    // Install Pod Identity Agent Addon (using cdk bug avoidance logic)
+    // This might look odd, it's a workaround for this bug https://github.com/aws/aws-cdk/issues/32580
+    const ALBC_Kube_SA = new eks.ServiceAccount(stack, 'pod-identity-agent-addon', {
+        cluster: cluster,
+        name: 'cdk-workaround',
+        namespace: 'kube-system',
+        identityType: eks.IdentityType.POD_IDENTITY, //depends on eks-pod-identity-agent addon
+        //Note: It's not documented, but this generates 4 things:
+        //1. A kube SA in the namespace of the cluster
+        //2. An IAM role paired to the Kube SA
+        //3. An EKS Pod Identity Association
+        //4. The eks-pod-identity-agent addon
+        //   ^<-- workaround is leveraging this 4th entry to indirectly install pod identity agent addon,
+        //        this install method avoids cdk bug.
     });
-    nodeLocalDNSCache.node.addDependency(cluster.awsAuth);
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ///////////////////////////////////////////////////////////////////
 
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    // Install EBS CSI Driver Addon
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
+    // Install EBS CSI Driver Addon (using cdk bug avoidance logic)
     // If you try to use eks.ServiceAccount with eksAddons you'll hit a cdk integration bug, this works around it.
     // (The gist of the bug is it'd fail, because the name would already exist because 2 things would try to create it.)
     const ebs_csi_addon_iam_role = new iam.Role(stack, 'aws-ebs-csi-driver-iam-role', {
@@ -253,7 +244,7 @@ export function deploy_workload_dependencies(config: Easy_EKS_Config_Data, stack
     const ebs_csi_addon = new eks.CfnAddon(stack, 'aws-ebs-csi-driver', {
         clusterName: cluster.clusterName,
         addonName: 'aws-ebs-csi-driver',
-        addonVersion: 'v1.43.0-eksbuild.1', //v--query for latest
+        addonVersion: 'v1.45.0-eksbuild.2', //v--query for latest
         // aws eks describe-addon-versions --kubernetes-version=1.31 --addon-name=aws-ebs-csi-driver --query='addons[].addonVersions[].addonVersion' | jq '.[0]'
         resolveConflicts: 'OVERWRITE',
         podIdentityAssociations: [
@@ -267,8 +258,38 @@ export function deploy_workload_dependencies(config: Easy_EKS_Config_Data, stack
                 "replicaCount": 1,
             },
         }`, //end aws-ebs-csi-driver configurationValues override
+    }); //end EBS CSI Driver Addon
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
+
+}//end deploy_addons()
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+export function deploy_essentials(config: Easy_EKS_Config_Data, stack: cdk.Stack, cluster: eks.ICluster){
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    //Install Node Local DNS Cache
+    const nodeLocalDNSCache = cluster.addHelmChart('NodeLocalDNSCache', {
+        chart: "node-local-dns", // Name of the Chart to be deployed
+        release: "node-local-dns-cache", // Name for our chart in Kubernetes (helm list -A)
+        repository: "oci://ghcr.io/deliveryhero/helm-charts/node-local-dns",  // HTTPS address of the helm chart (associated with helm repo add command)
+        namespace: "kube-system",
+        version: "2.1.10", // version of the helm chart, below can be used to look up latest
+        // curl https://raw.githubusercontent.com/deliveryhero/helm-charts/refs/heads/master/stable/node-local-dns/Chart.yaml | grep version: | cut -d ':' -f 2
+        wait: false,
+        values: { //<-- helm chart values per https://github.com/deliveryhero/helm-charts/blob/master/stable/node-local-dns/values.yaml
+          config: {
+            bindIp: true, //BottleRocket specific fix
+          },
+        },
     });
-    // adding gp3 storage class
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // Install default gp3 storage class
+    // File in /research/ was converted using https://onlineyamltools.com/convert-yaml-to-json
     const storage_class_gp3_manifest = {
         "apiVersion": "storage.k8s.io/v1",
         "kind": "StorageClass",
@@ -285,7 +306,7 @@ export function deploy_workload_dependencies(config: Easy_EKS_Config_Data, stack
         "parameters": {
             "type": "gp3",
             "encrypted": "true",
-            //"kmsKeyId": `${config.kmsKey.keyArn}` //commentig it out as while we test the logic to add permissions to customer's KMS key
+            //"kmsKeyId": `${config.kmsKey.keyArn}` //not yet stable, needs more testing of the logic to add permissions to KMS key
         }
     }
     const storage_class_gp3_construct = new eks.KubernetesManifest(stack, "StorageClassManifest",
@@ -296,31 +317,14 @@ export function deploy_workload_dependencies(config: Easy_EKS_Config_Data, stack
             prune: true,   
         }
     );
-    storage_class_gp3_construct.node.addDependency(cluster.awsAuth);
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    // v-- most won't need this, disabling by default
-    // const pvc_snapshot_controller = new eks.CfnAddon(stack, 'snapshot-controller', {
-    //     clusterName: cluster.clusterName,
-    //     addonName: 'snapshot-controller',
-    //     addonVersion: 'v8.2.0-eksbuild.1', //v--query for latest
-    //     // aws eks describe-addon-versions --kubernetes-version=1.31 --addon-name=snapshot-controller --query='addons[].addonVersions[].addonVersion' | jq '.[0]'
-    //     resolveConflicts: 'OVERWRITE',
-    //     configurationValues: '{}',
-    // });
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    //Install default storage class
-    //File in /research/ was converted using https://onlineyamltools.com/convert-yaml-to-json
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-}//end deploy_workload_dependencies()
+}//end deploy_essentials()
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-export function deploy_workloads(config: Easy_EKS_Config_Data, stack: cdk.Stack, cluster: eks.Cluster){
+export function deploy_workloads(config: Easy_EKS_Config_Data, stack: cdk.Stack, cluster: eks.ICluster){
 
 }//end deploy_workloads()
