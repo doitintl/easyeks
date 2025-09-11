@@ -68,10 +68,8 @@ export function deploy_addons(config: Easy_EKS_Config_Data, stack: cdk.Stack, cl
     const karpenter_YAMLs = (new Karpenter_YAML_Generator({
         cluster: cluster,
         config: config,
-        amiSelectorTerms_alias: "bottlerocket@v1.33.0", /* <-- Bottlerocket alias always ends in a zero, below is proof by command output
-        export K8S_VERSION="1.33"
-        aws ssm get-parameters-by-path --path "/aws/service/bottlerocket/aws-k8s-$K8S_VERSION" --recursive | jq -cr '.Parameters[].Name' | grep -v "latest" | awk -F '/' '{print $7}' | sort | uniq
-        */
+        amiSelectorTerms_alias: "bottlerocket@1.46.0-431fe75a",
+        //aws ssm get-parameters-by-path --path "/aws/service/bottlerocket/aws-k8s-1.33" --recursive | jq -cr '.Parameters[].Name' | grep -v "latest" | awk -F '/' '{print $7}' | sort | uniq
         consolidationPolicy: "WhenEmptyOrUnderutilized", //WhenUnderutilized is more agressive cost savings / slightly worse stability
         manifest_inputs: [ //Note highest weight = default, higher = preferred
             { type: "spot",      arch: "arm64", nodepools_cpu_limit: 1000, weight: 4, },
