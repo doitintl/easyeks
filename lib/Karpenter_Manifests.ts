@@ -55,8 +55,8 @@ export class Karpenter_YAML_Generator{
         //         { "id": `${config.vpc.privateSubnets[2]?.subnetId}` },
         //       ],
         let ipv6_status: string = "enabled";
-        if(config.ipMode===eks.IpFamily.IP_V6){console.log("ipv6 enabled")};
-        if(config.ipMode===eks.IpFamily.IP_V4){console.log("ipv4 enabled")};
+        if(config.ipMode===eks.IpFamily.IP_V6){ ipv6_status="enabled" };
+        if(config.ipMode===eks.IpFamily.IP_V4){ ipv6_status="disabled" };
         for (const item of this.manifest_inputs) {
             const karpenter_bottlerocket_EC2NodeClass = {
                 "apiVersion": "karpenter.k8s.aws/v1",
