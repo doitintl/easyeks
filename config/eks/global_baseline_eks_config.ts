@@ -10,14 +10,14 @@ import request from 'sync-request-curl'; //npm install sync-request-curl (cdk re
 
 //export function apply_config(config: Easy_EKS_Config_Data, stack: cdk.Stack, cluster: eks.Cluster){ //config: is of type Easy_EKS_Config_Data
 export function apply_config(config: Easy_EKS_Config_Data, stack: cdk.Stack){ //config: is of type Easy_EKS_Config_Data    
-    config.addTag("IaC Tooling used for Provisioning and Management of this EKS Cluster", "cdk: a CLI tool that stands for AWS Cloud Development Kit.");
-    config.addTag("Upstream Methodology Docs", "https://github.com/doitintl/easyeks");
+    config.add_tag("IaC Tooling used for Provisioning and Management of this EKS Cluster", "cdk: a CLI tool that stands for AWS Cloud Development Kit.");
+    config.add_tag("Upstream Methodology Docs", "https://github.com/doitintl/easyeks");
     //^-- NOTE: AWS tag restrictions vary by service, but generally only letters, numbers, spaces, and the following characters are allowed: + - = . _ : / @
     //    Tags are validated by the validateTag() function in lib/Utilities.ts before deployment
     //    More details:
     //      - https://docs.aws.amazon.com/eks/latest/userguide/eks-using-tags.html#tag-restrictions
     //      - https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/Using_Tags.html#tag-restrictions
-    config.addClusterAdminARN(`arn:aws:iam::${process.env.CDK_DEFAULT_ACCOUNT}:role/kubectl-helm-lambda-deployer-role-used-by-easy-eks`);
+    config.add_Cluster_Admin_using_ARN(`arn:aws:iam::${process.env.CDK_DEFAULT_ACCOUNT}:role/kubectl-helm-lambda-deployer-role-used-by-easy-eks`);
     //^-- cdk-main.ts calls a Utility.ts library that uses aws cli to ensure this role exists (cdk errors would occur if it wasn't pre-existing.)
 }//end apply_config()
 
@@ -29,7 +29,7 @@ export function deploy_addons(config: Easy_EKS_Config_Data, stack: cdk.Stack, cl
 
     /*To see official names of all eks add-ons:
     aws eks describe-addon-versions  \
-    --kubernetes-version=1.31 \
+    --kubernetes-version=1.33 \
     --query 'sort_by(addons  &owner)[].{owner: owner, addonName: addonName}' \
     --output table
     */

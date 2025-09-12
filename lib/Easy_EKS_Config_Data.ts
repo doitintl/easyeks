@@ -41,13 +41,13 @@ export class Easy_EKS_Config_Data { //This object just holds config data.
   
   
     //Config Snippet Population Methods
-    setVpcById(vpcId: string, config: Easy_EKS_Config_Data, stack: cdk.Stack){
+    set_VPC_using_VPC_Id(vpcId: string, config: Easy_EKS_Config_Data, stack: cdk.Stack){
         const pre_existing_vpc = ec2.Vpc.fromLookup(stack,'pre-existing-vpc', {
             vpcId: vpcId,
         });
         this.vpc = pre_existing_vpc as ec2.Vpc;
     }
-    setVpcByName(vpcName: string, config: Easy_EKS_Config_Data, stack: cdk.Stack){ 
+    set_VPC_using_name_tag(vpcName: string, config: Easy_EKS_Config_Data, stack: cdk.Stack){ 
         //Note: The following "normal cdk way of doing things" works 99% of the time
         //      const pre_existing_vpc = ec2.Vpc.fromLookup(stack,'pre-existing-vpc', {
         //          isDefault: false,
@@ -87,9 +87,9 @@ export class Easy_EKS_Config_Data { //This object just holds config data.
         }
         this.vpc = pre_existing_vpc as ec2.Vpc;
     }
-    setKubernetesVersion(version: KubernetesVersion){ this.kubernetesVersion = version; }
-    setKubectlLayer(version: cdk.aws_lambda.ILayerVersion ){ this.kubectlLayer = version; }
-    addTag(key: string, value: string){
+    set_clusters_version_of_Kubernetes(version: KubernetesVersion){ this.kubernetesVersion = version; }
+    set_version_of_kubectl_used_by_lambda(version: cdk.aws_lambda.ILayerVersion ){ this.kubectlLayer = version; }
+    add_tag(key: string, value: string){
         try {
             validateTag(key, value)
             if(this.tags === undefined){ this.tags = { [key] : value } }
@@ -99,14 +99,14 @@ export class Easy_EKS_Config_Data { //This object just holds config data.
             throw "Error validating tags. See details above"// Using throw here to stop the checks; otherwise an error will print out for every place this tag would be applied, and the process will continue
         }
     }
-    setBaselineMNGSize(num_baseline_nodes: number){
+    set_number_of_baseline_nodes(num_baseline_nodes: number){
         this.baselineNodesNumber = num_baseline_nodes;
     }
-    setBaselineMNGType(baseline_node_type: eks.CapacityType){
+    set_capacity_type_of_baseline_nodes(baseline_node_type: eks.CapacityType){
         this.baselineNodesType = baseline_node_type;
     }
-    setIpMode(ipMode: eks.IpFamily){ this.ipMode = ipMode; }
-    addClusterAdminARN(arn:string){        //v--initialize if undefined
+    set_IPv4_or_IPv6(ipMode: eks.IpFamily){ this.ipMode = ipMode; }
+    add_cluster_wide_kubectl_Admin_Access_using_ARN(arn:string){        //v--initialize if undefined
         if(this.clusterAdminAccessEksApiArns === undefined){ this.clusterAdminAccessEksApiArns = [arn]; }
         else{
             if(!this.clusterAdminAccessEksApiArns.includes(arn)){ //if value isn't already in array
@@ -114,7 +114,7 @@ export class Easy_EKS_Config_Data { //This object just holds config data.
             }
         } 
     }
-    addClusterViewerAccount(account:string){        //v--initialize if undefined
+    grant_cluster_wide_Viewer_Access_to_all_IAM_Identities_within_AWS_Account(account:string){        //v--initialize if undefined
         if(this.clusterViewerAccessAwsAuthConfigmapAccounts === undefined){ this.clusterViewerAccessAwsAuthConfigmapAccounts = [account] } 
         else{
             if(!this.clusterViewerAccessAwsAuthConfigmapAccounts.includes(account)){ //if value isn't already in array
@@ -122,17 +122,18 @@ export class Easy_EKS_Config_Data { //This object just holds config data.
             }
         } 
     }
-    setKmsKeyAlias(kms_key_alias: string){
+    set_KMS_Key_Alias_to_provision_and_reuse(kms_key_alias: string){
         /*Note (About UX improvement logic):
         Expectation is for end user to pass in value like "eks/lower-envs",
         as that's what they'll see in the AWS Web GUI Console; however, the cdk library needs "alias/"
         in front. Ex: "alias/eks/lower-envs".
-        This will check if string starts with "alias/", and add it if not there, for a better UX.
+        This will check if string starts with "alias/", and add it (if missing), for a better UX.
         */
         if(kms_key_alias.startsWith('alias/')){ this.kmsKeyAlias = kms_key_alias; }
         else{ this.kmsKeyAlias = `alias/${kms_key_alias}`; }
     }
-    setKmsKey(stack: cdk.Stack){
-        this.kmsKey = kms.Key.fromLookup(stack, 'pre-existing-kms-key', { aliasName: this.kmsKeyAlias });
-    } 
+    //Potential future logic mentioned in my_orgs_baseline_eks_config's storage class manifest
+    // set_KMS_Key(stack: cdk.Stack){
+    //     this.kmsKey = kms.Key.fromLookup(stack, 'pre-existing-kms-key', { aliasName: this.kmsKeyAlias });
+    // } 
 }//end of Easy_EKS_Config_Data

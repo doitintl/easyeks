@@ -198,7 +198,7 @@ export class Easy_EKS_Cluster{ //purposefully don't extend stack, to implement b
         // For good security we lock this down to whitelisted IAM access entries, defined in the Access tab of EKS's web console
         // For convienence we make an assumption that the IAM identity running cdk deploy dev1-eks, should be auto-added to that list.
         // A singleton pattern is used to avoid multiple lookups.
-        config.addClusterAdminARN(Easy_EKS_Dynamic_Config.get_ARN_of_IAM_Identity_running_CDK_Deploy());
+        config.add_cluster_wide_kubectl_Admin_Access_using_ARN(Easy_EKS_Dynamic_Config.get_ARN_of_IAM_Identity_running_CDK_Deploy());
         ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
         ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

@@ -8,7 +8,7 @@ import request from 'sync-request-curl'; //npm install sync-request-curl (cdk re
 //EasyEKS Admins: edit this file with config to apply to all Prod / Production cluster's in your org.
 
 export function apply_config(config: Easy_EKS_Config_Data, stack: cdk.Stack){ //config: is of type Easy_EKS_Config_Data
-    config.addTag("Environment", "Prod");
+    config.add_tag("Environment", "Prod");
 }//end apply_config()
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

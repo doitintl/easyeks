@@ -8,7 +8,7 @@ import request from 'sync-request-curl'; //npm install sync-request-curl (cdk re
 //EasyEKS Admins: edit this file with config to apply to all Stage / Staging / Pre-Production / UAT (User Acceptance Testing) cluster's in your org.
 
 export function apply_config(config: Easy_EKS_Config_Data, stack: cdk.Stack){ //config: is of type Easy_EKS_Config_Data
-    config.addTag("Environment", "Stage");
+    config.add_tag("Environment", "Stage");
 }//end apply_config()
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
