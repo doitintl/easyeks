@@ -90,7 +90,9 @@ export class Easy_EKS_Cluster{ //purposefully don't extend stack, to implement b
         const baseline_MNG: eks.NodegroupOptions = {
             subnets: { subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS },
             amiType: eks.NodegroupAmiType.BOTTLEROCKET_ARM_64,
-            instanceTypes: [new ec2.InstanceType('t4g.small')], //t4g.small = 2cpu, 2gb ram, 11pod max
+            instanceTypes: [new ec2.InstanceType('t4g.medium')], //medium = 2cpu, 4gb ram, 17 max pods per node
+            //^-- Can't go smaller. small supports 11 max pods per node, medium supports 17 max pods per node
+            //    daemonsets make it so medium is smallest acceptable baseline node size.
             capacityType: eks.CapacityType.SPOT,
             desiredSize: config.baselineNodesNumber,
             minSize: 0,
@@ -468,9 +470,13 @@ function initalize_baseline_LT_Spec(stack: cdk.Stack, config: Easy_EKS_Config_Da
     //v-- avoid editing this, invalid config prevents nodes from joining cluster, and results in a slow and annoying feedback loop.
     const Bottlerocket_baseline_MNG_TOML = `
     [settings.kubernetes]
-    max-pods = 11
+    max-pods = 17
     `;
-    //^-- 11 = max pods of t4g.small, per https://github.com/aws/amazon-vpc-cni-k8s/blob/master/misc/eni-max-pods.txt
+    //^-- per https://github.com/aws/amazon-vpc-cni-k8s/blob/master/misc/eni-max-pods.txt
+    // t4g.small supports max-pods = 11
+    // t4g.medium supports max-pods = 17
+    // Before adding observability stack daemonsets took up 8/11 of small's pod capacity
+    // Proactively bumping min node size from t4g.small to t4g.medium to account for daemonsets needed by observability stack
     const Bottlerocket_baseline_MNG_userdata = ec2.UserData.custom(Bottlerocket_baseline_MNG_TOML);
     const Baseline_MNG_LT = new ec2.LaunchTemplate(stack, `ARM64-Bottlerocket-${baseline_node_type}_MNG_LT`, {
       launchTemplateName: `${config.cluster_name}/baseline-MNG/arm64-bottlerocket-${baseline_node_type}`, //EKS Layer2 construct makes 2 LT's for some reason, uses the eks-* one.
