@@ -12,27 +12,27 @@ import { KubectlV33Layer } from '@aws-cdk/lambda-layer-kubectl-v33'; //npm insta
 //EasyEKS Admins: edit this file with config to apply to all lower environment eks cluster's in your org.
 
 export function apply_config(config: Easy_EKS_Config_Data, stack: cdk.Stack){ //config: is of type Easy_EKS_Config_Data
-    config.setKmsKeyAlias("eks/lower-envs"); //kms key with this alias will be created or reused if pre-existing
-    config.setVpcByName("lower-envs-vpc", config, stack); //Name as in VPC's Name Tag
-    //config.setVpcById("vpc-0dbcacb511f9bac4e", config, stack); //Alternative pre-existing VPC deployment option
-    config.setBaselineMNGSize(2);
-    config.setBaselineMNGType(eks.CapacityType.SPOT);
+    config.set_KMS_Key_Alias_to_provision_and_reuse("eks/lower-envs"); //kms key with this alias will be created or reused if pre-existing
+    config.set_VPC_using_name_tag("lower-envs-vpc", config, stack); //Name as in VPC's Name Tag
+    //config.set_VPC_using_VPC_Id("vpc-0dbcacb511f9bac4e", config, stack); //Alternative pre-existing VPC deployment option
+    config.set_number_of_baseline_nodes(2);
+    config.set_capacity_type_of_baseline_nodes(eks.CapacityType.SPOT);
     if(process.env.CDK_DEFAULT_ACCOUNT==="111122223333"){
-        config.addClusterAdminARN(`arn:aws:iam::111122223333:user/example`);
+        config.add_cluster_wide_kubectl_Admin_Access_using_ARN(`arn:aws:iam::111122223333:user/example`);
         /* Note 1:
            The IAM user/role running cdk deploy dev1-eks, gets added to the list of Cluster Admins by default.
            This is done for convenience, if you want to change this default, you'll need to edit ./lib/Easy_EKS.ts
 
            Note 2: 
-           config.addClusterAdminARN('...:user/example') should only be used in an if statement,
+           config.add_cluster_wide_kubectl_Admin_Access_using_ARN('...:user/example') should only be used in an if statement,
            Because the identity referenced in ARN must exist or the deployment will fail
            This allows you to create a explicit list of ARNs (representing IAM roles or users)
            That act as EKS Admins of all lower environments.
         */
     }
     //Kubernetes verson and addon's that may depend on Kubernetes version / should be updated along side it should be specified here
-    config.setKubernetesVersion(eks.KubernetesVersion.V1_33); //version of eks cluster
-    config.setKubectlLayer(new KubectlV32Layer(stack, 'kubectl')); //<--It's fine for this to stay on an old version
+    config.set_clusters_version_of_Kubernetes(eks.KubernetesVersion.V1_33); //version of eks cluster
+    config.set_version_of_kubectl_used_by_lambda(new KubectlV32Layer(stack, 'kubectl')); //<--It's fine for this to stay on an old version
     //^--refers to version of kubectl & helm installed in AWS Lambda Layer responsible for kubectl & helm deployments
     //Note: As of Sept 9th, 2025 KubectlV33Layer (which currently has latest available versions of kubectl & helm)
     //      results in error 'Error: media type "application/vnd.cncf.helm.chart.provenance.v1.prov" is not allowed'
@@ -68,10 +68,8 @@ export function deploy_addons(config: Easy_EKS_Config_Data, stack: cdk.Stack, cl
     const karpenter_YAMLs = (new Karpenter_YAML_Generator({
         cluster: cluster,
         config: config,
-        amiSelectorTerms_alias: "bottlerocket@v1.33.0", /* <-- Bottlerocket alias always ends in a zero, below is proof by command output
-        export K8S_VERSION="1.33"
-        aws ssm get-parameters-by-path --path "/aws/service/bottlerocket/aws-k8s-$K8S_VERSION" --recursive | jq -cr '.Parameters[].Name' | grep -v "latest" | awk -F '/' '{print $7}' | sort | uniq
-        */
+        amiSelectorTerms_alias: "bottlerocket@1.46.0-431fe75a",
+        //aws ssm get-parameters-by-path --path "/aws/service/bottlerocket/aws-k8s-1.33" --recursive | jq -cr '.Parameters[].Name' | grep -v "latest" | awk -F '/' '{print $7}' | sort | uniq
         consolidationPolicy: "WhenEmptyOrUnderutilized", //WhenUnderutilized is more agressive cost savings / slightly worse stability
         manifest_inputs: [ //Note highest weight = default, higher = preferred
             { type: "spot",      arch: "arm64", nodepools_cpu_limit: 1000, weight: 4, },

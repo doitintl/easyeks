@@ -11,13 +11,13 @@ import request from 'sync-request-curl'; //npm install sync-request-curl (cdk re
 //EasyEKS Admins would be expected to edit this file with defaults specific to their org. (that rarely change and are low risk to add)
 
 export function apply_config(config: Easy_EKS_Config_Data, stack: cdk.Stack){ //config: is of type Easy_EKS_Config_Data
-    config.addTag("Internally Maintained By", "person1@our.org and person2@our.org of Cloud Platform Team Updated 2024/12/15");
-    config.addTag("Internal Contact Methods for Questions", "devops slack channel or email devops@our.org");
-    config.addTag("IaC Tooling used for Provisioning and Management of EKS Workloads", "To be Determined maybe github actions flux or argo");
+    config.add_tag("Internally Maintained By", "person1@our.org and person2@our.org of Cloud Platform Team Updated 2024/12/15");
+    config.add_tag("Internal Contact Methods for Questions", "devops slack channel or email devops@our.org");
+    config.add_tag("IaC Tooling used for Provisioning and Management of EKS Workloads", "To be Determined maybe github actions flux or argo");
     //^-- NOTE: hashtag(#)   comma(,)   singlequote(')   doublequote(\")   parenthesis()   and more are not valid tag values
     //    https://docs.aws.amazon.com/codeguru/latest/bugbust-ug/limits-tags.html
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    config.addClusterViewerAccount(process.env.CDK_DEFAULT_ACCOUNT!); //<-- comment out to disable read_only_viewer_by_default
+    config.grant_cluster_wide_Viewer_Access_to_all_IAM_Identities_within_AWS_Account(process.env.CDK_DEFAULT_ACCOUNT!); //<-- comment out to disable read_only_viewer_by_default
     /* Explanation of what this-^ does:
     It adds current account to eks cluster's aws-auth configmap
     kubectl get cm -n=kube-system aws-auth -o yaml | grep Accounts:
@@ -50,7 +50,7 @@ export function apply_config(config: Easy_EKS_Config_Data, stack: cdk.Stack){ //
       * Can't kubectl exec -it into existing pods
     */ 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    config.setIpMode(eks.IpFamily.IP_V6); 
+    config.set_IPv4_or_IPv6(eks.IpFamily.IP_V6); 
     //^--EasyEKS Recommended Default: is IP_V6
     /* Useful Notes:
     * eks.IpFamily.IP_V4

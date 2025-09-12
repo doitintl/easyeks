@@ -54,7 +54,9 @@ export class Karpenter_YAML_Generator{
         //         { "id": `${config.vpc.privateSubnets[1]?.subnetId}` },
         //         { "id": `${config.vpc.privateSubnets[2]?.subnetId}` },
         //       ],
-
+        let ipv6_status: string = "enabled";
+        if(config.ipMode===eks.IpFamily.IP_V6){ ipv6_status="enabled" };
+        if(config.ipMode===eks.IpFamily.IP_V4){ ipv6_status="disabled" };
         for (const item of this.manifest_inputs) {
             const karpenter_bottlerocket_EC2NodeClass = {
                 "apiVersion": "karpenter.k8s.aws/v1",
@@ -65,11 +67,21 @@ export class Karpenter_YAML_Generator{
                 "spec": {
                     "amiFamily": "Bottlerocket",
                     "role": `${config.workerNodeRole.roleName}`,
-                    "subnetSelectorTerms": subnetSelectorTerms,
-                    "securityGroupSelectorTerms": [ { "tags": { "aws:eks:cluster-name": `${cluster.clusterName}` } } ],
                     "tags": {//ARM64-bottlerocket-spot
                         "Name": `${cluster.clusterName}/karpenter/${item.arch}-bottlerocket-${item.type}`, //<-- "dev1-eks/karpenter/x86_64-bottlerocket-spot", etc.
                     },
+                    "metadataOptions": { //overriding karpenter.sh's stupid default values & replacing with defaults that improve app compatibility
+                                         //This also makes karpenter node's IMDSv2 configuration consistent with that of default MNG Nodes
+                        "httpTokens": "required", //IMDSv2 = Required
+                        "httpEndpoint": "enabled",
+                        "httpProtocolIPv6": ipv6_status, //enabled or disabled based on config
+                        "httpPutResponseHopLimit": 2 //2 allows pods to successfully run commands like the example below while IMDSv2 is set to enforced
+// kubectl run -it curl --image=docker.io/curlimages/curl -- sh
+// TOKEN=`curl -X PUT http://169.254.169.254/latest/api/token -H "X-aws-ec2-metadata-token-ttl-seconds: 600"`
+// curl -H "X-aws-ec2-metadata-token: $TOKEN" http://169.254.169.254/latest/meta-data/instance-id                        
+                    },
+                    "subnetSelectorTerms": subnetSelectorTerms,
+                    "securityGroupSelectorTerms": [ { "tags": { "aws:eks:cluster-name": `${cluster.clusterName}` } } ],
                     "amiSelectorTerms": [
                         { "alias": this.amiSelectorTerms_alias }, //<--"bottlerocket@v1.31.6"
                         //Bottlerocket is easier than AL2023 & more secure by default, but if need AL2023:
