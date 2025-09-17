@@ -39,9 +39,10 @@ export class Easy_EKS{ //purposefully don't extend stack, to implement builder p
 
     //Class Constructor:
     constructor(storage_for_stacks_state: Construct, cluster_name: string, stack_config: cdk.StackProps) {
+        let cluster_region = process.env.CDK_DEFAULT_REGION!; //<-- better readability
+        this.cluster_exists = true_when_cluster_exists(cluster_name, cluster_region);
         this.eks_config = new Easy_EKS_Config_Data(cluster_name);
-        this.eks_cluster = new Easy_EKS_Cluster(storage_for_stacks_state, cluster_name, stack_config);
-        this.cluster_exists = true_when_cluster_exists(cluster_name, this.eks_cluster.stack.region);
+        this.eks_cluster = new Easy_EKS_Cluster(storage_for_stacks_state, cluster_name, stack_config, this.cluster_exists);
         //Constructor with minimal args is on purpose for desired UX of "builder pattern".
         //The idea is to add partial configuration snippets over time/as multiple operations
         //rather than populate a complete config all at once in one go.

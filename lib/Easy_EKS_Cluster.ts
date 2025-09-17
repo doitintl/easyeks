@@ -34,10 +34,12 @@ export class Easy_EKS_Cluster{ //purposefully don't extend stack, to implement b
     //Class Variables/Properties:
     stack: cdk.Stack;
     cluster: eks.Cluster;
+    cluster_exists: boolean;
 
     //Class Constructor:
-    constructor(storage_for_stacks_state: Construct, cluster_name: string, stack_config: cdk.StackProps) {
+    constructor(storage_for_stacks_state: Construct, cluster_name: string, stack_config: cdk.StackProps, cluster_exists: boolean) {
         this.stack = new cdk.Stack(storage_for_stacks_state, `${cluster_name}-cluster`, stack_config);
+        this.cluster_exists = cluster_exists; //used to improve tags, using a non-ideal method, but works around cdk limitations.
     }//end constructor of Easy_EKS_Cluster
 
     //Class Functions:
@@ -135,9 +137,28 @@ export class Easy_EKS_Cluster{ //purposefully don't extend stack, to implement b
         ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
         ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-        //Logic to add nicer Name Tag to EKS's Control Plane's Security Group
+        //Logic to add nicer Name Tags to EKS's Security Groups
         const eks_control_plane_sg = (this.stack.node.tryFindChild(config.cluster_name)?.node.tryFindChild('ControlPlaneSecurityGroup')?.node.defaultChild as cdk.CfnResource);
         cdk.Tags.of(eks_control_plane_sg).add('Name', `${config.cluster_name}-control-plane`);
+        //v-- cluster sg seems to be created by eks instead of cdk, which is why this workaround is used to import into cdk.
+        if(this.cluster_exists){ //eventual consistency adding of name tag (tag will exist by the time essentials and workloads are run)
+            let cluster_sg_id: string;
+            const cmd_to_lookup_sg_id = `aws ec2 describe-security-groups \
+                                        --filters Name=tag:aws:eks:cluster-name,Values=${config.cluster_name} \
+                                        --filters Name=tag:kubernetes.io/cluster/${config.cluster_name},Values=owned \
+                                        --query "SecurityGroups[*].GroupId" \
+                                        --output text | tr -d '\n|\r'`; //<-- |tr -d, means translate delete (remove) new lines 
+            const cmd_to_lookup_sg_id_results = shell.exec(cmd_to_lookup_sg_id, {silent:true});
+            if(cmd_to_lookup_sg_id_results.code===0){
+                cluster_sg_id = cmd_to_lookup_sg_id_results.stdout;
+                console.log(cluster_sg_id);
+                const cmd_to_update_sg_tag = `aws ec2 create-tags \
+                                          --resources ${cluster_sg_id} \
+                                          --tags Key=Name,Value=${config.cluster_name}-cluster-nodes`
+                shell.exec(cmd_to_update_sg_tag);
+            }
+        }//end if(this.cluster_exists)
+        //end Logic to add nicer Name Tags to EKS's Security Groups
         ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
         ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
