@@ -37,9 +37,8 @@ export class Easy_EKS_Cluster{ //purposefully don't extend stack, to implement b
     cluster_exists: boolean;
 
     //Class Constructor:
-    constructor(storage_for_stacks_state: Construct, cluster_name: string, stack_config: cdk.StackProps, cluster_exists: boolean) {
+    constructor(storage_for_stacks_state: Construct, cluster_name: string, stack_config: cdk.StackProps) {
         this.stack = new cdk.Stack(storage_for_stacks_state, `${cluster_name}-cluster`, stack_config);
-        this.cluster_exists = cluster_exists; //used to improve tags, using a non-ideal method, but works around cdk limitations.
     }//end constructor of Easy_EKS_Cluster
 
     //Class Functions:
@@ -138,27 +137,17 @@ export class Easy_EKS_Cluster{ //purposefully don't extend stack, to implement b
 
         ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
         //Logic to add nicer Name Tags to EKS's Security Groups
+        //Update Control Plane SG:
         const eks_control_plane_sg = (this.stack.node.tryFindChild(config.cluster_name)?.node.tryFindChild('ControlPlaneSecurityGroup')?.node.defaultChild as cdk.CfnResource);
         cdk.Tags.of(eks_control_plane_sg).add('Name', `${config.cluster_name}-control-plane`);
-        //v-- cluster sg seems to be created by eks instead of cdk, which is why this workaround is used to import into cdk.
-        if(this.cluster_exists){ //eventual consistency adding of name tag (tag will exist by the time essentials and workloads are run)
-            let cluster_sg_id: string;
-            const cmd_to_lookup_sg_id = `aws ec2 describe-security-groups \
-                                        --filters Name=tag:aws:eks:cluster-name,Values=${config.cluster_name} \
-                                        --filters Name=tag:kubernetes.io/cluster/${config.cluster_name},Values=owned \
-                                        --query "SecurityGroups[*].GroupId" \
-                                        --output text | tr -d '\n|\r'`; //<-- |tr -d, means translate delete (remove) new lines 
-            const cmd_to_lookup_sg_id_results = shell.exec(cmd_to_lookup_sg_id, {silent:true});
-            if(cmd_to_lookup_sg_id_results.code===0){
-                cluster_sg_id = cmd_to_lookup_sg_id_results.stdout;
-                console.log(cluster_sg_id);
-                const cmd_to_update_sg_tag = `aws ec2 create-tags \
-                                          --resources ${cluster_sg_id} \
-                                          --tags Key=Name,Value=${config.cluster_name}-cluster-nodes`
-                shell.exec(cmd_to_update_sg_tag);
-            }
-        }//end if(this.cluster_exists)
-        //end Logic to add nicer Name Tags to EKS's Security Groups
+        //Update Cluster Nodes SG:
+        //v-- This implementation works around a cdk limitation
+        if(config.preexisting_cluster_detected){
+            const cmd_to_update_sg_tag = `aws ec2 create-tags \
+                                         --resources ${config.sg_id_of_cluster_nodes} \
+                                         --tags Key=Name,Value=${config.cluster_name}-cluster-nodes`
+            shell.exec(cmd_to_update_sg_tag);
+        }
         ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
         ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -509,7 +498,7 @@ function initalize_baseline_LT_Spec(stack: cdk.Stack, config: Easy_EKS_Config_Da
       launchTemplateName: `${config.cluster_name}/baseline-MNG/arm64-bottlerocket-${baseline_node_type}`, //EKS Layer2 construct makes 2 LT's for some reason, uses the eks-* one.
       //blockDevices: [Baseline_MNG_Disk_AL2023],
       blockDevices: [Baseline_MNG_Disk_Bottlerocket_1_of_2, Baseline_MNG_Disk_Bottlerocket_2_of_2],
-      userData: Bottlerocket_baseline_MNG_userdata, //cdk.Fn.base64(Bottlerocket_baseline_MNG_userdata),
+      userData: Bottlerocket_baseline_MNG_userdata,
     });
     cdk.Tags.of(Baseline_MNG_LT).add("Name", `${config.cluster_name}/baseline-MNG/arm64-bottlerocket-${baseline_node_type}`);
     const tags = Object.entries(config.tags ?? {});
