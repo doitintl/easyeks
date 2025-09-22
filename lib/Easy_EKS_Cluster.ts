@@ -139,14 +139,14 @@ export class Easy_EKS_Cluster{ //purposefully don't extend stack, to implement b
         //Logic to add nicer Name Tags to EKS's Security Groups
         //Update Control Plane SG:
         const eks_control_plane_sg = (this.stack.node.tryFindChild(config.cluster_name)?.node.tryFindChild('ControlPlaneSecurityGroup')?.node.defaultChild as cdk.CfnResource);
-        cdk.Tags.of(eks_control_plane_sg).add('Name', `${config.cluster_name}-control-plane`);
+        cdk.Tags.of(eks_control_plane_sg).add('Name', `${config.cluster_name}/control-plane`);
         //Update Cluster Nodes SG:
         //v-- This implementation works around a cdk limitation
         if(config.preexisting_cluster_detected){
             const cmd_to_update_sg_tag = `aws ec2 create-tags \
                                          --resources ${config.sg_id_of_cluster_nodes} \
-                                         --tags Key=Name,Value=${config.cluster_name}-cluster-nodes`
-            shell.exec(cmd_to_update_sg_tag);
+                                         --tags Key=Name,Value=${config.cluster_name}/cluster-nodes`
+            shell.exec(cmd_to_update_sg_tag, {silent:true});
         }
         ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
