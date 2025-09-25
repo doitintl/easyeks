@@ -48,6 +48,15 @@ import * as acm from 'aws-cdk-lib/aws-certificatemanager';
 import * as cdk from 'aws-cdk-lib';
 //import { Easy_EKS } from "./Easy_EKS";
 
+
+export class EKS_Metrics_via_Grafana_and_Prometheus {
+
+}
+
+export class EKS_Logs_via_Grafana_and_QuickWit {
+
+}
+
 export function deploy(stack: cdk.Stack, config: Easy_EKS_Config_Data){
 
 

@@ -6,6 +6,7 @@ import * as iam from 'aws-cdk-lib/aws-iam';
 import * as s3 from 'aws-cdk-lib/aws-s3';
 import * as rds from 'aws-cdk-lib/aws-rds';
 import * as ec2 from 'aws-cdk-lib/aws-ec2';
+import { EKS_Metrics_via_CloudWatch_Input_Parameters, enable_metrics_observability_via_cloudwatch } from "../../lib/CW_Observability";
 import {
   Apply_Podinfo_Helm_Chart,
   Apply_Podinfo_Http_Alb_YAML,
@@ -26,96 +27,18 @@ export function apply_config(config: Easy_EKS_Config_Data, stack: cdk.Stack) { /
 
 export function deploy_addons(config: Easy_EKS_Config_Data, stack: cdk.Stack, cluster: eks.Cluster) {
 
-    /////////////////////////////////////////////////////////////////////////////////////////////////////
-    // Install AWS Cloudwatch Observability EKS Addon
-    // Note as of Sept 24th, 2025 there's an edge case bug that breaks fluent-bit's IAM access
-    // (The edge case is specific to integration of IPv6_EKS + IMDSv2 + Pod Identity Agent supplied IAM role + fluent-bit)
-    // So This is purposfully using node IAM rights to workaround the bug. 
-    // https://github.com/aws/aws-for-fluent-bit/issues/983
-    // const aws_cloudwatch_observability_eks_addon_iam_role = new iam.Role(stack, 'aws-cw-observability-eks-addon-iam-role', {
-    //     managedPolicies: [ iam.ManagedPolicy.fromAwsManagedPolicyName('CloudWatchAgentServerPolicy') ],
-    //     assumedBy: (new cdk.aws_iam.ServicePrincipal("pods.eks.amazonaws.com")),
-    // });
-    // aws_cloudwatch_observability_eks_addon_iam_role.assumeRolePolicy!.addStatements( //<-- ! is TypeScript for "I know this variable isn't null"
-    //     new iam.PolicyStatement({
-    //         actions: ['sts:AssumeRole', 'sts:TagSession'],
-    //         principals: [new iam.ServicePrincipal('pods.eks.amazonaws.com')],
-    //     })
-    // );
-    const aws_cloudwatch_observability_eks_addon = new eks.CfnAddon(stack, 'aws-cloudwatch-observability-eks-addon', {
-        clusterName: cluster.clusterName,
-        addonName: 'amazon-cloudwatch-observability',
+    const cw_metrics_observability_inputs: EKS_Metrics_via_CloudWatch_Input_Parameters = {
         addonVersion: Easy_EKS_Dynamic_Config.get_latest_version_of_amazon_cloudwatch_observability_eks_addon(), //OR 'v4.4.0-eksbuild.1'
-        resolveConflicts: 'OVERWRITE',
-        // podIdentityAssociations: [
-        //     {
-        //         serviceAccount: "cloudwatch-agent",
-        //         roleArn: aws_cloudwatch_observability_eks_addon_iam_role.roleArn,
-        //     }
-        // ],
-        // Note about configurationValues:
-        // agent.config.logs.metrics_collected.kubernetes.
-        configurationValues: `{
-            "admissionWebhooks": {},
-            "agent": {
-                "config": {
-                    "logs": {
-                        "metrics_collected": {
-                            "application_signals": {},
-                            "kubernetes": {
-                                "enhanced_container_insights": true,
-                                "accelerated_compute_metrics": false
-                            },
-                        }
-                    },
-                    "traces": {
-                        "traces_collected": {
-                            "application_signals": {}
-                        }
-                    }
-                }
-            },
-            "containerLogs": {
-                "enabled": true,
-                "fluentBit": {
-                    "resources": {
-                        "requests": {
-                            "cpu": "50m",
-                            "memory": "25Mi"
-                        },
-                        "limits": {
-                            "cpu": "500m",
-                            "memory": "250Mi"
-                        }
-                    },
-                }
-            },
-            "dcgmExporter": {
-                "enabled": false
-            },
-            "manager": {},
-            "neuronMonitor": {
-                "enabled": false
-            },
-            "tolerations": [ { "key": "", "operator": "Exists" } ]
-        }`, //aws_cloudwatch_observability_eks_addon configurationValues override
-    }); //end AWS Cloudwatch Observability EKS Addon
-    //^-- This deploys 2 daemonsets of significance:
-    //1. cloudwatch-agent (in amazon-cloudwatch namespace):
-    //   * Generates a log group
-    //     *  /aws/containerinsights/$CLUSTER_NAME/performance
-    //     Don't bother querying this log group.
-    //     It's just a werid implementation detail, that stores metrics embeddeded in a log format.
-    //   * ^- This makes it so you can see metrics in AWS_Console -> CloudWatch -> Container Insights
-    //2. fluent-bit (in amazon-cloudwatch namespace):
-    //   * Docs: https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/Container-Insights-setup-logs-FluentBit.html
-    //   * Generates 2-3 log groups
-    //     1. /aws/containerinsights/CLUSTER_NAME/application  (container logs generated by pods)
-    //     2. /aws/containerinsights/Cluster_Name/dataplane    (containerd & kubelet logs)
-    //     3. /aws/containerinsights/Cluster_Name/host         (dmesg and a few others)
-    //   * ^-- This makes it so you can go to AWS_Console -> CloudWatch -> Log Insights to query container, pod, contatainerd, and kubelet logs
+        enhanced_container_insights: false, //true is probably overkill & more expensive.
+        // false gives -> https://aws.github.io/amazon-cloudwatch-agent/
+        // true gives  -> https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/Container-Insights-metrics-enhanced-EKS.html
+        accelerated_compute_metrics: false,
+        metrics_collection_interval_seconds: 300, //10(expensive and short history), 60(expensive), 300(cheaper) are reasonable values
+    };
+    const metrics_via_cw_eks_addon:eks.CfnAddon = enable_metrics_observability_via_cloudwatch(config,stack,cluster,cw_metrics_observability_inputs);
+    //^-- Metrics via: CloudWatch -> Container Insights
+    
     /////////////////////////////////////////////////////////////////////////////////////////////////////
-
     // v-- most won't need this, so commented out by default
     // const pvc_snapshot_controller = new eks.CfnAddon(stack, 'snapshot-controller', {
     //     clusterName: cluster.clusterName,
@@ -125,6 +48,7 @@ export function deploy_addons(config: Easy_EKS_Config_Data, stack: cdk.Stack, cl
     //     resolveConflicts: 'OVERWRITE',
     //     configurationValues: '{}',
     // });
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
 
 }//end deploy_addons()
 
@@ -137,23 +61,21 @@ export function deploy_essentials(config: Easy_EKS_Config_Data, stack: cdk.Stack
         "apiVersion": "v1",
         "kind": "Namespace",
         "metadata": {
-          "name": "observability"
+          "name": "obs" //short for observability
         }
     };
-    const observability_ns = new eks.KubernetesManifest(stack, "observability",
+    const observability_ns = new eks.KubernetesManifest(stack, "observability-namespace",
         {
             cluster: cluster,
             manifest: [observability_ns_manifest],
             overwrite: true,
             prune: true,
         }
-    );
-
-
+    );  
 
     const kube_prometheus_stack_helm_release = new eks.HelmChart(stack, 'kps-helm', { //kps = kube prometheus stack (grafana & prometheus)
         cluster: cluster,
-        namespace: "observability",
+        namespace: observability_ns_manifest.metadata.name,
         repository: "https://prometheus-community.github.io/helm-charts",
         chart: "kube-prometheus-stack",
         release: 'kps',
@@ -182,7 +104,7 @@ export function deploy_essentials(config: Easy_EKS_Config_Data, stack: cdk.Stack
     const quickwit_Kube_SA = new eks.ServiceAccount(stack, 'quickwit_kube-sa', {
             cluster: cluster,
             name: 'qw-quickwit',
-            namespace: 'observability',
+            namespace: observability_ns_manifest.metadata.name,
             identityType: eks.IdentityType.POD_IDENTITY, //depends on eks-pod-identity-agent addon
             //Note: It's not documented, but this generates 4 things:
             //1. A kube SA in the namespace of the cluster
@@ -231,7 +153,7 @@ export function deploy_essentials(config: Easy_EKS_Config_Data, stack: cdk.Stack
     ///////////////////////////////////////////////////////////////////////////////////////////////////////
     const quickwit_helm_release = new eks.HelmChart(stack, 'qw-helm', {
         cluster: cluster,
-        namespace: "observability",
+        namespace: observability_ns_manifest.metadata.name,
         repository: "https://helm.quickwit.io",
         chart: "quickwit",
         release: 'qw',
