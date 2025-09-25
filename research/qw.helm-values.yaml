@@ -1,0 +1,38 @@
+# helm repo add quickwit https://helm.quickwit.io
+# helm repo update quickwit
+# helm search repo quickwit
+# helm show values quickwit/quickwit
+# cd (this location)
+# helm upgrade --install --version=0.7.18 qw quickwit/quickwit --values=qw.helm-values.yaml -n=observability --create-namespace=true
+# serviceAccount:
+#   create: false #<-- let cdk create it 
+#   annotations: {}
+#   name: "qw-quickwit" #<-- expects cdk to create a sa with this name
+
+securityContext:
+  runAsNonRoot: false
+  runAsUser: 0
+podSecurityContext:
+  fsGroup: 0
+
+environment:
+  QW_LISTEN_ADDRESS: "::"
+
+control_plane:
+  enabled: true
+metastore:
+  replicaCount: 1
+janitor:
+  enabled: true
+indexer:
+  replicaCount: 1
+  startupProbe: null
+  livenessProbe: null
+searcher:
+  enabled: true
+  replicaCount: 1
+  startupProbe: null
+  livenessProbe: null
+################################
+# helm upgrade --install --version=0.7.18 qw quickwit/quickwit --values=qw.helm-values.yaml -n=default
+

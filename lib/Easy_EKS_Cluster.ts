@@ -72,6 +72,7 @@ export class Easy_EKS_Cluster{ //purposefully don't extend stack, to implement b
                 iam.ManagedPolicy.fromAwsManagedPolicyName('AmazonEC2ContainerRegistryReadOnly'),
                 iam.ManagedPolicy.fromAwsManagedPolicyName('AmazonEKS_CNI_Policy'),
                 iam.ManagedPolicy.fromAwsManagedPolicyName('AmazonSSMManagedInstanceCore'),
+                iam.ManagedPolicy.fromAwsManagedPolicyName('CloudWatchAgentServerPolicy'), //workaround https://github.com/aws/aws-for-fluent-bit/issues/983
                 //^-- allows aws managed browser based shell access to private nodes, can be useful for debuging
                 //^-- AWS Systems Manager --> Session Manager --> Start Session
             ],

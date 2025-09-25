@@ -224,7 +224,7 @@ export function deploy_addons(config: Easy_EKS_Config_Data, stack: cdk.Stack, cl
     ///////////////////////////////////////////////////////////////////
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
-    // Install EBS CSI Driver Addon (using cdk bug avoidance logic)
+    // Install EBS CSI Driver Addon (using specific implementation methodology to avoid cdk bug)
     // If you try to use eks.ServiceAccount with eksAddons you'll hit a cdk integration bug, this works around it.
     // (The gist of the bug is it'd fail, because the name would already exist because 2 things would try to create it.)
     const ebs_csi_addon_iam_role = new iam.Role(stack, 'aws-ebs-csi-driver-iam-role', {
