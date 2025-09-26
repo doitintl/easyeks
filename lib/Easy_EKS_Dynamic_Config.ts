@@ -19,6 +19,7 @@ export class Easy_EKS_Dynamic_Config {
     private static latest_version_of_eks_node_monitoring_agent_eks_addon: string;
     private static latest_version_of_ebs_csi_eks_addon: string;
     private static latest_version_of_amazon_cloudwatch_observability_eks_addon: string;
+    private static latest_version_of_snapshot_controller_eks_addon: string;
     private static latest_version_of_kube_proxy_1_31_eks_addon: string;
     private static latest_version_of_kube_proxy_1_32_eks_addon: string;
     private static latest_version_of_kube_proxy_1_33_eks_addon: string;
@@ -55,6 +56,9 @@ export class Easy_EKS_Dynamic_Config {
 
         const cmd8 = `aws eks describe-addon-versions --kubernetes-version=1.33 --addon-name=amazon-cloudwatch-observability --query='addons[].addonVersions[].addonVersion' | jq '.[0]' | tr -d '"|\n|\r'`;
         Easy_EKS_Dynamic_Config.latest_version_of_amazon_cloudwatch_observability_eks_addon = stdout_of_cmd(cmd8); //plausible value = v4.4.0-eksbuild.1
+
+        const cmd9 = `aws eks describe-addon-versions --kubernetes-version=1.33 --addon-name=snapshot-controller --query='addons[].addonVersions[].addonVersion' | jq '.[0]' | tr -d '"|\n|\r'`;
+        Easy_EKS_Dynamic_Config.latest_version_of_snapshot_controller_eks_addon = stdout_of_cmd(cmd9); //plausible value = v8.3.0-eksbuild.1
 
         const kp31 = `aws eks describe-addon-versions --kubernetes-version=1.31 --addon-name=kube-proxy --query='addons[].addonVersions[].addonVersion' | jq '.[0]' | tr -d '"|\n|\r'`;
         Easy_EKS_Dynamic_Config.latest_version_of_kube_proxy_1_31_eks_addon = stdout_of_cmd(kp31); //plausible value = v1.31.10-eksbuild.8
@@ -98,6 +102,10 @@ export class Easy_EKS_Dynamic_Config {
     public static get_latest_version_of_amazon_cloudwatch_observability_eks_addon(): string{
         this.ensure_init();
         return this.latest_version_of_amazon_cloudwatch_observability_eks_addon;
+    }
+    public static get_latest_version_of_snapshot_controller_eks_addon(): string{
+        this.ensure_init();
+        return this.latest_version_of_snapshot_controller_eks_addon;
     }
     public static get_latest_version_of_kube_proxy_1_31_eks_addon(): string{
         this.ensure_init();
