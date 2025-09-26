@@ -74,7 +74,7 @@ export interface EKS_Logs_via_CloudWatch_Input_Parameters {
     //TBD
 }
 
-export function deploy_logs_via_cloudwatch(config: Easy_EKS_Config_Data, stack: cdk.Stack, cluster: eks.Cluster){
+export function enable_logs_observability_via_cloudwatch(config: Easy_EKS_Config_Data, stack: cdk.Stack, cluster: eks.Cluster, input: EKS_Logs_via_CloudWatch_Input_Parameters){
 
 }
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
