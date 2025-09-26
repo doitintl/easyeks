@@ -2,7 +2,7 @@ import * as cdk from 'aws-cdk-lib';
 import * as eks from 'aws-cdk-lib/aws-eks'
 import * as iam from 'aws-cdk-lib/aws-iam';
 import { Easy_EKS_Config_Data } from "../Easy_EKS_Config_Data";
-import { Easy_EKS_Dynamic_Config } from '../Easy_EKS_Dynamic_Config';
+import * as fs from 'fs'; //node.js built in file system module, used to improve fluent-bit config edit UX.
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
@@ -78,7 +78,11 @@ return aws_cloudwatch_observability_eks_addon;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 export interface EKS_Logs_via_CloudWatch_Input_Parameters {
-    //TBD
+    application_log_conf_file_name: string;
+    dataplane_log_conf_file_name: string;
+    fluent_bit_conf_file_name: string;
+    host_log_conf_file_name: string;
+    parsers_conf_file_name: string;
 }
 
 //below is equivalent to & based on $REPO/research/cloudwatch_logs_manual_install.sh
@@ -102,7 +106,7 @@ export function enable_logs_observability_via_cloudwatch(config: Easy_EKS_Config
             manifest: [amazon_cloudwatch_ns_manifest],
             overwrite: true,
             prune: true,
-            skipValidation: true, //might make things faster
+            skipValidation: true, //might make things slightly faster
         }
     );
     const amazon_cloudwatch_ns_CFR = (amazon_cloudwatch_ns.node.defaultChild as cdk.CfnResource);
@@ -397,7 +401,43 @@ export function enable_logs_observability_via_cloudwatch(config: Easy_EKS_Config
             }
         }
     };
-    console.log("hi");
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    //Dynamically Construct fluent-bit ConfigMap from config files
+    let application_log_conf: string = "";
+    let dataplane_log_conf: string = "";
+    let fluent_bit_conf: string = "";
+    let host_log_conf: string = "";
+    let parsers_conf: string = "";
+    try {
+        application_log_conf = fs.readFileSync(`./lib/CW_Observability/${input.application_log_conf_file_name}`, 'utf8');
+        dataplane_log_conf = fs.readFileSync(`./lib/CW_Observability/${input.dataplane_log_conf_file_name}`, 'utf8');
+        fluent_bit_conf = fs.readFileSync(`./lib/CW_Observability/${input.fluent_bit_conf_file_name}`, 'utf8');
+        host_log_conf = fs.readFileSync(`./lib/CW_Observability/${input.host_log_conf_file_name}`, 'utf8');
+        parsers_conf = fs.readFileSync(`./lib/CW_Observability/${input.parsers_conf_file_name}`, 'utf8');
+    } catch (error) {
+        console.error(`Error reading Cloudwatch's fluent-bit config file:`, error);
+    }
+    const fluent_bit_config_configmap_manifest = {
+        "apiVersion": "v1",
+        "kind": "ConfigMap",
+        "metadata": {
+            "name": "fluent-bit-config",
+            "namespace": amazon_cloudwatch_ns_manifest.metadata.name,
+            "labels": {
+                "k8s-app": "fluent-bit"
+            }
+        },
+        "data": {
+            "application-log.conf": application_log_conf,
+            "dataplane-log.conf": dataplane_log_conf,
+            "host-log.conf": host_log_conf,
+            "fluent-bit.conf": fluent_bit_conf,
+            "parsers.conf": parsers_conf,
+        }
+    }
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     const enable_cloudwatch_logs = new eks.KubernetesManifest(stack, "enable-cloudwatch-logs",
         {
             cluster: cluster,
@@ -407,18 +447,17 @@ export function enable_logs_observability_via_cloudwatch(config: Easy_EKS_Config
                 fluent_bit_cluster_role_manifest,
                 fluent_bit_cluster_role_binding_manifest,
                 fluent_bit_daemonset_manifest,
+                fluent_bit_config_configmap_manifest,
             ],
             overwrite: true,
             prune: true,
-            skipValidation: true, //might make things faster
+            skipValidation: true, //might make things slightly faster
         }
     );
     enable_cloudwatch_logs.node.addDependency(amazon_cloudwatch_ns);
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-}
+} //End of function enable_logs_observability_via_cloudwatch()
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 

@@ -187,7 +187,8 @@ export function Apply_Karpenter_YAMLs_with_fixes(stack: cdk.Stack, cluster: eks.
             cluster: cluster,
             manifest: karpenter_YAMLs,
             overwrite: true,
-            prune: true,   
+            prune: true,
+            skipValidation: true, //might make things slightly faster
         }
     );
     //v-- Inform cdk of order of operations
