@@ -1,11 +1,12 @@
 {
+  "ts-node": {
+    "swc": true
+  },
   "compilerOptions": {
-    "target": "ES2020",
+    "incremental": true,
+    "target": "ES2024",
     "module": "commonjs",
-    "lib": [
-      "es2020",
-      "dom"
-    ],
+    "lib": [ "es2024", ],
     "declaration": true,
     "strict": true,
     "noImplicitAny": true,
