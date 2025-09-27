@@ -117,6 +117,7 @@ export class Easy_EKS_Cluster{ //purposefully don't extend stack, to implement b
             clusterName: config.cluster_name,
             version: config.kubernetesVersion,
             kubectlLayer: config.kubectlLayer,
+            clusterLogging: config.control_plane_logging_options_to_enable,
             vpc: config.vpc,
             ipFamily: config.ipMode,
             vpcSubnets: [{ subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS }],

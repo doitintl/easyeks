@@ -15,7 +15,7 @@ import {
 //EasyEKS Admins: edit this file with config to apply to all dev / sandbox cluster's in your org.
 
 export function apply_config(config: Easy_EKS_Config_Data, stack: cdk.Stack) { //config: is of type Easy_EKS_Config_Data
-  config.add_tag("Environment", "Dev");
+    config.add_tag("Environment", "Dev");
 }//end apply_config()
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

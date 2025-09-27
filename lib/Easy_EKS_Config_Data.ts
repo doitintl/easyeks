@@ -34,6 +34,7 @@ export class Easy_EKS_Config_Data { //This object just holds config data.
     workerNodeRole: iam.Role; //used by baselineMNG & Karpenter
     preexisting_cluster_detected: boolean; //true when cluster is detected to be pre-existing
     sg_id_of_cluster_nodes: string; //(cdk doesn't normally supply this, added for convenience)
+    control_plane_logging_options_to_enable?: eks.ClusterLoggingTypes[]; //? is necessary as undefined is used to represent none
 
 
 
@@ -132,6 +133,13 @@ export class Easy_EKS_Config_Data { //This object just holds config data.
             this.clusterViewerAccessAwsAuthConfigmapAccounts.push(account); //then push, as in add, to end of array
             }
         } 
+    }
+    set_control_plane_logging_options_to_enable(array_of_control_plane_logging_options: eks.ClusterLoggingTypes[]){
+        //If array is empty, then leave the variable as undefined (to avoid runtime error)
+        if(array_of_control_plane_logging_options.length===0){ 
+            this.control_plane_logging_options_to_enable = undefined;
+        }
+        else{ this.control_plane_logging_options_to_enable = array_of_control_plane_logging_options; }
     }
     set_KMS_Key_Alias_to_provision_and_reuse(kms_key_alias: string){
         /*Note (About UX improvement logic):
