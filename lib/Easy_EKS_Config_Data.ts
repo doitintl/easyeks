@@ -19,6 +19,7 @@ export class Easy_EKS_Config_Data { //This object just holds config data.
     //Config_Var: Data_Type
     //(var?: is TS syntax to ignore initial null value)
     cluster_name: string;
+    cluster_region: string; //for convenience
     vpc: ec2.Vpc; //populated with pre-existing VPC
     kubernetesVersion: KubernetesVersion;
     kubectlLayer: cdk.aws_lambda.ILayerVersion;
@@ -31,8 +32,18 @@ export class Easy_EKS_Config_Data { //This object just holds config data.
     baselineNodesNumber: number;
     baselineNodesType: eks.CapacityType; //enum eks.CapacityType.SPOT or eks.CapacityType.ON_DEMAND
     workerNodeRole: iam.Role; //used by baselineMNG & Karpenter
-    constructor(cluster_name: string){
-        this.cluster_name=cluster_name;
+    preexisting_cluster_detected: boolean; //true when cluster is detected to be pre-existing
+    sg_id_of_cluster_nodes: string; //(cdk doesn't normally supply this, added for convenience)
+
+
+
+    constructor(cluster_name: string, cluster_region: string){
+        this.cluster_name = cluster_name;
+        this.cluster_region = cluster_region;
+        this.preexisting_cluster_detected = true_when_cluster_exists(cluster_name, cluster_region);
+        if(this.preexisting_cluster_detected){
+            this.sg_id_of_cluster_nodes = lookup_sg_id_of_cluster_nodes(cluster_name, cluster_region);
+        }
         //Constructor with minimal args is on purpose for desired UX of "builder pattern".
         //The idea is to add partial configuration snippets over time/as multiple operations
         //rather than populate a complete config all at once in one go.
@@ -137,3 +148,34 @@ export class Easy_EKS_Config_Data { //This object just holds config data.
     //     this.kmsKey = kms.Key.fromLookup(stack, 'pre-existing-kms-key', { aliasName: this.kmsKeyAlias });
     // } 
 }//end of Easy_EKS_Config_Data
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+function true_when_cluster_exists(cluster_name: string, region: string){
+    const cmd = `aws eks describe-cluster --name=${cluster_name} --region=${region}`
+    const cmd_return_code = shell.exec(cmd, {silent:true}).code;
+    if(cmd_return_code===0){ return true; } //return code 0 = pre-existing cluster found
+    else{ return false; } //return code 254 = cluster not found
+}//end of true_when_cluster_exists()
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+function lookup_sg_id_of_cluster_nodes(cluster_name: string, cluster_region: string){
+    //This seems to be generated after cluster exists, so this logic only runs against pre-existing clusters
+    let sg_id_of_cluster_nodes: string = "";
+    const cmd_to_lookup_sg_id = `aws ec2 describe-security-groups --region=${cluster_region} \
+                                --filters Name=tag:aws:eks:cluster-name,Values=${cluster_name} \
+                                --filters Name=tag:kubernetes.io/cluster/${cluster_name},Values=owned \
+                                --query "SecurityGroups[*].GroupId" \
+                                --output text | tr -d '\n|\r'`; //<-- |tr -d, means translate delete (remove) new lines 
+    const cmd_to_lookup_sg_id_results = shell.exec(cmd_to_lookup_sg_id, {silent:true});
+    if(cmd_to_lookup_sg_id_results.code===0){
+        sg_id_of_cluster_nodes = cmd_to_lookup_sg_id_results.stdout;
+    }
+    return sg_id_of_cluster_nodes; //"" or real-value, (should only return real-value when called against pre-existing cluster)
+}//end of set_sg_id_of_cluster_nodes()
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

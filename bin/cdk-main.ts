@@ -144,21 +144,23 @@ dev1_eks.stage_deployment_of_global_baseline_eks_addons();
 dev1_eks.stage_deployment_of_my_orgs_baseline_eks_addons();
 dev1_eks.stage_deployment_of_lower_envs_eks_addons();
 dev1_eks.stage_deployment_of_dev_eks_addons();
-//^-- `cdk deploy dev1-eks-cluster has a deployment time of ~17mins
+//^-- `cdk deploy dev1-eks-cluster` has a deployment time of ~17mins
 ///////////////////////////////////////////////////////////////////////
 dev1_eks.stage_deployment_of_global_baseline_eks_essentials();
 dev1_eks.stage_deployment_of_my_orgs_baseline_eks_essentials();
 dev1_eks.stage_deployment_of_lower_envs_eks_essentials();
 dev1_eks.stage_deployment_of_dev_eks_essentials();
-//^-- `cdk deploy dev1-eks-essentials has a deployment time of ~2mins
+//^-- `cdk deploy dev1-eks-essentials` has a deployment time of ~2mins
 ///////////////////////////////////////////////////////////////////////
 dev1_eks.stage_deployment_of_global_baseline_eks_workloads();
 dev1_eks.stage_deployment_of_my_orgs_baseline_eks_workloads();
 dev1_eks.stage_deployment_of_lower_envs_eks_workloads();
 dev1_eks.stage_deployment_of_dev_eks_workloads();
-//^-- `cdk deploy dev1-eks-workloads has a deployment time of ~1min
+//^-- `cdk deploy dev1-eks-workloads` has a deployment time of ~1min
 
-
+// Tip for implementing iterative changes faster:
+// Adding --require-approval=never can significantly improve feedback loop from 1m32s to 24s
+// `cdk deploy dev1-eks-cluster --require-approval=never`
 
 ///////////////////////////////////////////////////////////////////////////////////////////
 

@@ -34,6 +34,7 @@ export class Easy_EKS_Cluster{ //purposefully don't extend stack, to implement b
     //Class Variables/Properties:
     stack: cdk.Stack;
     cluster: eks.Cluster;
+    cluster_exists: boolean;
 
     //Class Constructor:
     constructor(storage_for_stacks_state: Construct, cluster_name: string, stack_config: cdk.StackProps) {
@@ -71,6 +72,7 @@ export class Easy_EKS_Cluster{ //purposefully don't extend stack, to implement b
                 iam.ManagedPolicy.fromAwsManagedPolicyName('AmazonEC2ContainerRegistryReadOnly'),
                 iam.ManagedPolicy.fromAwsManagedPolicyName('AmazonEKS_CNI_Policy'),
                 iam.ManagedPolicy.fromAwsManagedPolicyName('AmazonSSMManagedInstanceCore'),
+                iam.ManagedPolicy.fromAwsManagedPolicyName('CloudWatchAgentServerPolicy'), //workaround https://github.com/aws/aws-for-fluent-bit/issues/983
                 //^-- allows aws managed browser based shell access to private nodes, can be useful for debuging
                 //^-- AWS Systems Manager --> Session Manager --> Start Session
             ],
@@ -132,6 +134,21 @@ export class Easy_EKS_Cluster{ //purposefully don't extend stack, to implement b
         'Note: This only works for the user/role deploying cdk and IAM Whitelisted Admins.\n'+
         '      To learn more review ./easyeks/config/eks/lower_envs_eks_config.ts';
         const output_msg = new cdk.CfnOutput(this.stack, 'iamWhitelistedKubeConfigCmd', { value: msg });
+        ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+        ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        //Logic to add nicer Name Tags to EKS's Security Groups
+        //Update Control Plane SG:
+        const eks_control_plane_sg = (this.stack.node.tryFindChild(config.cluster_name)?.node.tryFindChild('ControlPlaneSecurityGroup')?.node.defaultChild as cdk.CfnResource);
+        cdk.Tags.of(eks_control_plane_sg).add('Name', `${config.cluster_name}/control-plane`);
+        //Update Cluster Nodes SG:
+        //v-- This implementation works around a cdk limitation
+        if(config.preexisting_cluster_detected){
+            const cmd_to_update_sg_tag = `aws ec2 create-tags \
+                                         --resources ${config.sg_id_of_cluster_nodes} \
+                                         --tags Key=Name,Value=${config.cluster_name}/cluster-nodes`
+            shell.exec(cmd_to_update_sg_tag, {silent:true});
+        }
         ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
         ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -482,7 +499,7 @@ function initalize_baseline_LT_Spec(stack: cdk.Stack, config: Easy_EKS_Config_Da
       launchTemplateName: `${config.cluster_name}/baseline-MNG/arm64-bottlerocket-${baseline_node_type}`, //EKS Layer2 construct makes 2 LT's for some reason, uses the eks-* one.
       //blockDevices: [Baseline_MNG_Disk_AL2023],
       blockDevices: [Baseline_MNG_Disk_Bottlerocket_1_of_2, Baseline_MNG_Disk_Bottlerocket_2_of_2],
-      userData: Bottlerocket_baseline_MNG_userdata, //cdk.Fn.base64(Bottlerocket_baseline_MNG_userdata),
+      userData: Bottlerocket_baseline_MNG_userdata,
     });
     cdk.Tags.of(Baseline_MNG_LT).add("Name", `${config.cluster_name}/baseline-MNG/arm64-bottlerocket-${baseline_node_type}`);
     const tags = Object.entries(config.tags ?? {});

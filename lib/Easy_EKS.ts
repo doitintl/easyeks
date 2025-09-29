@@ -33,19 +33,18 @@ export class Easy_EKS{ //purposefully don't extend stack, to implement builder p
     //Class Variables/Properties:
     eks_config: Easy_EKS_Config_Data;
     eks_cluster: Easy_EKS_Cluster; //creates eks cluster + manageds eks addons
-    cluster_exists: boolean; //true when cluster is pre-existing
     eks_essentials: Easy_EKS_Essentials; //imports eks cluster + deploys production readiness essentials (karpenter, AWS LB Controller, node local dns cache, storage class, observability, etc.)
     eks_workloads: Easy_EKS_Workloads; //imports eks cluster + deploys workloads
 
     //Class Constructor:
     constructor(storage_for_stacks_state: Construct, cluster_name: string, stack_config: cdk.StackProps) {
-        this.eks_config = new Easy_EKS_Config_Data(cluster_name);
+        let cluster_region = process.env.CDK_DEFAULT_REGION!; //<-- better readability
+        this.eks_config = new Easy_EKS_Config_Data(cluster_name, cluster_region);
         this.eks_cluster = new Easy_EKS_Cluster(storage_for_stacks_state, cluster_name, stack_config);
-        this.cluster_exists = true_when_cluster_exists(cluster_name, this.eks_cluster.stack.region);
         //Constructor with minimal args is on purpose for desired UX of "builder pattern".
         //The idea is to add partial configuration snippets over time/as multiple operations
         //rather than populate a complete config all at once in one go.
-        if(this.cluster_exists){
+        if(this.eks_config.preexisting_cluster_detected){
             this.eks_essentials = new Easy_EKS_Essentials(storage_for_stacks_state, cluster_name, stack_config);
             this.eks_workloads = new Easy_EKS_Workloads(storage_for_stacks_state, cluster_name, stack_config);
         }
@@ -286,16 +285,3 @@ export class Easy_EKS{ //purposefully don't extend stack, to implement builder p
 
 }//end class Easy_EKS
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-
-
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-function true_when_cluster_exists(cluster_name: string, region: string){
-    const cmd = `aws eks describe-cluster --name=${cluster_name} --region=${region}`
-    const cmd_return_code = shell.exec(cmd, {silent:true}).code;
-    if(cmd_return_code===0){ return true; } //return code 0 = pre-existing cluster found
-    else{ return false; } //return code 254 = cluster not found
-}
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-
