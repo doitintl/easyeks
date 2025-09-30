@@ -2,14 +2,19 @@ import { Easy_EKS_Config_Data } from '../../lib/Easy_EKS_Config_Data';
 import { Easy_EKS_Dynamic_Config } from '../../lib/Easy_EKS_Dynamic_Config';
 import * as cdk from 'aws-cdk-lib';
 import * as eks from 'aws-cdk-lib/aws-eks'
-import { EKS_Metrics_via_CloudWatch_Input_Parameters, enable_metrics_observability_via_cloudwatch } from "../../lib/CW_Observability/CW_Observability";
-import { EKS_Logs_via_CloudWatch_Input_Parameters, enable_logs_observability_via_cloudwatch } from "../../lib/CW_Observability/CW_Observability";
+import * as GPQ from '../../lib/GPQ_Observability';
+import { 
+    EKS_Metrics_via_CloudWatch_Input_Parameters, 
+    enable_metrics_observability_via_cloudwatch,
+    EKS_Logs_via_CloudWatch_Input_Parameters,
+    enable_logs_observability_via_cloudwatch
+} from '../../lib/CW_Observability/CW_Observability';
 import {
-  Apply_Podinfo_Helm_Chart,
-  Apply_Podinfo_Http_Alb_YAML,
-  Apply_Podinfo_Https_Alb_YAML,
-  Podinfo_Helm_Config,
-} from "../../lib/Podinfo_Manifests";
+    Apply_Podinfo_Helm_Chart,
+    Apply_Podinfo_Http_Alb_YAML,
+    Apply_Podinfo_Https_Alb_YAML,
+    Podinfo_Helm_Config,
+} from '../../lib/Podinfo_Manifests';
 
 //Intended Use: 
 //EasyEKS Admins: edit this file with config to apply to all dev / sandbox cluster's in your org.
@@ -75,6 +80,14 @@ export function deploy_essentials(config: Easy_EKS_Config_Data, stack: cdk.Stack
     //      2. /aws/containerinsights/$CLUSTER_NAME/dataplane    (containerd & kubelet logs)
     //    * Deploys daemonset fluent-bit in namespace amazon-cloudwatch
     /////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    // const gpq_logs_observability_inputs: object = {
+    //     //TO DO
+    // };
+    // GPQ.enable_logs_observability_via_quickwit(config, stack, cluster, gpq_logs_observability_inputs);
+    const GPQ_Observability = new GPQ.Grafana_Prometheus_Quickwit(stack, cluster);
+
+
 
 }//end deploy_essentials()
 

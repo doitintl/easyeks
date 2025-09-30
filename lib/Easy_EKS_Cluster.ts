@@ -35,6 +35,8 @@ export class Easy_EKS_Cluster{ //purposefully don't extend stack, to implement b
     stack: cdk.Stack;
     cluster: eks.Cluster;
     cluster_exists: boolean;
+    //eks_config: Easy_EKS_Config_Data; //<-- doesn't exist within this class on purpose
+    //^-- Avoid multiple instances to prevent unexpected results from multiple config object instances having de-synchronized config.
 
     //Class Constructor:
     constructor(storage_for_stacks_state: Construct, cluster_name: string, stack_config: cdk.StackProps) {
