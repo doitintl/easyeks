@@ -32,6 +32,8 @@ export class Easy_EKS_Essentials{ //purposefully don't extend stack, to implemen
     //Class Variables/Properties:
     stack: cdk.Stack;
     cluster: eks.ICluster;
+    //eks_config: Easy_EKS_Config_Data; //<-- doesn't exist within this class on purpose
+    //^-- Avoid multiple instances to prevent unexpected results from multiple config object instances having de-synchronized config.
 
     //Class Constructor:
     constructor(storage_for_stacks_state: Construct, cluster_name: string, stack_config: cdk.StackProps) {
@@ -81,7 +83,11 @@ export class Easy_EKS_Essentials{ //purposefully don't extend stack, to implemen
         //      to avoid cdk specific scalability limits. It also mitigated other issues and lead to multiple UX improvements.
     }
     //v-- these depend on config being initialized (must be called after the above, Easy_EKS.ts's global_baseline was tweaked to make this less of an issue.)
-    stage_deployment_of_global_baseline_eks_essentials(config: Easy_EKS_Config_Data){ global_baseline_eks_config.deploy_essentials(config, this.stack, this.cluster); }
+    stage_deployment_of_global_baseline_eks_essentials(config: Easy_EKS_Config_Data){ 
+        config.initialize_GPQV_Observability(this.stack, this.cluster); //object initializes as empty, so init is fine even if not used.
+        config.initialize_CW_Observability(this.stack, this.cluster); //object initializes as empty, so init is fine even if not used.
+        global_baseline_eks_config.deploy_essentials(config, this.stack, this.cluster); 
+    }
     stage_deployment_of_my_orgs_baseline_eks_essentials(config: Easy_EKS_Config_Data){ my_orgs_baseline_eks_config.deploy_essentials(config, this.stack, this.cluster); }
     stage_deployment_of_lower_envs_eks_essentials(config: Easy_EKS_Config_Data){ lower_envs_eks_config.deploy_essentials(config, this.stack, this.cluster); }
     stage_deployment_of_higher_envs_eks_essentials(config: Easy_EKS_Config_Data){ higher_envs_eks_config.deploy_essentials(config, this.stack, this.cluster); }

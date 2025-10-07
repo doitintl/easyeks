@@ -2,20 +2,31 @@ import { Easy_EKS_Config_Data } from '../../lib/Easy_EKS_Config_Data';
 import { Easy_EKS_Dynamic_Config } from '../../lib/Easy_EKS_Dynamic_Config';
 import * as cdk from 'aws-cdk-lib';
 import * as eks from 'aws-cdk-lib/aws-eks'
-import { EKS_Metrics_via_CloudWatch_Input_Parameters, enable_metrics_observability_via_cloudwatch } from "../../lib/CW_Observability/CW_Observability";
-import { EKS_Logs_via_CloudWatch_Input_Parameters, enable_logs_observability_via_cloudwatch } from "../../lib/CW_Observability/CW_Observability";
+import * as ec2 from 'aws-cdk-lib/aws-ec2'
 import {
-  Apply_Podinfo_Helm_Chart,
-  Apply_Podinfo_Http_Alb_YAML,
-  Apply_Podinfo_Https_Alb_YAML,
-  Podinfo_Helm_Config,
-} from "../../lib/Podinfo_Manifests";
+    Grafana_Input_Parameters,
+    Prometheus_Input_Parameters,
+    Quickwit_Input_Parameters,
+    Vector_Input_Parameters,
+    Grafana_Prometheus_Quickwit_Vector,
+} from '../../lib/GPQV_Observability';
+import { 
+    CloudWatch_Metrics_Input_Parameters,
+    CloudWatch_Logs_Input_Parameters,
+    CloudWatch_Metrics_and_Logs_Observability
+} from '../../lib/CW_Observability/CW_Observability';
+import {
+    Apply_Podinfo_Helm_Chart,
+    Apply_Podinfo_Http_Alb_YAML,
+    Apply_Podinfo_Https_Alb_YAML,
+    Podinfo_Helm_Config,
+} from '../../lib/Podinfo_Manifests';
 
 //Intended Use: 
 //EasyEKS Admins: edit this file with config to apply to all dev / sandbox cluster's in your org.
 
 export function apply_config(config: Easy_EKS_Config_Data, stack: cdk.Stack) { //config: is of type Easy_EKS_Config_Data
-  config.add_tag("Environment", "Dev");
+    config.add_tag("Environment", "Dev");
 }//end apply_config()
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -23,21 +34,6 @@ export function apply_config(config: Easy_EKS_Config_Data, stack: cdk.Stack) { /
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 export function deploy_addons(config: Easy_EKS_Config_Data, stack: cdk.Stack, cluster: eks.Cluster) {
-
-    /////////////////////////////////////////////////////////////////////////////////////////////////////
-    const cw_metrics_observability_inputs: EKS_Metrics_via_CloudWatch_Input_Parameters = {
-        addonVersion: Easy_EKS_Dynamic_Config.get_latest_version_of_amazon_cloudwatch_observability_eks_addon(), //OR 'v4.4.0-eksbuild.1'
-        enhanced_container_insights: false, //true is probably overkill & more expensive.
-        accelerated_compute_metrics: false,
-        metrics_collection_interval_seconds: 300, //10(expensive and short history), 60(expensive), 300(cheaper) are reasonable values
-        // enhanced false gives -> https://aws.github.io/amazon-cloudwatch-agent/
-        // enhanced true  gives -> https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/Container-Insights-metrics-enhanced-EKS.html
-    };
-    // const metrics_via_cw_eks_addon:eks.CfnAddon = enable_metrics_observability_via_cloudwatch(config,stack,cluster,cw_metrics_observability_inputs);
-    // ^--Uncommenting the one line directly above:
-    //    * Enables Metrics via: CloudWatch -> Container Insights
-    //    * Deploys daemonset cloudwatch-agent in namespace amazon-cloudwatch
-    /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
     // v-- most won't need this, so commented out by default
@@ -59,22 +55,41 @@ export function deploy_addons(config: Easy_EKS_Config_Data, stack: cdk.Stack, cl
 export function deploy_essentials(config: Easy_EKS_Config_Data, stack: cdk.Stack, cluster: eks.ICluster){
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
-    const cw_logs_observability_inputs: EKS_Logs_via_CloudWatch_Input_Parameters = {
-        application_log_conf_file_name: "default-application-log.conf",
-        dataplane_log_conf_file_name: "default-dataplane-log.conf",
-        fluent_bit_conf_file_name: "default-fluent-bit.conf",
-        host_log_conf_file_name: "default-host-log.conf",
-        parsers_conf_file_name: "default-parsers.conf",
-        //If you want to modify, then copy and edit files in './lib/CW_Observability/' (95% of people won't need to)
-    };
-    //enable_logs_observability_via_cloudwatch(config,stack,cluster,cw_logs_observability_inputs);
+    //config.CW.deploy_configured_cloudwatch_metrics_observability(config);
+    // ^--Uncommenting the one line directly above:
+    //    * Enables Metrics via: CloudWatch -> Container Insights
+    //    * Deploys in namespace amazon-cloudwatch
+    //      * daemonset cloudwatch-agent
+    //      * replicaset amazon-cloudwatch-observability-controller-manager
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
+    //config.CW.deploy_configured_cloudwatch_logs_observability(config);
     // ^--Uncommenting the one line directly above:
     //    * Enables Logs via: CloudWatch -> Log Insights to query container, pod, contatainerd, and kubelet logs
     //      You'll see 2 log groups: (a 3rd named host isn't seen, because it's not relevant to bottlerocket AMI)
     //      1. /aws/containerinsights/$CLUSTER_NAME/application  (container logs generated by pods)
     //      2. /aws/containerinsights/$CLUSTER_NAME/dataplane    (containerd & kubelet logs)
-    //    * Deploys daemonset fluent-bit in namespace amazon-cloudwatch
+    //    * Deploys in namespace amazon-cloudwatch
+    //      * daemonset fluent-bit 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    const quickwit_input:Quickwit_Input_Parameters = {
+        enabled: true,
+        rds_instance_type: ec2.InstanceType.of(ec2.InstanceClass.BURSTABLE4_GRAVITON, ec2.InstanceSize.MICRO), //t4g.micro
+    };
+    const vector_input:Vector_Input_Parameters = {
+        enabled: false,
+    };
+    const prometheus_input:Prometheus_Input_Parameters = {
+        enabled: false,
+    }
+    const grafana_input:Grafana_Input_Parameters = {
+        enabled: false,
+    }
+    config.GPQV.set_input_parameters_of_quickwit(quickwit_input);
+    config.GPQV.set_input_parameters_of_vector(vector_input);
+    config.GPQV.set_input_parameters_of_prometheus(prometheus_input);
+    config.GPQV.set_input_parameters_of_grafana(grafana_input);
+    config.GPQV.deploy_configured_GPQV_Observability_Stack(config);
 
 }//end deploy_essentials()
 

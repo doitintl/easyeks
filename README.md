@@ -124,7 +124,7 @@ An opinionated bundling of automation & Infrastructure as code that aims to:
          versions will be better, that doesn't mean the older versions will be bad. Any version
          of the template new or old should be updatable to latest cdk, eks, helm charts, etc.
        * You're supposed to treat each release of easyeks as your own personal fork and make it
-         your own, threat it as a starting point and modify it however you want.
+         your own, treat it as a starting point and modify it however you want.
        * The only time you may want to consider updating to a new release of easyeks is if you
          have the opportunity to start over from scratch, or think it's worth doing a blue green
          cutover. One strategy you may want to use is to use early pre-alpha releases of easyeks

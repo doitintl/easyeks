@@ -37,6 +37,13 @@ export function apply_config(config: Easy_EKS_Config_Data, stack: cdk.Stack){ //
     //Note: As of Sept 9th, 2025 KubectlV33Layer (which currently has latest available versions of kubectl & helm)
     //      results in error 'Error: media type "application/vnd.cncf.helm.chart.provenance.v1.prov" is not allowed'
     //It's safe to permanently use old versions of both apps.
+    config.set_control_plane_logging_options_to_enable([
+        // eks.ClusterLoggingTypes.API,
+        // eks.ClusterLoggingTypes.AUDIT,
+        // eks.ClusterLoggingTypes.AUTHENTICATOR,
+        // eks.ClusterLoggingTypes.CONTROLLER_MANAGER,
+        // eks.ClusterLoggingTypes.SCHEDULER,
+    ]);    
 
 }//end apply_config()
 

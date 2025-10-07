@@ -31,7 +31,7 @@ import { Easy_EKS_Workloads } from './Easy_EKS_Workloads';
 export class Easy_EKS{ //purposefully don't extend stack, to implement builder pattern and give more flexibility for imperative logic.
 
     //Class Variables/Properties:
-    eks_config: Easy_EKS_Config_Data;
+    eks_config: Easy_EKS_Config_Data; //Avoid multiple instances to prevent unexpected results from multiple config object instances having de-synchronized config.
     eks_cluster: Easy_EKS_Cluster; //creates eks cluster + manageds eks addons
     eks_essentials: Easy_EKS_Essentials; //imports eks cluster + deploys production readiness essentials (karpenter, AWS LB Controller, node local dns cache, storage class, observability, etc.)
     eks_workloads: Easy_EKS_Workloads; //imports eks cluster + deploys workloads

@@ -12,9 +12,15 @@ import * as shell from 'shelljs'; //npm install shelljs && npm i --save-dev @typ
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //Local Library Imports:
 import { validateTag } from './Utilities';
+import * as gqpv from './GPQV_Observability';
+import * as cw from './CW_Observability/CW_Observability';
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-export class Easy_EKS_Config_Data { //This object just holds config data.
+export class Easy_EKS_Config_Data { //This object just holds config data
+    //Code Architectural decision & expectations:
+    //1 instance of Easy_EKS should have 1 instance of this object. This is to avoid unexpected behavior,
+    //which could occur if multiple instances were allowed to exist, as they could become de-synchronized
+
     //Typescript(TS) readability notes
     //Config_Var: Data_Type
     //(var?: is TS syntax to ignore initial null value)
@@ -34,6 +40,9 @@ export class Easy_EKS_Config_Data { //This object just holds config data.
     workerNodeRole: iam.Role; //used by baselineMNG & Karpenter
     preexisting_cluster_detected: boolean; //true when cluster is detected to be pre-existing
     sg_id_of_cluster_nodes: string; //(cdk doesn't normally supply this, added for convenience)
+    control_plane_logging_options_to_enable?: eks.ClusterLoggingTypes[]; //? is necessary as undefined is used to represent none
+    GPQV: gqpv.Grafana_Prometheus_Quickwit_Vector; //holds a mix of config, state, and functions specific to GPQV Observability Stack
+    CW: cw.CloudWatch_Metrics_and_Logs_Observability; //holds a mix of config, state, and functions specific to CW Observability Stack
 
 
 
@@ -133,6 +142,13 @@ export class Easy_EKS_Config_Data { //This object just holds config data.
             }
         } 
     }
+    set_control_plane_logging_options_to_enable(array_of_control_plane_logging_options: eks.ClusterLoggingTypes[]){
+        //If array is empty, then leave the variable as undefined (to avoid runtime error)
+        if(array_of_control_plane_logging_options.length===0){ 
+            this.control_plane_logging_options_to_enable = undefined;
+        }
+        else{ this.control_plane_logging_options_to_enable = array_of_control_plane_logging_options; }
+    }
     set_KMS_Key_Alias_to_provision_and_reuse(kms_key_alias: string){
         /*Note (About UX improvement logic):
         Expectation is for end user to pass in value like "eks/lower-envs",
@@ -146,7 +162,23 @@ export class Easy_EKS_Config_Data { //This object just holds config data.
     //Potential future logic mentioned in my_orgs_baseline_eks_config's storage class manifest
     // set_KMS_Key(stack: cdk.Stack){
     //     this.kmsKey = kms.Key.fromLookup(stack, 'pre-existing-kms-key', { aliasName: this.kmsKeyAlias });
-    // } 
+    // }
+    initialize_GPQV_Observability(stack: cdk.Stack, cluster: eks.ICluster){
+        if(!this.GPQV){ //if uninitialized, then initialize
+            this.GPQV = new gqpv.Grafana_Prometheus_Quickwit_Vector(stack, cluster);
+            //The purpose of this logic is to avoid issues, in the event that redundant calls are made.
+            //Easy_EKS_Essentials.ts has a method stage_deployment_of_global_baseline_eks_essentials
+            //Which is expected to initialize this so users don't have to.
+        }
+    }
+    initialize_CW_Observability(stack: cdk.Stack, cluster: eks.ICluster){
+        if(!this.CW){ //if uninitialized, then initialize
+            this.CW = new cw.CloudWatch_Metrics_and_Logs_Observability(stack, cluster);
+            //The purpose of this logic is to avoid issues, in the event that redundant calls are made.
+            //Easy_EKS_Essentials.ts has a method stage_deployment_of_global_baseline_eks_essentials
+            //Which is expected to initialize this so users don't have to.
+        }
+    }
 }//end of Easy_EKS_Config_Data
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
