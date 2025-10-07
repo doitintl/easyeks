@@ -4,6 +4,11 @@ import * as cdk from 'aws-cdk-lib';
 import * as iam from 'aws-cdk-lib/aws-iam';
 import * as eks from 'aws-cdk-lib/aws-eks';
 import request from 'sync-request-curl'; //npm install sync-request-curl (cdk requires sync functions, async not allowed)
+import { 
+    CloudWatch_Metrics_Input_Parameters,
+    CloudWatch_Logs_Input_Parameters,
+    CloudWatch_Metrics_and_Logs_Observability
+} from '../../lib/CW_Observability/CW_Observability';
 //Intended Use: 
 //A baseline config file (to be applied to all EasyEKS Clusters)
 //That 95% of global users will feel comfortable using with 0 changes, but can change.
@@ -51,6 +56,32 @@ export function deploy_addons(config: Easy_EKS_Config_Data, stack: cdk.Stack, cl
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 export function deploy_essentials(config: Easy_EKS_Config_Data, stack: cdk.Stack, cluster: eks.ICluster){
+
+    //Note: This is only staging configuration for a potential deployment.
+    //It's not actually deploying anything
+    //Also you can overide / replace either of these global baseline configurations, by calling the set_input_parameters()
+    //from another config.ts file, which will replace the staged global baseline configuration.
+    const cw_metrics_observability_inputs: CloudWatch_Metrics_Input_Parameters = {
+        addonVersion: Easy_EKS_Dynamic_Config.get_latest_version_of_amazon_cloudwatch_observability_eks_addon(), //OR 'v4.4.0-eksbuild.1'
+        enhanced_container_insights: false, //true is probably overkill & more expensive.
+        accelerated_compute_metrics: false,
+        metrics_collection_interval_seconds: 300, //10(expensive and short history), 60(expensive), 300(cheaper) are reasonable values
+        // enhanced false gives -> https://aws.github.io/amazon-cloudwatch-agent/
+        // enhanced true  gives -> https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/Container-Insights-metrics-enhanced-EKS.html
+    };
+    config.CW.set_input_parameters_of_cloudwatch_metrics(cw_metrics_observability_inputs);
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
+    const cw_logs_observability_inputs: CloudWatch_Logs_Input_Parameters = {
+        application_log_conf_file_name: "default-application-log.conf",
+        dataplane_log_conf_file_name: "default-dataplane-log.conf",
+        fluent_bit_conf_file_name: "default-fluent-bit.conf",
+        host_log_conf_file_name: "default-host-log.conf",
+        parsers_conf_file_name: "default-parsers.conf",
+        //If you want to modify, then copy and edit files in './lib/CW_Observability/' (95% of people won't need to)
+    };
+    config.CW.set_input_parameters_of_cloudwatch_logs(cw_logs_observability_inputs);
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
 
 }//end deploy_essentials()
 
