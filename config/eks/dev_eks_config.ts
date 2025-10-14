@@ -3,18 +3,7 @@ import { Easy_EKS_Dynamic_Config } from '../../lib/Easy_EKS_Dynamic_Config';
 import * as cdk from 'aws-cdk-lib';
 import * as eks from 'aws-cdk-lib/aws-eks'
 import * as ec2 from 'aws-cdk-lib/aws-ec2'
-import {
-    Grafana_Input_Parameters,
-    Prometheus_Input_Parameters,
-    Quickwit_Input_Parameters,
-    Vector_Input_Parameters,
-    Grafana_Prometheus_Quickwit_Vector,
-} from '../../lib/GPQV_Observability';
-import { 
-    CloudWatch_Metrics_Input_Parameters,
-    CloudWatch_Logs_Input_Parameters,
-    CloudWatch_Metrics_and_Logs_Observability
-} from '../../lib/CW_Observability/CW_Observability';
+import * as fo from '../../lib/Frugal_Observability';
 import {
     Apply_Podinfo_Helm_Chart,
     Apply_Podinfo_Http_Alb_YAML,
@@ -55,14 +44,14 @@ export function deploy_addons(config: Easy_EKS_Config_Data, stack: cdk.Stack, cl
 export function deploy_essentials(config: Easy_EKS_Config_Data, stack: cdk.Stack, cluster: eks.ICluster){
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
-    //config.CW.deploy_configured_cloudwatch_metrics_observability(config);
+    ///config.CloudWatch_Observability.deploy_configured_cloudwatch_metrics_observability(config);
     // ^--Uncommenting the one line directly above:
     //    * Enables Metrics via: CloudWatch -> Container Insights
     //    * Deploys in namespace amazon-cloudwatch
     //      * daemonset cloudwatch-agent
     //      * replicaset amazon-cloudwatch-observability-controller-manager
     /////////////////////////////////////////////////////////////////////////////////////////////////////
-    //config.CW.deploy_configured_cloudwatch_logs_observability(config);
+    //config.CloudWatch_Observability.deploy_configured_cloudwatch_logs_observability(config);
     // ^--Uncommenting the one line directly above:
     //    * Enables Logs via: CloudWatch -> Log Insights to query container, pod, contatainerd, and kubelet logs
     //      You'll see 2 log groups: (a 3rd named host isn't seen, because it's not relevant to bottlerocket AMI)
@@ -72,24 +61,15 @@ export function deploy_essentials(config: Easy_EKS_Config_Data, stack: cdk.Stack
     //      * daemonset fluent-bit 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    const quickwit_input:Quickwit_Input_Parameters = {
+    const logs_db_input_parameters:fo.Victoria_Logs_Single_Node_Input_Parameters = {
         enabled: true,
-        rds_instance_type: ec2.InstanceType.of(ec2.InstanceClass.BURSTABLE4_GRAVITON, ec2.InstanceSize.MICRO), //t4g.micro
     };
-    const vector_input:Vector_Input_Parameters = {
+    const logs_agent_input_parameters:fo.Vector_Log_Shipping_Agent_Input_Parameters = {
         enabled: false,
     };
-    const prometheus_input:Prometheus_Input_Parameters = {
-        enabled: false,
-    }
-    const grafana_input:Grafana_Input_Parameters = {
-        enabled: false,
-    }
-    config.GPQV.set_input_parameters_of_quickwit(quickwit_input);
-    config.GPQV.set_input_parameters_of_vector(vector_input);
-    config.GPQV.set_input_parameters_of_prometheus(prometheus_input);
-    config.GPQV.set_input_parameters_of_grafana(grafana_input);
-    config.GPQV.deploy_configured_GPQV_Observability_Stack(config);
+    config.Frugal_Observability.set_input_parameters_of_logs_db(logs_db_input_parameters);
+    config.Frugal_Observability.set_input_parameters_of_logs_agent(logs_agent_input_parameters);
+    config.Frugal_Observability.deploy_configured_Frugal_Observability_Stack(config);
 
 }//end deploy_essentials()
 
