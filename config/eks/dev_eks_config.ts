@@ -44,7 +44,7 @@ export function deploy_addons(config: Easy_EKS_Config_Data, stack: cdk.Stack, cl
 export function deploy_essentials(config: Easy_EKS_Config_Data, stack: cdk.Stack, cluster: eks.ICluster){
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
-    ///config.CloudWatch_Observability.deploy_configured_cloudwatch_metrics_observability(config);
+    //config.CloudWatch_Observability.deploy_configured_cloudwatch_metrics_observability(config);
     // ^--Uncommenting the one line directly above:
     //    * Enables Metrics via: CloudWatch -> Container Insights
     //    * Deploys in namespace amazon-cloudwatch

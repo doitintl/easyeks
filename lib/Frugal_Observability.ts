@@ -8,6 +8,7 @@ import * as eks from 'aws-cdk-lib/aws-eks';
 import { Construct } from "constructs";
 import * as route53 from 'aws-cdk-lib/aws-route53';
 import * as acm from 'aws-cdk-lib/aws-certificatemanager';
+import * as fs from 'fs';
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /*Frugal GVVV: Grafana Victoria Vector Stack
 * Grafana (Dashboard GUI for Prometheues Metrics & can also function as a GUI for quickwit logs)
@@ -68,7 +69,7 @@ export class Frugal_Observability {
         "apiVersion": "v1",
         "kind": "Namespace",
         "metadata": {
-            "name": "monitoring" //following a pre-existing-convention established by kube-prometheus-stack
+            "name": "observability"
         }
     };
     observability_ns: eks.KubernetesManifest;
@@ -92,7 +93,7 @@ export class Frugal_Observability {
         this.logs_agent_input_parameters = input;
     }
     deploy_configured_Frugal_Observability_Stack(config: Easy_EKS_Config_Data){
-        this.observability_ns = new eks.KubernetesManifest(this.stack, "monitoring-kube-namespace", {
+        this.observability_ns = new eks.KubernetesManifest(this.stack, "observability-kube-namespace", {
             cluster: this.cluster,
             manifest: [this.observability_ns_manifest],
             overwrite: true,
@@ -106,20 +107,39 @@ export class Frugal_Observability {
         const victoria_logs_helm_release = new eks.HelmChart(this.stack, 'victoria-logs-helm', {
             cluster: this.cluster,
             namespace: this.observability_ns_manifest.metadata.name,
-            repository: "https://helm.quickwit.io",
-            chart: "quickwit",
-            release: 'qw',
-            version: "0.7.18", //version of helm chart (helm version 0.7.18 maps to app version 0.8.2)
-            // helm repo add quickwit https://helm.quickwit.io
-            // helm repo update quickwit
-            // helm search repo quickwit
-            // helm show values quickwit/quickwit
+            repository: "https://victoriametrics.github.io/helm-charts/",
+            chart: "victoria-logs-single",
+            release: 'vl',
+            version: "0.11.15", //version of helm chart (v0.11.15, maps to app version 1.36.1)
+            // helm repo add vm https://victoriametrics.github.io/helm-charts/
+            // helm repo update vm
+            // helm search repo vm
             values: {
-                "serviceAccount": {
-                    "create": false, //<--tell helm to let cdk create the kube service account
-                    "name": "qw-quickwit" //<-- helm expects cdk to create a kube sa with this name
+                "server": {
+                    "extraArgs": {
+                        "enableTCP6": `${config.ipMode === eks.IpFamily.IP_V6}`, //defaults to true, which enables application level IPv6 support.
+                    },  //^-- This is required for readiness and liveness probes to work correctly in IPv6 environments.
+                    "retentionPeriod": "30d",
+                    "persistentVolume": {
+                        "size": "10Gi"
+                    },
+                    "resources": {
+                        "requests": {
+                            "cpu": "100m",
+                            "memory": "128Mi",
+                        },
+                        "limits": {
+                            "memory": "4Gi",
+                        },
+                    },
                 },
             },//end helm values
+            //Command to verify config:
+            //* helm get values vl -n=observability
+            //Access Proxy Command:
+            //* kubectl port-forward service/vl-victoria-logs-single-server -n=observability 9428:9428
+            //Browser Access:
+            //* http://localhost:9428/select/vmui/
         });
         // Imperative installation order to avoid temporary errors in logs
         victoria_logs_helm_release.node.addDependency(this.observability_ns);
