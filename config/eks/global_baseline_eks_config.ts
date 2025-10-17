@@ -1,9 +1,7 @@
 import { Easy_EKS_Config_Data } from '../../lib/Easy_EKS_Config_Data';
 import { Easy_EKS_Dynamic_Config } from '../../lib/Easy_EKS_Dynamic_Config';
 import * as cdk from 'aws-cdk-lib';
-import * as iam from 'aws-cdk-lib/aws-iam';
 import * as eks from 'aws-cdk-lib/aws-eks';
-import request from 'sync-request-curl'; //npm install sync-request-curl (cdk requires sync functions, async not allowed)
 import * as cwo from '../../lib/CW_Observability/CW_Observability';
 //Intended Use: 
 //A baseline config file (to be applied to all EasyEKS Clusters)
@@ -28,7 +26,7 @@ export function apply_config(config: Easy_EKS_Config_Data, stack: cdk.Stack){ //
 
 export function deploy_addons(config: Easy_EKS_Config_Data, stack: cdk.Stack, cluster: eks.Cluster){
 
-    /*To see official names of all eks add-ons:
+    /*To see officially recognized spelling of names of all eks add-ons:
     aws eks describe-addon-versions  \
     --kubernetes-version=1.33 \
     --query 'sort_by(addons  &owner)[].{owner: owner, addonName: addonName}' \

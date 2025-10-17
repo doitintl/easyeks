@@ -1,11 +1,9 @@
 import { Easy_EKS_Config_Data } from '../../lib/Easy_EKS_Config_Data';
 import { Easy_EKS_Dynamic_Config } from '../../lib/Easy_EKS_Dynamic_Config';
-import { KubernetesVersion } from 'aws-cdk-lib/aws-eks';
+import * as generate_recommended from '../../lib/Opinionated_Config_Generator';
 import * as cdk from 'aws-cdk-lib';
 import * as eks from 'aws-cdk-lib/aws-eks';
 import * as iam from 'aws-cdk-lib/aws-iam';
-import * as kms from 'aws-cdk-lib/aws-kms';
-import request from 'sync-request-curl'; //npm install sync-request-curl (cdk requires sync functions, async not allowed)
 //Intended Use:
 //A baseline config file (to be applied to all EasyEKS Clusters in your organization)
 //EasyEKS Admins would be expected to edit this file with defaults specific to their org. (that rarely change and are low risk to add)
@@ -88,58 +86,7 @@ export function deploy_addons(config: Easy_EKS_Config_Data, stack: cdk.Stack, cl
         //v-- Below represents an optimized CoreDNS deployment, based on
         //    https://aws.amazon.com/blogs/containers/amazon-eks-add-ons-advanced-configuration/
         //    aws eks describe-addon-configuration --addon-name coredns --addon-version v1.11.4-eksbuild.2 --query configurationSchema --output text | jq .
-        configurationValues: `{
-            "autoScaling": {
-              "enabled": true,
-              "minReplicas": 2,
-              "maxReplicas": 1000
-            },
-            "affinity": {
-              "nodeAffinity": {
-                "requiredDuringSchedulingIgnoredDuringExecution": {
-                  "nodeSelectorTerms": [
-                    {
-                      "matchExpressions": [
-                        {
-                          "key": "kubernetes.io/os",
-                          "operator": "In",
-                          "values": [
-                            "linux"
-                          ]
-                        },
-                        {
-                          "key": "kubernetes.io/arch",
-                          "operator": "In",
-                          "values": [
-                            "amd64",
-                            "arm64"
-                          ]
-                        }
-                      ]
-                    }
-                  ]
-                }
-              },
-              "podAntiAffinity": {
-                "requiredDuringSchedulingIgnoredDuringExecution": [
-                  {
-                    "labelSelector": {
-                      "matchExpressions": [
-                        {
-                          "key": "k8s-app",
-                          "operator": "In",
-                          "values": [
-                            "kube-dns"
-                          ]
-                        }
-                      ]
-                    },
-                    "topologyKey": "kubernetes.io/hostname"
-                  }
-                ]
-              }
-            }
-        }`, //end CoreDNS configurationValues override
+        configurationValues: generate_recommended.config_for_coreds_eks_addon(2), //<-- 2 min replicas
     });//end CoreDNS AddOn
 
     const metrics_server = new eks.CfnAddon(stack, 'metrics-server', { //allows `kubectl top nodes` to work & valid for all versions of kubernetes
@@ -147,54 +94,7 @@ export function deploy_addons(config: Easy_EKS_Config_Data, stack: cdk.Stack, cl
         addonName: 'metrics-server',
         addonVersion: Easy_EKS_Dynamic_Config.get_latest_version_of_metrics_server_eks_addon(), //OR 'v0.8.0-eksbuild.2'
         resolveConflicts: 'OVERWRITE',
-        configurationValues: `{
-            "replicas": 2,
-            "affinity": {
-              "nodeAffinity": {
-                "requiredDuringSchedulingIgnoredDuringExecution": {
-                  "nodeSelectorTerms": [
-                    {
-                      "matchExpressions": [
-                        {
-                          "key": "kubernetes.io/os",
-                          "operator": "In",
-                          "values": [
-                            "linux"
-                          ]
-                        },
-                        {
-                          "key": "kubernetes.io/arch",
-                          "operator": "In",
-                          "values": [
-                            "amd64",
-                            "arm64"
-                          ]
-                        }
-                      ]
-                    }
-                  ]
-                }
-              },
-              "podAntiAffinity": {
-                "requiredDuringSchedulingIgnoredDuringExecution": [
-                  {
-                    "labelSelector": {
-                      "matchExpressions": [
-                        {
-                          "key": "app.kubernetes.io/name",
-                          "operator": "In",
-                          "values": [
-                            "metrics-server"
-                          ]
-                        }
-                      ]
-                    },
-                    "topologyKey": "kubernetes.io/hostname"
-                  }
-                ]
-              }
-            }
-        }`, //end metrics-server configurationValues override
+        configurationValues: generate_recommended.config_for_metrics_server_eks_addon(2), //<--2 min replicas
     });//end metrics-server addon
 
     const eks_node_monitoring_agent = new eks.CfnAddon(stack, 'eks-node-monitoring-agent', {
@@ -248,11 +148,7 @@ export function deploy_addons(config: Easy_EKS_Config_Data, stack: cdk.Stack, cl
                 roleArn: ebs_csi_addon_iam_role.roleArn,
             }
         ], // (v-- replicaCount: 1, makes logs easier to read/debug, and doesn't hurt stability.)
-        configurationValues: `{
-            controller: {
-                "replicaCount": 1,
-            },
-        }`, //end aws-ebs-csi-driver configurationValues override
+        configurationValues: `{ controller: { "replicaCount": 1, }, }`,
     }); //end EBS CSI Driver Addon
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 

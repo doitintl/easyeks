@@ -46,7 +46,7 @@ Ambivalent Notes:
 export interface Victoria_Logs_Single_Node_Input_Parameters {
     enabled: boolean;
 }
-export interface Vector_Log_Shipping_Agent_Input_Parameters {
+export interface Vector_Observability_Agent_Input_Parameters {
     enabled: boolean;
 }
 export interface Victoria_Metrics_Single_Node_Input_Parameters {
@@ -74,7 +74,7 @@ export class Frugal_Observability {
     };
     observability_ns: eks.KubernetesManifest;
     logs_db_input_parameters: Victoria_Logs_Single_Node_Input_Parameters;
-    logs_agent_input_parameters: Vector_Log_Shipping_Agent_Input_Parameters;
+    observability_agent_input_parameters: Vector_Observability_Agent_Input_Parameters;
     metrics_db_input_parameters: Victoria_Metrics_Single_Node_Input_Parameters;
     dashboard_input_parameters: Grafana_Dashboard_Input_Parameters;
 
@@ -89,8 +89,8 @@ export class Frugal_Observability {
     set_input_parameters_of_logs_db(input: Victoria_Logs_Single_Node_Input_Parameters){
         this.logs_db_input_parameters = input;
     }
-    set_input_parameters_of_logs_agent(input: Vector_Log_Shipping_Agent_Input_Parameters){
-        this.logs_agent_input_parameters = input;
+    set_input_parameters_of_observability_agent(input: Vector_Observability_Agent_Input_Parameters){
+        this.observability_agent_input_parameters = input;
     }
     deploy_configured_Frugal_Observability_Stack(config: Easy_EKS_Config_Data){
         this.observability_ns = new eks.KubernetesManifest(this.stack, "observability-kube-namespace", {
@@ -100,11 +100,11 @@ export class Frugal_Observability {
             prune: true,
         });
         if(this.logs_db_input_parameters.enabled === true){ this.deploy_victoria_logs_db(config); }
-        if(this.logs_agent_input_parameters.enabled === true){ this.deploy_vector_logging_agent(config); }
+        if(this.observability_agent_input_parameters.enabled === true){ this.deploy_vector_observability_agents(config); }
     }
+    ///////////////////////////////////////////////////////////////////////////////////////////////////////
     deploy_victoria_logs_db(config: Easy_EKS_Config_Data){
-        ///////////////////////////////////////////////////////////////////////////////////////////////////////
-        const victoria_logs_helm_release = new eks.HelmChart(this.stack, 'victoria-logs-helm', {
+        const victoria_logs_helm_release = new eks.HelmChart(this.stack, 'victoria-logs-db-helm', {
             cluster: this.cluster,
             namespace: this.observability_ns_manifest.metadata.name,
             repository: "https://victoriametrics.github.io/helm-charts/",
@@ -143,12 +143,181 @@ export class Frugal_Observability {
         });
         // Imperative installation order to avoid temporary errors in logs
         victoria_logs_helm_release.node.addDependency(this.observability_ns);
-    } //end deploy_quickwit()
-
-    deploy_vector_logging_agent(config: Easy_EKS_Config_Data){
-        //TODO
-    }
-
+    } //end deploy_victoria_logs_db()
+    ///////////////////////////////////////////////////////////////////////////////////////////////////////
+    deploy_vector_observability_agents(config: Easy_EKS_Config_Data){
+        const vector_observability_agent_helm_release = new eks.HelmChart(this.stack, 'vector-observability-agent-daemonset-helm', {
+            cluster: this.cluster,
+            namespace: this.observability_ns_manifest.metadata.name,
+            repository: "https://helm.vector.dev",
+            chart: "vector",
+            release: 'observability-agent',
+            version: "0.46.0", //version of helm chart (0.46.0, maps to app version 0.50.0-distroless-libc)
+            // helm repo add vector https://helm.vector.dev
+            // helm repo update vector
+            // helm search repo vector
+            // helm show values vector/vector       <-- can be run to show all possible values
+            // helm get values observability-agent  <-- can be run to see the yaml equivalent the the below values. (potentially easier to read)
+            values: {
+                "role": "Agent", //deploys vector as a kubernetes daemonset & uses hostPath for ephemeral filesystem.
+                "resources": {
+                    "requests": {
+                        "cpu": "10m",
+                        "memory": "32Mi",
+                    },
+                    "limits": {
+                        "memory": "4Gi",
+                    },
+                },
+                "containerPorts": [
+                    { "name": "prom-exporter", "containerPort": 9090, "protocol": "TCP" },
+                ],
+                "service": { "ports": [
+                    { "name": "prom-exporter", "port": 9090, "protocol": "TCP" },
+                ]},
+                "serviceHeadless": { "ports": [
+                    { "name": "prom-exporter", "port": 9090, "protocol": "TCP" },
+                ]},
+                "customConfig": {
+                    "data_dir": "/vector-data-dir",
+                    "api": {
+                        "enabled": false,
+                        "address": "127.0.0.1:8686",
+                        "playground": false,
+                    },
+                    "sources": {
+                        "kubernetes_logs": {
+                            "type": "kubernetes_logs",
+                            "glob_minimum_cooldown_ms": 1000,
+                        },
+                        "host_metrics": {
+                            "type": "host_metrics",
+                            "filesystem": {
+                                "devices": {
+                                    "excludes": [
+                                        "binfmt_misc",
+                                    ],
+                                },
+                                "filesystems": {
+                                    "excludes": [
+                                        "[binfmt_misc]",
+                                    ],
+                                },
+                                "mountpoints": {
+                                    "excludes": [
+                                        "*/proc/sys/fs/binfmt_misc",
+                                    ],
+                                },
+                            },
+                        }
+                    },
+                    "acknowledgements": { //attempt to verify delivery & retry upon failure.
+                        "enabled": true,
+                    },
+                    "sinks": { //(sink = destination)
+                        "vector_aggregator": {
+                            "type": "vector",  //Uses efficient gRPC & End-to-End Ack (retry on fail) for data durability
+                            "inputs": [ //these must match arbitrary source names defined in sources
+                                "kubernetes_logs",
+                                "host_metrics",
+                            ],
+                            "address": "http://observability-aggregator-vector:6000", //<-- Is a kubernetes service name & inner cluster DNS name.
+                            // "buffer": [ //^-- In theory statefulset aggregator hosted on spot nodes can reboot without losing observability data
+                            //     {
+                            //         "type": "disk", //node local disk (via hostPath)
+                            //         "max_size": `${2 * 1073741824}`, //2 GiB
+                            //         "when_full": "drop_newest" //last resort
+                            //     },
+                            // ],
+                        },
+                    },
+                }
+            },//end helm values
+        });
+        const vector_observability_aggregator_helm_release = new eks.HelmChart(this.stack, 'vector-observability-aggregator-statefulset-helm', {
+            cluster: this.cluster,
+            namespace: this.observability_ns_manifest.metadata.name,
+            repository: "https://helm.vector.dev",
+            chart: "vector",
+            release: 'observability-aggregator',
+            version: "0.46.0", //version of helm chart (0.46.0, maps to app version 0.50.0-distroless-libc)
+            // helm repo add vector https://helm.vector.dev
+            // helm repo update vector
+            // helm search repo vector
+            // helm show values vector/vector            <-- can be run to show all possible values
+            // helm get values observability-aggregator  <-- can be run to see the yaml equivalent the the below values. (potentially easier to read)
+            values: {
+                "role": "Aggregator", //deploys vector as a kubernetes statefulset & uses PVC for buffering.
+                "resources": {
+                    "requests": {
+                        "cpu": "10m",
+                        "memory": "32Mi",
+                    },
+                    "limits": {
+                        "memory": "4Gi",
+                    },
+                },
+                "containerPorts": [
+                    { "name": "vector", "containerPort": 6000, "protocol": "TCP" }, //accepts http & grpc
+                    { "name": "api", "containerPort": 8686, "protocol": "TCP" },
+                    { "name": "prom-exporter", "containerPort": 9090, "protocol": "TCP" },
+                ],
+                "service": { "ports": [
+                    { "name": "vector", "port": 6000, "protocol": "TCP" },
+                    { "name": "api", "port": 8686, "protocol": "TCP" },
+                    { "name": "prom-exporter", "port": 9090, "protocol": "TCP" },
+                ]},
+                "serviceHeadless": { "ports": [
+                    { "name": "vector", "port": 6000, "protocol": "TCP" },
+                    { "name": "api", "port": 8686, "protocol": "TCP" },
+                    { "name": "prom-exporter", "port": 9090, "protocol": "TCP" },
+                ]},
+                "customConfig": {
+                    "data_dir": "/vector-data-dir",
+                    "api": {
+                        "enabled": true,
+                        "address": "127.0.0.1:8686",
+                        "playground": false,
+                    },
+                    "sources": {
+                        "vector_agents": {
+                            "type": "vector",
+                            "version": "2",
+                            "address": "0.0.0.0:6000",
+                        },
+                    },
+                    "acknowledgements": { //attempt to verify delivery & retry upon failure.
+                        "enabled": true,
+                    },
+                    "sinks": { //(sink = destination)
+                        "victoria_logs_db": { 
+                            "type": "elasticsearch", //(The Bulk API algorithm invented by elasticsearch is the most efficient option available)
+                            "inputs": [ //these must match arbitrary source names defined in sources
+                                "vector_agents"
+                            ],
+                            "endpoints": [ //v-- service name, which is an inner cluster DNS name
+                                "http://vl-victoria-logs-single-server:9428/insert/elasticsearch/",
+                            ],
+                            "api_version": "v8",
+                            "compression": "gzip",
+                            "healthcheck": {
+                                "enabled": false, //per VL's docs: https://docs.victoriametrics.com/victorialogs/data-ingestion/vector/
+                            },
+                            "query": {
+                                "_msg_field": "message",
+                                "_time_field": "timestamp",
+                                "_stream_field": "host,container_name",
+                            },
+                        },
+                    },
+                }
+            },//end helm values
+        });
+        // Imperative installation order to avoid temporary errors in logs
+        vector_observability_agent_helm_release.node.addDependency(this.observability_ns);
+        vector_observability_aggregator_helm_release.node.addDependency(this.observability_ns);
+    } //end deploy_vector_logging_agent
+    ///////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
 }//end of Frugal_Observability class

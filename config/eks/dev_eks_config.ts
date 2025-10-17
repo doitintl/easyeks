@@ -2,7 +2,6 @@ import { Easy_EKS_Config_Data } from '../../lib/Easy_EKS_Config_Data';
 import { Easy_EKS_Dynamic_Config } from '../../lib/Easy_EKS_Dynamic_Config';
 import * as cdk from 'aws-cdk-lib';
 import * as eks from 'aws-cdk-lib/aws-eks'
-import * as ec2 from 'aws-cdk-lib/aws-ec2'
 import * as fo from '../../lib/Frugal_Observability';
 import {
     Apply_Podinfo_Helm_Chart,
@@ -64,11 +63,11 @@ export function deploy_essentials(config: Easy_EKS_Config_Data, stack: cdk.Stack
     const logs_db_input_parameters:fo.Victoria_Logs_Single_Node_Input_Parameters = {
         enabled: true,
     };
-    const logs_agent_input_parameters:fo.Vector_Log_Shipping_Agent_Input_Parameters = {
-        enabled: false,
+    const observability_agent_input_parameters:fo.Vector_Observability_Agent_Input_Parameters = {
+        enabled: true,
     };
     config.Frugal_Observability.set_input_parameters_of_logs_db(logs_db_input_parameters);
-    config.Frugal_Observability.set_input_parameters_of_logs_agent(logs_agent_input_parameters);
+    config.Frugal_Observability.set_input_parameters_of_observability_agent(observability_agent_input_parameters);
     config.Frugal_Observability.deploy_configured_Frugal_Observability_Stack(config);
 
 }//end deploy_essentials()
