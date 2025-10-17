@@ -5,9 +5,9 @@ import * as eks from 'aws-cdk-lib/aws-eks';
 import * as iam from 'aws-cdk-lib/aws-iam';
 import request from 'sync-request-curl'; //npm install sync-request-curl (cdk requires sync functions, async not allowed)
 import { Karpenter_Helm_Config, Karpenter_YAML_Generator, Apply_Karpenter_YAMLs_with_fixes } from '../../lib/Karpenter_Manifests';
-import { KubectlV31Layer } from '@aws-cdk/lambda-layer-kubectl-v31'; //npm install @aws-cdk/lambda-layer-kubectl-v31
 import { KubectlV32Layer } from '@aws-cdk/lambda-layer-kubectl-v32'; //npm install @aws-cdk/lambda-layer-kubectl-v32
 import { KubectlV33Layer } from '@aws-cdk/lambda-layer-kubectl-v33'; //npm install @aws-cdk/lambda-layer-kubectl-v33
+import { KubectlV34Layer } from '@aws-cdk/lambda-layer-kubectl-v34'; //npm install @aws-cdk/lambda-layer-kubectl-v34
 //Intended Use: 
 //EasyEKS Admins: edit this file with config to apply to all lower environment eks cluster's in your org.
 

@@ -22,9 +22,9 @@
     "typescript": "~5.8.2"
   },
   "dependencies": {
-    "@aws-cdk/lambda-layer-kubectl-v31": "^2.1.0",
     "@aws-cdk/lambda-layer-kubectl-v32": "^2.1.0",
     "@aws-cdk/lambda-layer-kubectl-v33": "^2.0.0",
+    "@aws-cdk/lambda-layer-kubectl-v34": "^2.0.0",
     "aws-cdk-lib": "^2.214.0",
     "cdk-eks-karpenter": "^1.0.18",
     "cdk-fck-nat": "^1.6.16",
