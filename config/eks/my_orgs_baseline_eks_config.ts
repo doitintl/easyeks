@@ -185,7 +185,7 @@ export function deploy_addons(config: Easy_EKS_Config_Data, stack: cdk.Stack, cl
         // helm repo update jetstack
         // helm search repo jetstack
         wait: false,
-        values: generate_recommended.config_for_cert_manager_helm_values(1),
+        values: generate_recommended.config_for_cert_manager_helm_values(),
     });
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
