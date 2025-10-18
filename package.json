@@ -13,6 +13,7 @@
   "devDependencies": {
     "@swc/core": "^1.13.19",
     "@types/jest": "^29.5.14",
+    "@types/js-yaml": "^4.0.9",
     "@types/node": "^22.7.9",
     "@types/shelljs": "^0.8.16",
     "aws-cdk": "^2.1030.0",
@@ -29,6 +30,7 @@
     "cdk-eks-karpenter": "^1.0.18",
     "cdk-fck-nat": "^1.6.16",
     "constructs": "^10.4.2",
+    "js-yaml": "^4.1.0",
     "shelljs": "^0.10.0",
     "sync-request-curl": "^3.1.0"
   }
