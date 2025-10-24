@@ -280,8 +280,8 @@ startupapicheck:
 
     try {
         const JSON_string_from_YAML = JSON.stringify( yaml.load(helm_values_as_yaml), null, 4); //null, 4 makes it human readable
-        const JS_Ojbect_from_JSON = JSON.parse(JSON_string_from_YAML);
-        recommended_config = JS_Ojbect_from_JSON;
+        const JS_Object_from_JSON = JSON.parse(JSON_string_from_YAML);
+        recommended_config = JS_Object_from_JSON;
     } catch (error){
         console.error("Error parsing cert-manager.io's helm values as yaml", error);
     } //end try-catch
