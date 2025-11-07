@@ -2,7 +2,7 @@ import { Easy_EKS_Config_Data } from '../../lib/Easy_EKS_Config_Data';
 import { Easy_EKS_Dynamic_Config } from '../../lib/Easy_EKS_Dynamic_Config';
 import * as cdk from 'aws-cdk-lib';
 import * as eks from 'aws-cdk-lib/aws-eks'
-import * as fo from '../../lib/Frugal_Observability';
+import * as fo from '../../lib/Frugal_Observability/Frugal_Observability';
 import {
     Apply_Podinfo_Helm_Chart,
     Apply_Podinfo_Http_Alb_YAML,

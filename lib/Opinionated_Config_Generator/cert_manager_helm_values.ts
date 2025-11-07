@@ -99,14 +99,14 @@ webhook:
       memory: 1Gi
   replicaCount: 3
   topologySpreadConstraints:
-  - maxSkew: 1 #Prefer the 3 replicas of cert-manager webhook to spread across zones
+  - maxSkew: 2 #Prefer the 3 replicas of cert-manager webhook to spread across zones
     topologyKey: topology.kubernetes.io/zone #(topologyKey = Node Label)
     whenUnsatisfiable: ScheduleAnyway
     labelSelector:
       matchLabels: #(of pod)
         app.kubernetes.io/instance: cert-manager
         app.kubernetes.io/component: webhook
-  - maxSkew: 1 #Force 3 replicas of cert-manager webhook to spread across multiple nodes
+  - maxSkew: 2 #Prefer 3 replicas of cert-manager webhook to spread across multiple nodes
     topologyKey: kubernetes.io/hostname
     whenUnsatisfiable: DoNotSchedule
     labelSelector:
@@ -276,7 +276,6 @@ startupapicheck:
     name: serviceaccount-token
     readOnly: true
 `;
-
 
     try {
         const JSON_string_from_YAML = JSON.stringify( yaml.load(helm_values_as_yaml), null, 4); //null, 4 makes it human readable
