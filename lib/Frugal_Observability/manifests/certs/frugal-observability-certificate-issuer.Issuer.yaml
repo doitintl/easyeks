@@ -1,8 +1,0 @@
-apiVersion: cert-manager.io/v1
-kind: Issuer
-metadata:
-  name: frugal-observability-certificate-issuer
-  namespace: observability
-spec:
-  ca:
-    secretName: root-ca-for-frugal-observability-stack #uses secret made by earlier Certificate object

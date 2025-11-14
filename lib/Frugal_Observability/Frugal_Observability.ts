@@ -456,31 +456,28 @@ customConfig:
 `;
 const vector_observability_aggregator_helm_values_as_JS_object: JSON = read_yaml_string_as_javascript_object(vector_observability_aggregator_helm_values_as_yaml);
 
-        const root_ca_clusterissuer_yaml_file = './lib/Frugal_Observability/manifests/certs/self-signed-root-ca-issuer.ClusterIssuer.yaml';
-        const root_ca_cert_yaml_file = './lib/Frugal_Observability/manifests/certs/root-ca-for-frugal-observability-stack.Certificate.yaml';
-        const cert_issuer_yaml_file = './lib/Frugal_Observability/manifests/certs/frugal-observability-certificate-issuer.Issuer.yaml';
-        const cert_yaml_file = './lib/Frugal_Observability/manifests/certs/observability-aggregator-vector.Certificate.yaml';
-        // const clusterrole_yaml_file = './lib/Frugal_Observability/manifests/rbac/'; 
-        // const clusterrolebinding_yaml_file = './lib/Frugal_Observability/manifests/rbac/';
-        // const secret_yaml_file = './lib/Frugal_Observability/manifests/rbac/';
-        const kube_rbac_file = './lib/Frugal_Observability/manifests/rbac/kube_rbac_secret.yaml';
-
-        const root_ca_clusterissuer = read_yaml_file_as_javascript_object(root_ca_clusterissuer_yaml_file);
-        const root_ca_cert = read_yaml_file_as_javascript_object(root_ca_cert_yaml_file);
-        const cert_issuer = read_yaml_file_as_javascript_object(cert_issuer_yaml_file);
-        const cert = read_yaml_file_as_javascript_object(cert_yaml_file);
-
+        const vector_aggregator_cert_yaml_file = './lib/Frugal_Observability/manifests/certs_for_vector_observability_aggregator.yaml';
+        const vector_aggregator_cert_yamls_as_JSO_array: JSON[] = read_yaml_file_as_array_of_javascript_objects(vector_aggregator_cert_yaml_file);
         const observability_certificates = new eks.KubernetesManifest(this.stack, "observability-certificates", {
             cluster: this.cluster,
-            manifest: [root_ca_clusterissuer, root_ca_cert, cert_issuer, cert],
+            manifest: vector_aggregator_cert_yamls_as_JSO_array,
             overwrite: true,
             prune: true,
         });
         observability_certificates.node.addDependency(this.observability_ns);
 
-        const kube_rbac_yaml_manifests_as_javascript_objects: JSON[] = read_yaml_file_as_array_of_javascript_objects(kube_rbac_file);
-        console.log(...kube_rbac_yaml_manifests_as_javascript_objects);
 
+        const vector_aggregator_kube_rbac_yaml_file = './lib/Frugal_Observability/manifests/kube_rbac_for_vector_observability_aggregator.yaml';
+        const vector_aggregator_kube_rbac_yaml_manifests_as_JSO_array: JSON[] = read_yaml_file_as_array_of_javascript_objects(vector_aggregator_kube_rbac_yaml_file);
+        const observability_kube_rbac = new eks.KubernetesManifest(this.stack, "observability-kube-rbac", {
+            cluster: this.cluster,
+            manifest: vector_aggregator_kube_rbac_yaml_manifests_as_JSO_array,
+            overwrite: true,
+            prune: true,
+        });
+        observability_kube_rbac.node.addDependency(this.observability_ns);
+
+        
         const vector_observability_agent_helm_release = new eks.HelmChart(this.stack, 'vector-observability-agent-daemonset-helm', {
             cluster: this.cluster,
             namespace: this.observability_ns_manifest.metadata.name,

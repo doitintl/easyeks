@@ -1,2 +1,0 @@
-./certs act as prerequisite dependencies that generate an HTTPS cert for vector aggregator to listen to HTTPS protected grpc traffic
-./rbac grants kube rbac permissions to query kube api server for kubernetes event logs

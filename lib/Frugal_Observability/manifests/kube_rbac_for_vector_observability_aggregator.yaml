@@ -1,3 +1,4 @@
+# This yaml config grants vector observability aggregator kube rbac permissions to query kube api server for kubernetes event logs
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
@@ -28,7 +29,9 @@ subjects:
 apiVersion: v1
 kind: Secret
 metadata:
-  name: observability-aggregator-vector-kube-sa-token
+  name: observability-aggregator-vector-kube-service-account-token
+  namespace: observability
   annotations:
     kubernetes.io/service-account.name: observability-aggregator-vector
 type: kubernetes.io/service-account-token
+# ^-- This allows the pod to mount an RBAC scoped credential to interact with kube api-server (to pull kubernetes event logs)
