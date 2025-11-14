@@ -1,4 +1,4 @@
-import { Easy_EKS_Config_Data } from "../Easy_EKS_Config_Data";
+import { Easy_EKS_Config_Data } from '../Easy_EKS_Config_Data';
 import * as iam from 'aws-cdk-lib/aws-iam';
 import * as s3 from 'aws-cdk-lib/aws-s3';
 import * as rds from 'aws-cdk-lib/aws-rds';
@@ -10,6 +10,7 @@ import * as route53 from 'aws-cdk-lib/aws-route53';
 import * as acm from 'aws-cdk-lib/aws-certificatemanager';
 import * as fs from 'fs'; //node.js built in file system module
 import * as yaml from 'js-yaml'; //npm install js-yaml && npm install --save-dev @types/js-yaml
+import { read_yaml_string_as_javascript_object, read_yaml_file_as_javascript_object, read_yaml_file_as_array_of_javascript_objects } from '../../lib/Utilities';
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /*Frugal Observability Stack:
 * Grafana (Dashboard GUI for Prometheues Metrics & can also function as a GUI for quickwit logs)
@@ -265,7 +266,7 @@ customConfig:
       - container_logs
       - worker_node_metrics
 `;
-const vector_observability_agent_helm_values_as_JS_object = JSON.parse(JSON.stringify(yaml.load(vector_observability_agent_helm_values_as_yaml)));
+const vector_observability_agent_helm_values_as_JS_object: JSON = read_yaml_string_as_javascript_object(vector_observability_agent_helm_values_as_yaml);
 
 const vector_observability_aggregator_helm_values_as_yaml = `
 role: Aggregator    #<--deploys vector as a kubernetes statefulset & uses PVC for buffering.
@@ -288,6 +289,7 @@ image:
 #     * apk add --no-cache --no-check-certificate --allow-untrusted curl
 #     * curl observability-aggregator-vector.observability:8686/health 
 rollWorkloadSecrets: true
+replicas: 1
 resources:
   limits:
     memory: 4Gi
@@ -297,6 +299,8 @@ resources:
 env:
 - name: KUBERNETES_SERVICE_HOST
   value: "kubernetes.default.svc"   #<--IPv6 fix documented in https://github.com/vectordotdev/vector/issues/19224
+- name: KUBERNETES_SERVICEACCOUNT_TOKEN
+  value: "TODO"
 containerPorts:
 - containerPort: 6443   #<--GRPC endpoint. (not a webserver) (grpc needs https)
   name: vector
@@ -450,31 +454,32 @@ customConfig:
 #      encoding:
 #        codec: "json"
 `;
-const vector_observability_aggregator_helm_values_as_JS_object = JSON.parse(JSON.stringify(yaml.load(vector_observability_aggregator_helm_values_as_yaml)));
+const vector_observability_aggregator_helm_values_as_JS_object: JSON = read_yaml_string_as_javascript_object(vector_observability_aggregator_helm_values_as_yaml);
 
-        const root_ca_clusterissuer_yaml_file = './lib/Frugal_Observability/cert_manifests/self-signed-root-ca-issuer.ClusterIssuer.yaml';
-        const root_ca_cert_yaml_file = './lib/Frugal_Observability/cert_manifests/root-ca-for-frugal-observability-stack.Certificate.yaml';
-        const cert_issuer_yaml_file = './lib/Frugal_Observability/cert_manifests/frugal-observability-certificate-issuer.Issuer.yaml';
-        const cert_yaml_file = './lib/Frugal_Observability/cert_manifests/observability-aggregator-vector.Certificate.yaml';
-        let root_ca_clusterissuer;
-        let root_ca_cert;
-        let cert_issuer;
-        let cert;
-        try { //v-- convert yaml into JavaScript Objects
-            root_ca_clusterissuer = JSON.parse(JSON.stringify(yaml.load(fs.readFileSync(root_ca_clusterissuer_yaml_file, 'utf8'))));
-            root_ca_cert = JSON.parse(JSON.stringify(yaml.load(fs.readFileSync(root_ca_cert_yaml_file, 'utf8'))));
-            cert_issuer = JSON.parse(JSON.stringify(yaml.load(fs.readFileSync(cert_issuer_yaml_file, 'utf8'))));
-            cert = JSON.parse(JSON.stringify(yaml.load(fs.readFileSync(cert_yaml_file, 'utf8'))));
-        } catch (error) {
-             console.error(`Error reading YAML files in ./lib/Frugal_Observability/ folder`, error);
-             throw "User fixable error detected, see notes above.";
-        }        
+        const root_ca_clusterissuer_yaml_file = './lib/Frugal_Observability/manifests/certs/self-signed-root-ca-issuer.ClusterIssuer.yaml';
+        const root_ca_cert_yaml_file = './lib/Frugal_Observability/manifests/certs/root-ca-for-frugal-observability-stack.Certificate.yaml';
+        const cert_issuer_yaml_file = './lib/Frugal_Observability/manifests/certs/frugal-observability-certificate-issuer.Issuer.yaml';
+        const cert_yaml_file = './lib/Frugal_Observability/manifests/certs/observability-aggregator-vector.Certificate.yaml';
+        // const clusterrole_yaml_file = './lib/Frugal_Observability/manifests/rbac/'; 
+        // const clusterrolebinding_yaml_file = './lib/Frugal_Observability/manifests/rbac/';
+        // const secret_yaml_file = './lib/Frugal_Observability/manifests/rbac/';
+        const kube_rbac_file = './lib/Frugal_Observability/manifests/rbac/kube_rbac_secret.yaml';
+
+        const root_ca_clusterissuer = read_yaml_file_as_javascript_object(root_ca_clusterissuer_yaml_file);
+        const root_ca_cert = read_yaml_file_as_javascript_object(root_ca_cert_yaml_file);
+        const cert_issuer = read_yaml_file_as_javascript_object(cert_issuer_yaml_file);
+        const cert = read_yaml_file_as_javascript_object(cert_yaml_file);
+
         const observability_certificates = new eks.KubernetesManifest(this.stack, "observability-certificates", {
             cluster: this.cluster,
             manifest: [root_ca_clusterissuer, root_ca_cert, cert_issuer, cert],
             overwrite: true,
             prune: true,
         });
+        observability_certificates.node.addDependency(this.observability_ns);
+
+        const kube_rbac_yaml_manifests_as_javascript_objects: JSON[] = read_yaml_file_as_array_of_javascript_objects(kube_rbac_file);
+        console.log(...kube_rbac_yaml_manifests_as_javascript_objects);
 
         const vector_observability_agent_helm_release = new eks.HelmChart(this.stack, 'vector-observability-agent-daemonset-helm', {
             cluster: this.cluster,

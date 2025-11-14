@@ -204,12 +204,13 @@ export function deploy_essentials(config: Easy_EKS_Config_Data, stack: cdk.Stack
         release: "node-local-dns-cache", // Name for our chart in Kubernetes (helm list -A)
         repository: "oci://ghcr.io/deliveryhero/helm-charts/node-local-dns",  // HTTPS address of the helm chart (associated with helm repo add command)
         namespace: "kube-system",
-        version: Easy_EKS_Dynamic_Config.get_latest_version_of_node_local_dns_cache_helm_chart(), //OR "2.1.10"
+        version: Easy_EKS_Dynamic_Config.get_latest_version_of_node_local_dns_cache_helm_chart(), //OR "2.2.10"
         wait: false,
         values: { //<-- helm chart values per https://github.com/deliveryhero/helm-charts/blob/master/stable/node-local-dns/values.yaml
-          config: {
-            bindIp: true, //BottleRocket specific fix
-          },
+            config: {
+                bindIp: true, //BottleRocket specific fix
+            },
+            //Note there's a minor bug with the kube service in kube-system https://github.com/deliveryhero/helm-charts/issues/736
         },
     });
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
