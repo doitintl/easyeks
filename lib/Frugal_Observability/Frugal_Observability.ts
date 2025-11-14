@@ -299,8 +299,14 @@ resources:
 env:
 - name: KUBERNETES_SERVICE_HOST
   value: "kubernetes.default.svc"   #<--IPv6 fix documented in https://github.com/vectordotdev/vector/issues/19224
-- name: KUBERNETES_SERVICEACCOUNT_TOKEN
-  value: "TODO"
+- name: KUBERNETES_SERVICEACCOUNT_TOKEN   #<--used to ingest kubernetes event logs
+  valueFrom:
+    secretKeyRef:
+      name: observability-aggregator-vector-kube-service-account-token
+      key: token
+serviceAccount:
+  name: observability-aggregator-vector
+  create: true
 containerPorts:
 - containerPort: 6443   #<--GRPC endpoint. (not a webserver) (grpc needs https)
   name: vector
@@ -350,7 +356,21 @@ customConfig:
     playground: false
   data_dir: /vector-data-dir
   sources:
-    vector_agents:
+    kube_event_logs:
+      type: http_client
+      endpoint: https://kubernetes.default.svc:443/api/v1/events
+      scrape_interval_secs: 10
+      decoding:
+        codec: json
+      auth:
+        strategy: bearer
+        token: "\$\{KUBERNETES_SERVICEACCOUNT_TOKEN\}"
+      tls:
+        ca_file: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+      headers:
+        Accept:
+        - application/json
+    vector_agents: #<-- source of container logs + worker node metrics
       type: vector
       version: "2"
       address: "[::]:6443"   #<-- triggers listening on port 6443 (from an IPv6 IP address)
@@ -383,9 +403,33 @@ customConfig:
         tags:
           purpose: testing
   transforms:
+    unnest_kube_event_logs:
+      type: remap
+      inputs: [ kube_event_logs ]
+      source: |
+        . = unnest!(.items)
+    deduplicate_kube_event_logs:
+      type: dedupe
+      inputs: [ unnest_kube_event_logs ]
+      cache:
+        num_events: 10000  #Number of events to cache and use for comparing incoming events to previously seen events.
+      time_settings:
+        max_age_ms: 3600000 #<--1h (matches kube event expiration)
+      fields:
+        match:
+        - items.metadata.uid
+    conventionalized_kube_event_logs:
+      type: remap
+      inputs: [ deduplicate_kube_event_logs ]
+      source: |
+        .log_source = "kubernetes_event_logs" #<-- "log_source: kubernetes_event_logs" becomes a working query for Victoria Logs
+        .message = .items.message
+        .timestamp = .items.lastTimestamp
+        .involvedObject = .items.involvedObject
+        .reason = .items.reason
+        .source = .items.source
     from_vector_agents:
       type: "route"
-      reroute_unmatched: false
       inputs: [ "vector_agents" ]
       route:
         metrics: #<-- now "from_vector_agents.metrics" is a recognized input
@@ -394,6 +438,7 @@ customConfig:
           type: 'is_log'
         traces:  #<-- now "from_vector_agents.traces" is a recognized input
           type: 'is_trace'
+      reroute_unmatched: false
     subset_of_metrics:
       type: "route"
       inputs: 
@@ -435,6 +480,8 @@ customConfig:
     victoria_logs_db:
       inputs:
       - conventionalized_container_logs
+      - conventionalized_kube_event_logs
+#      - kube_event_logs
       type: elasticsearch   #<-- The Bulk API algorithm invented by elasticsearch is the most efficient option available
       api_version: v8
       compression: gzip
@@ -446,13 +493,14 @@ customConfig:
         _msg_field: message
         _time_field: timestamp
         _stream_field: host,container_name   #https://docs.victoriametrics.com/victorialogs/keyconcepts/#stream-fields
-#    std_out: #<-- You can test using kubectl logs observability-aggregator-vector-0 -n=observability
-#      type: "console"
-#      inputs:
+    std_out: #<-- You can test using kubectl logs observability-aggregator-vector-0 -n=observability
+      type: "console"
+      inputs:
+      - conventionalized_kube_event_logs
 #      - conventionalized_vector_aggregator_generated_test_logs
 #      - subset_of_metrics.vector_aggregator_generated_test_metrics
-#      encoding:
-#        codec: "json"
+      encoding:
+        codec: "json"
 `;
 const vector_observability_aggregator_helm_values_as_JS_object: JSON = read_yaml_string_as_javascript_object(vector_observability_aggregator_helm_values_as_yaml);
 
@@ -477,7 +525,7 @@ const vector_observability_aggregator_helm_values_as_JS_object: JSON = read_yaml
         });
         observability_kube_rbac.node.addDependency(this.observability_ns);
 
-        
+
         const vector_observability_agent_helm_release = new eks.HelmChart(this.stack, 'vector-observability-agent-daemonset-helm', {
             cluster: this.cluster,
             namespace: this.observability_ns_manifest.metadata.name,
