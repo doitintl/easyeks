@@ -41,6 +41,7 @@ export class Easy_EKS_Config_Data { //This object just holds config data
     preexisting_cluster_detected: boolean; //true when cluster is detected to be pre-existing
     sg_id_of_cluster_nodes: string; //(cdk doesn't normally supply this, added for convenience)
     control_plane_logging_options_to_enable?: eks.ClusterLoggingTypes[]; //? is necessary as undefined is used to represent none
+    aws_load_balancer_controller_helm_chart_essentials_dependency: cdk.aws_eks.HelmChart; //needed to implement order of operations, to fix race condition
     Frugal_Observability: fo.Frugal_Observability; //holds a mix of config, state, and functions specific to Frugal Observability Stack
     CloudWatch_Observability: cwo.CloudWatch_Metrics_and_Logs_Observability; //holds a mix of config, state, and functions specific to CW Observability Stack
 

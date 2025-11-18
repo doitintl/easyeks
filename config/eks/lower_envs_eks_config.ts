@@ -116,7 +116,8 @@ export function deploy_essentials(config: Easy_EKS_Config_Data, stack: cdk.Stack
         //4. The eks-pod-identity-agent addon (dependency)
     });
     ALBC_Kube_SA.role.attachInlinePolicy(ALBC_IAM_Policy);
-    const awsLoadBalancerController = cluster.addHelmChart('AWSLoadBalancerController', {
+    //v--stored in config as it needs to be used as a dependency for other things, to fix a race condition
+    config.aws_load_balancer_controller_helm_chart_essentials_dependency = cluster.addHelmChart('AWSLoadBalancerController', {
         chart: 'aws-load-balancer-controller',
         repository: 'https://aws.github.io/eks-charts',
         namespace: "kube-system",
@@ -136,8 +137,8 @@ export function deploy_essentials(config: Easy_EKS_Config_Data, stack: cdk.Stack
             },
         },
     });
-    // The following should help prevent temporary errors in logs of ALBC
-    awsLoadBalancerController.node.addDependency(ALBC_Kube_SA);
+    config.aws_load_balancer_controller_helm_chart_essentials_dependency.node.addDependency(ALBC_Kube_SA);
+    // ^-- This prevents temporary errors in logs of AWS Load Balancer Controller
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 }//end deploy_essentials()
