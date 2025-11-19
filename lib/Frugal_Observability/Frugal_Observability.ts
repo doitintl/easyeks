@@ -521,11 +521,12 @@ const vector_observability_aggregator_helm_values_as_JS_object: JSON = read_yaml
         const vector_aggregator_kube_rbac_yaml_manifests_as_JSO_array: JSON[] = read_yaml_file_as_array_of_javascript_objects(vector_aggregator_kube_rbac_yaml_file);
         const observability_kube_rbac = new eks.KubernetesManifest(this.stack, "observability-kube-rbac", {
             cluster: this.cluster,
-            manifest: vector_aggregator_kube_rbac_yaml_manifests_as_JSO_array,
+            manifest: [ ...vector_aggregator_kube_rbac_yaml_manifests_as_JSO_array ], //<--inconsistent from above to show alternate syntax options
             overwrite: true,
             prune: true,
         });
         observability_kube_rbac.node.addDependency(this.observability_ns);
+
 
         const vector_observability_agent_helm_release = new eks.HelmChart(this.stack, 'vector-observability-agent-daemonset-helm', {
             cluster: this.cluster,

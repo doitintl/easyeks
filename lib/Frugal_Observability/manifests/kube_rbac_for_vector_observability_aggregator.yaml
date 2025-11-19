@@ -14,6 +14,16 @@ rules:
   - get
   - list
 ---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: observability-aggregator-vector-kube-service-account-token
+  namespace: observability
+  annotations:
+    kubernetes.io/service-account.name: observability-aggregator-vector
+type: kubernetes.io/service-account-token
+# ^-- This allows the pod to mount an RBAC scoped credential to interact with kube api-server (to pull kubernetes event logs)
+---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
@@ -25,13 +35,3 @@ subjects:
 - kind: ServiceAccount
   name: observability-aggregator-vector
   namespace: observability
----
-apiVersion: v1
-kind: Secret
-metadata:
-  name: observability-aggregator-vector-kube-service-account-token
-  namespace: observability
-  annotations:
-    kubernetes.io/service-account.name: observability-aggregator-vector
-type: kubernetes.io/service-account-token
-# ^-- This allows the pod to mount an RBAC scoped credential to interact with kube api-server (to pull kubernetes event logs)

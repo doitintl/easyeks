@@ -98,7 +98,7 @@ export function deploy_essentials(config: Easy_EKS_Config_Data, stack: cdk.Stack
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     //Install AWS Load Balancer Controller via Helm Chart
-    const ALBC_Version = 'v2.13.4'; //latest as of Sept 9th, 2025 per https://github.com/kubernetes-sigs/aws-load-balancer-controller/releases
+    const ALBC_Version = 'v2.15.0'; //latest as of Nov 18th, 2025 per https://github.com/kubernetes-sigs/aws-load-balancer-controller/releases
     const ALBC_IAM_Policy_Url = `https://raw.githubusercontent.com/kubernetes-sigs/aws-load-balancer-controller/refs/tags/${ALBC_Version}/docs/install/iam_policy.json`
     const ALBC_IAM_Policy_JSON = JSON.parse(request("GET", ALBC_IAM_Policy_Url).body.toString());
     const ALBC_IAM_Policy = new iam.Policy(stack, 'AWS_LB_Controller_IAM_policy_for_EKS', {
