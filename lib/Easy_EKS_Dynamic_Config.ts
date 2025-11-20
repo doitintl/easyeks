@@ -23,6 +23,7 @@ export class Easy_EKS_Dynamic_Config {
     private static latest_version_of_kube_proxy_1_31_eks_addon: string;
     private static latest_version_of_kube_proxy_1_32_eks_addon: string;
     private static latest_version_of_kube_proxy_1_33_eks_addon: string;
+    private static latest_version_of_bottlerocket_1_33_release: string;
     private static arn_of_aws_iam_identity_running_cdk_deploy: string; 
     //^-- Purpose: Get's added to list of eks cluster admin users able to run 'aws eks update-kubeconfig --region ca-central-1 --name dev1-eks'
 
@@ -60,14 +61,17 @@ export class Easy_EKS_Dynamic_Config {
         const cmd9 = `aws eks describe-addon-versions --kubernetes-version=1.33 --addon-name=snapshot-controller --query='addons[].addonVersions[].addonVersion' | jq '.[0]' | tr -d '"|\n|\r'`;
         Easy_EKS_Dynamic_Config.latest_version_of_snapshot_controller_eks_addon = stdout_of_cmd(cmd9); //plausible value = v8.3.0-eksbuild.1
 
-        const kp31 = `aws eks describe-addon-versions --kubernetes-version=1.31 --addon-name=kube-proxy --query='addons[].addonVersions[].addonVersion' | jq '.[0]' | tr -d '"|\n|\r'`;
-        Easy_EKS_Dynamic_Config.latest_version_of_kube_proxy_1_31_eks_addon = stdout_of_cmd(kp31); //plausible value = v1.31.10-eksbuild.8
+        const latest_kube_proxy_31_cmd = `aws eks describe-addon-versions --kubernetes-version=1.31 --addon-name=kube-proxy --query='addons[].addonVersions[].addonVersion' | jq '.[0]' | tr -d '"|\n|\r'`;
+        Easy_EKS_Dynamic_Config.latest_version_of_kube_proxy_1_31_eks_addon = stdout_of_cmd(latest_kube_proxy_31_cmd); //plausible value = v1.31.10-eksbuild.8
 
-        const kp32 = `aws eks describe-addon-versions --kubernetes-version=1.32 --addon-name=kube-proxy --query='addons[].addonVersions[].addonVersion' | jq '.[0]' | tr -d '"|\n|\r'`;
-        Easy_EKS_Dynamic_Config.latest_version_of_kube_proxy_1_32_eks_addon = stdout_of_cmd(kp32); //plausible value = v1.32.6-eksbuild.8
+        const latest_kube_proxy_32_cmd = `aws eks describe-addon-versions --kubernetes-version=1.32 --addon-name=kube-proxy --query='addons[].addonVersions[].addonVersion' | jq '.[0]' | tr -d '"|\n|\r'`;
+        Easy_EKS_Dynamic_Config.latest_version_of_kube_proxy_1_32_eks_addon = stdout_of_cmd(latest_kube_proxy_32_cmd); //plausible value = v1.32.6-eksbuild.8
 
-        const kp33 = `aws eks describe-addon-versions --kubernetes-version=1.33 --addon-name=kube-proxy --query='addons[].addonVersions[].addonVersion' | jq '.[0]' | tr -d '"|\n|\r'`;
-        Easy_EKS_Dynamic_Config.latest_version_of_kube_proxy_1_33_eks_addon = stdout_of_cmd(kp33); //plausible value = v1.33.3-eksbuild.6
+        const latest_kube_proxy_33_cmd = `aws eks describe-addon-versions --kubernetes-version=1.33 --addon-name=kube-proxy --query='addons[].addonVersions[].addonVersion' | jq '.[0]' | tr -d '"|\n|\r'`;
+        Easy_EKS_Dynamic_Config.latest_version_of_kube_proxy_1_33_eks_addon = stdout_of_cmd(latest_kube_proxy_33_cmd); //plausible value = v1.33.3-eksbuild.6
+
+        const latest_bottlerocket_33_cmd = `aws ssm get-parameters-by-path --path "/aws/service/bottlerocket/aws-k8s-1.33" --recursive | jq -cr '.Parameters[].Name' | grep -v "latest" | awk -F '/' '{print $7}' | sort | uniq | tail -n 1 | tr -d '"|\n|\r'`;
+        Easy_EKS_Dynamic_Config.latest_version_of_bottlerocket_1_33_release = stdout_of_cmd(latest_bottlerocket_33_cmd); //plausible value = 1.51.0-47438798
     }//end constructor
 
     private static ensure_init(){ if(!Easy_EKS_Dynamic_Config.singleton){ Easy_EKS_Dynamic_Config.singleton = new Easy_EKS_Dynamic_Config(); } }
@@ -118,6 +122,10 @@ export class Easy_EKS_Dynamic_Config {
     public static get_latest_version_of_kube_proxy_1_33_eks_addon(): string{
         this.ensure_init();
         return this.latest_version_of_kube_proxy_1_33_eks_addon;
+    }
+    public static get_latest_version_of_bottlerocket_1_33_release(): string{
+        this.ensure_init();
+        return this.latest_version_of_bottlerocket_1_33_release;
     }
 
 } //end class Easy_EKS_Dynamic_Config

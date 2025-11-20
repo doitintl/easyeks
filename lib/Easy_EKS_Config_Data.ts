@@ -38,6 +38,7 @@ export class Easy_EKS_Config_Data { //This object just holds config data
     baselineNodesNumber: number;
     baselineNodesType: eks.CapacityType; //enum eks.CapacityType.SPOT or eks.CapacityType.ON_DEMAND
     workerNodeRole: iam.Role; //used by baselineMNG & Karpenter
+    worker_nodes_bottlerocket_release_version: string;
     preexisting_cluster_detected: boolean; //true when cluster is detected to be pre-existing
     sg_id_of_cluster_nodes: string; //(cdk doesn't normally supply this, added for convenience)
     control_plane_logging_options_to_enable?: eks.ClusterLoggingTypes[]; //? is necessary as undefined is used to represent none
@@ -109,6 +110,9 @@ export class Easy_EKS_Config_Data { //This object just holds config data
         this.vpc = pre_existing_vpc as ec2.Vpc;
     }
     set_clusters_version_of_Kubernetes(version: KubernetesVersion){ this.kubernetesVersion = version; }
+    set_worker_nodes_bottlerocket_release_version(worker_nodes_bottlerocket_release_version: string){
+        this.worker_nodes_bottlerocket_release_version = worker_nodes_bottlerocket_release_version;
+    }
     set_version_of_kubectl_used_by_lambda(version: cdk.aws_lambda.ILayerVersion ){ this.kubectlLayer = version; }
     add_tag(key: string, value: string){
         try {
