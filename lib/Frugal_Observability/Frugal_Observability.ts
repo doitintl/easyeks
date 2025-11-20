@@ -509,7 +509,7 @@ customConfig:
       address: "[::]:9090"  #<-- triggers listening on port 9090 (from an IPv6 IP address)
       inputs:
       - subset_of_metrics.kube_worker_node_metrics
-    conventionalized_kube_container_logs_to_victoria_logs_db:
+    victoria_logs_db_sink_for_conventionalized_kube_container_logs:
       inputs: [ conventionalized_kube_container_logs ]  #<-- best to only send 1 input per vl_log_sink, so they can have diff VL-Stream-Field values
       type: elasticsearch   #<-- The Bulk API algorithm invented by elasticsearch is the most efficient option available
       api_version: v8
@@ -526,7 +526,7 @@ customConfig:
           VL-Msg-Field: "message"
           AccountID: "0"
           ProjectID: "0"
-    conventionalized_kube_event_logs_to_victoria_logs_db:
+    victoria_logs_db_sink_for_conventionalized_kube_event_logs:
       inputs: [ conventionalized_kube_event_logs ]  #<-- best to only send 1 input per vl_log_sink, so they can have diff VL-Stream-Field values
       type: elasticsearch   #<-- The Bulk API algorithm invented by elasticsearch is the most efficient option available
       api_version: v8
