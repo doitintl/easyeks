@@ -301,14 +301,6 @@ resources:
 env:
 - name: KUBERNETES_SERVICE_HOST
   value: "kubernetes.default.svc"   #<--IPv6 fix documented in https://github.com/vectordotdev/vector/issues/19224
-- name: KUBERNETES_SERVICEACCOUNT_TOKEN   #<--used to ingest kubernetes event logs
-  valueFrom:
-    secretKeyRef:
-      name: observability-aggregator-vector-kube-service-account-token
-      key: token
-serviceAccount:
-  name: observability-aggregator-vector
-  create: true
 containerPorts:
 - containerPort: 6443   #<--GRPC endpoint. (not a webserver) (grpc needs https)
   name: vector
@@ -358,20 +350,6 @@ customConfig:
     playground: false
   data_dir: /vector-data-dir
   sources:
-    kube_event_logs:
-      type: http_client
-      endpoint: https://kubernetes.default.svc:443/api/v1/events
-      scrape_interval_secs: 10
-      decoding:
-        codec: json
-      auth:
-        strategy: bearer
-        token: "\$\{KUBERNETES_SERVICEACCOUNT_TOKEN\}"
-      tls:
-        ca_file: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
-      headers:
-        Accept:
-        - application/json
     vector_agents: #<-- source of container logs + worker node metrics
       type: vector
       version: "2"
@@ -405,31 +383,6 @@ customConfig:
         tags:
           purpose: testing
   transforms:
-    unnest_kube_event_logs:
-      type: remap
-      inputs: [ kube_event_logs ]
-      source: |
-        . = unnest!(.items)
-    deduplicate_kube_event_logs:
-      type: dedupe
-      inputs: [ unnest_kube_event_logs ]
-      cache:
-        num_events: 10000  #Number of events to cache and use for comparing incoming events to previously seen events.
-      time_settings:
-        max_age_ms: 3600000 #<--1h (matches kube event expiration)
-      fields:
-        match:
-        - items.metadata.uid
-    conventionalized_kube_event_logs:
-      type: remap
-      inputs: [ deduplicate_kube_event_logs ]
-      source: |
-        .log_source = "kubernetes_event_logs" #<-- "log_source: kubernetes_event_logs" becomes a working query for Victoria Logs
-        .message = .items.message
-        .timestamp = .items.lastTimestamp
-        .involvedObject = .items.involvedObject
-        .reason = .items.reason
-        .source = .items.source
     from_vector_agents:
       type: "route"
       inputs: [ "vector_agents" ]
@@ -457,15 +410,92 @@ customConfig:
       - vector_aggregator_generated_test_logs
       route: #v-- Pattern is log_name: 'VRLcondition' (https://vector.dev/docs/reference/vrl/#example-filtering-events)
         vector_aggregator_generated_test_logs: '.source_type == "demo_logs"'   #<-- now "subset_of_logs.vector_aggregator_generated_test_logs" is a recognized input
-        container_logs: '.source_type == "kubernetes_logs"'                    #<-- now "subset_of_logs.container_logs" is a recognized input
-    conventionalized_container_logs:
+        kubernetes_event_exporter_container_logs: ' .source_type == "kubernetes_logs" && .kubernetes.pod_labels."app.kubernetes.io/name" == "kubernetes-event-exporter" '     #<-- now "subset_of_logs.kubernetes_event_exporter_container_logs" is a recognized input
+        kube_container_logs: ' .source_type == "kubernetes_logs" && .kubernetes.pod_labels."app.kubernetes.io/name" != "kubernetes-event-exporter" ' #<-- now "subset_of_logs.kube_container_logs" is a recognized input
+    kube_event_logs:
       type: "remap"
-      inputs: [ "subset_of_logs.container_logs" ]
+      inputs: [ subset_of_logs.kubernetes_event_exporter_container_logs ]
       # v-- source represents an embedded multi-line text file / HEREDOC of vector remap language syntax
-      source: |-
-        del(.source_type) # remove the following KV pair from the log entry, "source_type": "kubernetes_logs"
-        .log_source = "container_logs" #(effectively renamed the KV pair, to this new name)
-        # ^-- Thanks to this "log_source: container_logs" becomes a working query for Victoria Logs
+      source: |
+        . = parse_json!(.message) #<-- extract contents of json log embedded in .message, and transfer it's contents into the root of a new json log entry
+    conventionalized_kube_container_logs:
+      type: "remap"
+      inputs: [ "subset_of_logs.kube_container_logs" ]
+      source: |
+        # v-- Thanks to this "log_source: kubernetes_container_logs" becomes a working query for Victoria Logs  
+        .log_source = "kubernetes_container_logs"
+        # v-- UX improvements
+        .cluster_name = "${config.cluster_name}"
+        .cluster_region = "${config.cluster_region}"
+        #v-- shortening name of keys used as log streams, for UX reasons (looks nicer in GUI)
+        .container = del(.kubernetes.container_name) #<-- effectively renames the key "kubernetes.container_name" to "container"
+        .ns = del(.kubernetes.pod_namespace) #<-- effectively renames the key "kubernetes.pod_namespace" to "ns"
+        # v-- Cleaning up duplicate info & useless noise
+        del(.source_type)
+        del(.file)
+        del(.kubernetes.container_id)
+        del(.kubernetes.namespace_labels)
+        del(.kubernetes.node_labels."k8s.io/cloud-provider-aws")
+        del(.kubernetes.node_labels."karpenter.sh/do-not-sync-taints")
+        del(.kubernetes.node_labels."beta*")
+        del(.kubernetes.node_labels."beta.kubernetes.io/arch")
+        del(.kubernetes.node_labels."beta.kubernetes.io/instance-type") #<-- "'s are needed when referencing a key with /'s OR -'s
+        del(.kubernetes.node_labels."beta.kubernetes.io/os")
+        del(.kubernetes.node_labels."failure-domain.beta.kubernetes.io/region")
+        del(.kubernetes.node_labels."failure-domain.beta.kubernetes.io/zone")
+        del(.kubernetes.node_labels."topology.ebs.csi.aws.com/zone")
+        del(.kubernetes.node_labels."kubernetes.io/os")
+        del(.kubernetes.node_labels."kubernetes.io/hostname")
+        del(.kubernetes.node_labels."karpenter.sh/initialized")
+        del(.kubernetes.node_labels."karpenter.sh/registered")
+        del(.kubernetes.node_labels."karpenter.k8s.aws/instance-hypervisor")
+        del(.kubernetes.node_labels."karpenter.k8s.aws/instance-family")
+        del(.kubernetes.node_labels."karpenter.k8s.aws/instance-generation")
+        del(.kubernetes.node_labels."karpenter.k8s.aws/instance-size")
+        del(.kubernetes.node_labels."karpenter.k8s.aws/instance-encryption-in-transit-supported")
+        del(.kubernetes.node_labels."karpenter.k8s.aws/instance-category")
+        del(.kubernetes.node_labels."eks.amazonaws.com/sourceLaunchTemplateVersion")
+        del(.kubernetes.pod_ips)
+        del(.kubernetes.pod_annotations."eks.amazonaws.com/timestamp")
+        del(.kubernetes.pod_labels."controller-revision-hash")
+        del(.kubernetes.pod_labels."pod-template-generation")
+        del(.kubernetes.pod_labels."pod-template-hash")
+        del(.kubernetes.pod_uid)
+        # v-- Note: .kubernetes is purposefully temporarily added in front of a few things, to preserve them, when .kubernetes is later removed.
+        .kubernetes.message = del(.message)
+        .kubernetes.timestamp = del(.timestamp)
+        .kubernetes.cluster_name = del(.cluster_name)
+        .kubernetes.cluster_region = del(.cluster_region)
+        .kubernetes.ns = del(.ns)
+        .kubernetes.container = del(.container)
+        .kubernetes.log_type = del(.stream)
+        .kubernetes.log_source = del(.log_source)
+        . = del(.kubernetes) #<-- remove kubernetes for UX as its redundant info
+    conventionalized_kube_event_logs:
+      type: "remap"
+      inputs: [ kube_event_logs ]
+      source: |
+        # v-- Thanks to this "log_source: kubernetes_event_logs" becomes a working query for Victoria Logs
+        .log_source = "kubernetes_event_logs"
+        # v-- UX improvements
+        .cluster_name = "${config.cluster_name}"
+        .cluster_region = "${config.cluster_region}"
+        .event_type = del(.type) #<-- effectively renames the key "type" to "event_type"
+        .event_reason = del(.reason) #<-- effectively renames the key "reason" to "event_reason"
+        if ( exists(.involvedObject.namespace) ) {
+            .event_ns = del(.involvedObject.namespace) #<-- effectively renames the key "involvedObject.namespace" to "event_ns"
+        } else {
+            .event_ns = "none" #<-- force existance of key, so it can be used as Victoria Log Stream Entry
+        }   #^v-- shortening name of keys used as log streams, for UX reasons (looks nicer in GUI)
+        .obj_kind = del(.involvedObject.kind) #<-- effectively renames the key "involvedObject.kind" to "obj_kind"
+        # v-- Cleaning up duplicate info & useless noise
+        del(.source_type)
+        del(.involvedObject.resourceVersion)
+        del(.involvedObject.uid)
+        del(.involvedObject.ownerReferences)
+        del(.involvedObject.deleted)
+        del(.metadata)
+        del(.source)
     conventionalized_vector_aggregator_generated_test_logs:
       type: "remap"
       inputs: [ "subset_of_logs.vector_aggregator_generated_test_logs" ]
@@ -479,30 +509,48 @@ customConfig:
       address: "[::]:9090"  #<-- triggers listening on port 9090 (from an IPv6 IP address)
       inputs:
       - subset_of_metrics.kube_worker_node_metrics
-    victoria_logs_db:
-      inputs:
-      - conventionalized_container_logs
-      - conventionalized_kube_event_logs
-#      - kube_event_logs
+    conventionalized_kube_container_logs_to_victoria_logs_db:
+      inputs: [ conventionalized_kube_container_logs ]  #<-- best to only send 1 input per vl_log_sink, so they can have diff VL-Stream-Field values
       type: elasticsearch   #<-- The Bulk API algorithm invented by elasticsearch is the most efficient option available
       api_version: v8
       compression: gzip
+      mode: bulk
       endpoints:
       - http://vl-victoria-logs-single-server:9428/insert/elasticsearch/
       healthcheck:
         enabled: false   #<-- recommended per VL's docs: https://docs.victoriametrics.com/victorialogs/data-ingestion/vector/
-      query:
-        _msg_field: message
-        _time_field: timestamp
-        _stream_field: host,container_name   #https://docs.victoriametrics.com/victorialogs/keyconcepts/#stream-fields
-    std_out: #<-- You can test using kubectl logs observability-aggregator-vector-0 -n=observability
-      type: "console"
-      inputs:
-      - conventionalized_kube_event_logs
+      request:  #<-- based on example config of 'helm show values oci://ghcr.io/victoriametrics/helm-charts/victoria-logs-single'
+        headers: #v--Important: don't put spaces between these CSV values, or it'll cause a hidden error.
+          VL-Time-Field: "timestamp"
+          VL-Stream-Fields: "container,ns"  #<-- UX wise best to only have short names & 2 max (also only use keys with low cardinality) (query optimization)
+          VL-Msg-Field: "message"
+          AccountID: "0"
+          ProjectID: "0"
+    conventionalized_kube_event_logs_to_victoria_logs_db:
+      inputs: [ conventionalized_kube_event_logs ]  #<-- best to only send 1 input per vl_log_sink, so they can have diff VL-Stream-Field values
+      type: elasticsearch   #<-- The Bulk API algorithm invented by elasticsearch is the most efficient option available
+      api_version: v8
+      compression: gzip
+      mode: bulk
+      endpoints:
+      - http://vl-victoria-logs-single-server:9428/insert/elasticsearch/
+      healthcheck:
+        enabled: false   #<-- recommended per VL's docs: https://docs.victoriametrics.com/victorialogs/data-ingestion/vector/
+      request:  #<-- based on example config of 'helm show values oci://ghcr.io/victoriametrics/helm-charts/victoria-logs-single'
+        headers: #v--Important: don't put spaces between these CSV values, or it'll cause a hidden error.
+          VL-Time-Field: "timestamp"
+          VL-Stream-Fields: "obj_kind,event_ns"  #<-- UX wise best to only have short names & 2 max (also only use keys with low cardinality) (query optimization)
+          VL-Msg-Field: "message"
+          AccountID: "0"
+          ProjectID: "0"
+#    std_out: #<-- You can test using kubectl logs observability-aggregator-vector-0 -n=observability
+#      type: "console"
+#      inputs:
 #      - conventionalized_vector_aggregator_generated_test_logs
 #      - subset_of_metrics.vector_aggregator_generated_test_metrics
-      encoding:
-        codec: "json"
+#      - conventionalized_kube_container_logs
+#      encoding:
+#        codec: "json"
 `;
 const vector_observability_aggregator_helm_values_as_JS_object: JSON = read_yaml_string_as_javascript_object(vector_observability_aggregator_helm_values_as_yaml);
 
@@ -510,22 +558,12 @@ const vector_observability_aggregator_helm_values_as_JS_object: JSON = read_yaml
         const vector_aggregator_cert_yamls_as_JSO_array: JSON[] = read_yaml_file_as_array_of_javascript_objects(vector_aggregator_cert_yaml_file);
         const observability_certificates = new eks.KubernetesManifest(this.stack, "observability-certificates", {
             cluster: this.cluster,
-            manifest: vector_aggregator_cert_yamls_as_JSO_array,
+            manifest: [ ...vector_aggregator_cert_yamls_as_JSO_array ],
             overwrite: true,
             prune: true,
         });
         observability_certificates.node.addDependency(this.observability_ns);
 
-
-        const vector_aggregator_kube_rbac_yaml_file = './lib/Frugal_Observability/manifests/kube_rbac_for_vector_observability_aggregator.yaml';
-        const vector_aggregator_kube_rbac_yaml_manifests_as_JSO_array: JSON[] = read_yaml_file_as_array_of_javascript_objects(vector_aggregator_kube_rbac_yaml_file);
-        const observability_kube_rbac = new eks.KubernetesManifest(this.stack, "observability-kube-rbac", {
-            cluster: this.cluster,
-            manifest: [ ...vector_aggregator_kube_rbac_yaml_manifests_as_JSO_array ], //<--inconsistent from above to show alternate syntax options
-            overwrite: true,
-            prune: true,
-        });
-        observability_kube_rbac.node.addDependency(this.observability_ns);
 
 
         const vector_observability_agent_helm_release = new eks.HelmChart(this.stack, 'vector-observability-agent-daemonset-helm', {
