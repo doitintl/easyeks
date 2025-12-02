@@ -66,8 +66,12 @@ export function deploy_essentials(config: Easy_EKS_Config_Data, stack: cdk.Stack
     const observability_agent_input_parameters:fo.Vector_Observability_Agent_Input_Parameters = {
         enabled: true,
     };
+    const dashboard_input_parameters:fo.Grafana_Dashboard_Input_Parameters = {
+        enabled: true,
+    };
     config.Frugal_Observability.set_input_parameters_of_logs_db(logs_db_input_parameters);
     config.Frugal_Observability.set_input_parameters_of_observability_agent(observability_agent_input_parameters);
+    config.Frugal_Observability.set_input_parameters_of_dashboard(dashboard_input_parameters);
     config.Frugal_Observability.deploy_configured_Frugal_Observability_Stack(config);
 
 }//end deploy_essentials()

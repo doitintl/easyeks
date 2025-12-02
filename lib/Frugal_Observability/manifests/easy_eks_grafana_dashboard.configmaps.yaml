@@ -1,0 +1,482 @@
+# Debug Tips:
+# * kubectl logs --previous deploy/grafana --container grafana-sc-dashboard -n=observability
+#   ^-- this one's rarely useful for debugging
+# * cdk deploy dev1-eks-essentials --require-approval=never && kubectl rollout restart deploy/grafana -n=observability && kubectl rollout status deploy/grafana -n=observability
+#   ^-- potentially useful for iterative testing, to allow clean log messages
+# * kubectl logs  deploy/grafana --container grafana -n=observability | grep "error msg"
+#   Example Output:
+#   logger=provisioning.dashboard type=file name=sidecarProvider t=2025-12-02T16:57:05.597586992Z level=error msg="failed to load dashboard from " file=/tmp/dashboards/kubernetes-container-logs-dashboard.json error="Dashboard title cannot be empty"
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-dashboard-vl-kubernetes-container-logs
+  namespace: observability
+  labels:
+    grafana_dashboard: "auto_loaded_by_grafana_sidecar_container"
+data:
+  kubernetes-container-logs-dashboard.json: |-
+    {
+      "uid": "configmap-001",
+      "title": "Kubernetes Container Logs (from VictoriaLogs)",
+      "tags": [ "managed_by_configmap" ],
+      "schemaVersion": 40,
+      "graphTooltip": 0,
+      "preload": false,
+      "liveNow": false,
+      "editable": true,
+      "time": {
+        "from": "now-30m",
+        "to": "now"
+      },
+      "timezone": "browser",
+      "refresh": "",
+      "timepicker": {
+        "refresh_intervals": [
+          "5s",
+          "10s",
+          "30s",
+          "1m",
+          "5m",
+          "15m",
+          "30m",
+          "1h",
+          "2h",
+          "1d"
+        ],
+        "hidden": false
+      },
+      "fiscalYearStartMonth": 0,
+      "version": 1,
+      "links": [
+        {
+          "asDropdown": false,
+          "icon": "bolt",
+          "includeVars": true,
+          "keepTime": false,
+          "tags": [],
+          "targetBlank": true,
+          "title": "View In Grafana's Explore Tab",
+          "tooltip": "Note: Explorer Tab may require sign in. (Explorer Tab isn't accessible to viewer role, requires editor role or higher)",
+          "type": "link",
+          "url": "/explore?orgId=1&left={\"datasource\":\"$DS_VICTORIALOGS\",\"queries\":[{\"expr\":\"ns: $namespace AND container: $container_in_ns AND $query\"}]}"
+        },
+        {
+          "asDropdown": false,
+          "icon": "external link",
+          "includeVars": false,
+          "keepTime": false,
+          "tags": [],
+          "targetBlank": true,
+          "title": "Learn LogsQL",
+          "tooltip": "",
+          "type": "link",
+          "url": "https://docs.victoriametrics.com/victorialogs/logsql/"
+        },
+        {
+          "asDropdown": false,
+          "icon": "external link",
+          "includeVars": false,
+          "keepTime": false,
+          "tags": [],
+          "targetBlank": true,
+          "title": "Victoria Logs GUI URL",
+          "tooltip": "kubectl port-forward service/vl-victoria-logs-single-server -n=observability 9428:9428",
+          "type": "link",
+          "url": "http://localhost:9428/select/vmui/"
+        }
+      ],
+      "annotations": {
+        "list": [
+          {
+            "enable": true,
+            "hide": true,
+            "iconColor": "rgba(0, 211, 255, 1)",
+            "name": "Annotations & Alerts",
+            "type": "dashboard",
+            "builtIn": 1,
+            "datasource": {
+              "uid": "grafana",
+              "type": "grafana"
+            }
+          }
+        ]
+      },
+      "panels": [
+        {
+          "id": 2,
+          "type": "timeseries",
+          "title": "Counts of Kubernetes Container Logs in Namespace: ${namespace}, for Container(s): ${container_in_ns}",
+          "description": "",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "axisBorderShow": false,
+                "axisCenteredZero": false,
+                "axisColorMode": "text",
+                "axisLabel": "",
+                "axisPlacement": "auto",
+                "barAlignment": 0,
+                "barWidthFactor": 0.6,
+                "drawStyle": "bars",
+                "fillOpacity": 0,
+                "gradientMode": "none",
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "insertNulls": false,
+                "lineInterpolation": "linear",
+                "lineWidth": 2,
+                "pointSize": 5,
+                "scaleDistribution": {
+                  "type": "linear"
+                },
+                "showPoints": "auto",
+                "showValues": true,
+                "spanNulls": false,
+                "stacking": {
+                  "group": "A",
+                  "mode": "none"
+                },
+                "thresholdsStyle": {
+                  "mode": "off"
+                }
+              },
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": 0
+                  },
+                  {
+                    "color": "red",
+                    "value": 80
+                  }
+                ]
+              },
+              "unit": "short"
+            },
+            "overrides": [
+              {
+                "__systemRef": "hideSeriesFrom",
+                "matcher": {
+                  "id": "byNames",
+                  "options": {
+                    "mode": "exclude",
+                    "names": [
+                      "observability_{grafana,grafana-sc-dashboard}"
+                    ],
+                    "prefix": "All except:",
+                    "readOnly": true
+                  }
+                },
+                "properties": [
+                  {
+                    "id": "custom.hideFrom",
+                    "value": {
+                      "legend": false,
+                      "tooltip": true,
+                      "viz": true
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          "options": {
+            "legend": {
+              "calcs": [
+                "sum"
+              ],
+              "displayMode": "list",
+              "placement": "bottom",
+              "showLegend": true
+            },
+            "tooltip": {
+              "hideZeros": false,
+              "mode": "single",
+              "sort": "none"
+            }
+          },
+          "pluginVersion": "12.3.0",
+          "links": [],
+          "targets": [
+            {
+              "refId": "A",
+              "hide": false,
+              "datasource": {},
+              "editorMode": "code",
+              "expr": "_stream: {container=~\"$container_in_ns\", ns=\"$namespace\"} AND $query | stats count()",
+              "legendFormat": "${namespace}_${container_in_ns}",
+              "queryType": "statsRange"
+            }
+          ],
+          "transformations": [],
+          "gridPos": {
+            "x": 0,
+            "y": 0,
+            "w": 18,
+            "h": 6
+          }
+        },
+        {
+          "id": 3,
+          "type": "piechart",
+          "title": "Count by $count_by",
+          "description": "",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                }
+              },
+              "unit": "short"
+            },
+            "overrides": []
+          },
+          "options": {
+            "legend": {
+              "displayMode": "list",
+              "placement": "bottom",
+              "showLegend": true
+            },
+            "pieType": "pie",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "sort": "desc",
+            "tooltip": {
+              "hideZeros": false,
+              "mode": "single",
+              "sort": "none"
+            }
+          },
+          "pluginVersion": "12.3.0",
+          "links": [],
+          "targets": [
+            {
+              "refId": "A",
+              "hide": false,
+              "datasource": {},
+              "editorMode": "code",
+              "expr": "_stream: {container=~\"$container_in_ns\", ns=\"$namespace\"} AND $query | stats by (\"$count_by\") count() c | sort by (c desc) | limit 50",
+              "legendFormat": "{{$count_by}}",
+              "queryType": "stats"
+            }
+          ],
+          "transformations": [],
+          "gridPos": {
+            "x": 18,
+            "y": 0,
+            "w": 6,
+            "h": 6
+          }
+        },
+        {
+          "id": 1,
+          "type": "logs",
+          "title": "Kubernetes Container Logs in Namespace: ${namespace}, for Container(s): ${container_in_ns}",
+          "description": "",
+          "fieldConfig": {
+            "defaults": {},
+            "overrides": []
+          },
+          "options": {
+            "dedupStrategy": "none",
+            "enableInfiniteScrolling": false,
+            "enableLogDetails": true,
+            "prettifyLogMessage": false,
+            "showCommonLabels": false,
+            "showControls": false,
+            "showLabels": false,
+            "showTime": true,
+            "sortOrder": "Descending",
+            "wrapLogMessage": false
+          },
+          "pluginVersion": "12.3.0",
+          "links": [],
+          "targets": [
+            {
+              "refId": "A",
+              "hide": false,
+              "datasource": {},
+              "editorMode": "code",
+              "expr": "_stream: {container=~\"$container_in_ns\", ns=\"$namespace\"} AND $query | sort desc | limit $limit",
+              "queryType": "range"
+            }
+          ],
+          "transformations": [],
+          "gridPos": {
+            "x": 0,
+            "y": 6,
+            "w": 24,
+            "h": 23
+          }
+        }
+      ],
+      "templating": {
+        "list": [
+          {
+            "name": "namespace",
+            "label": "namespace",
+            "description": "kubernetes namespace",
+            "skipUrlSync": false,
+            "hide": 0,
+            "type": "query",
+            "current": {
+              "text": "observability",
+              "value": "observability"
+            },
+            "options": [],
+            "query": {
+              "field": "ns",
+              "limit": 0,
+              "query": "ns: *",
+              "refId": "VictoriaLogsVariableQueryEditor-VariableQuery",
+              "type": "fieldValue"
+            },
+            "datasource": {},
+            "sort": 1,
+            "refresh": 1,
+            "regex": "",
+            "allValue": "*",
+            "includeAll": true,
+            "multi": false,
+            "definition": "ns: *"
+          },
+          {
+            "name": "container_in_ns",
+            "label": "container_in_ns",
+            "description": "name of kubernetes container in $namespace",
+            "skipUrlSync": false,
+            "hide": 0,
+            "type": "query",
+            "current": {
+              "text": [
+                "grafana"
+              ],
+              "value": [
+                "grafana"
+              ]
+            },
+            "options": [],
+            "query": {
+              "field": "container",
+              "limit": 0,
+              "query": "ns: $namespace",
+              "refId": "VictoriaLogsVariableQueryEditor-VariableQuery",
+              "type": "fieldValue"
+            },
+            "datasource": {},
+            "sort": 1,
+            "refresh": 2,
+            "regex": "",
+            "allValue": "*",
+            "includeAll": true,
+            "multi": true,
+            "definition": "ns: $namespace"
+          },
+          {
+            "name": "limit",
+            "label": "Displayed Logs Limit",
+            "skipUrlSync": false,
+            "hide": 0,
+            "type": "custom",
+            "current": {
+              "text": "20",
+              "value": "20"
+            },
+            "options": [
+              {
+                "selected": true,
+                "text": "20",
+                "value": "20"
+              },
+              {
+                "selected": false,
+                "text": "30",
+                "value": "30"
+              },
+              {
+                "selected": false,
+                "text": "40",
+                "value": "40"
+              },
+              {
+                "selected": false,
+                "text": "50",
+                "value": "50"
+              },
+              {
+                "selected": false,
+                "text": "100",
+                "value": "100"
+              }
+            ],
+            "query": "10, 20, 30, 40, 50, 100",
+            "multi": false,
+            "includeAll": false
+          },
+          {
+            "name": "query",
+            "skipUrlSync": false,
+            "hide": 0,
+            "type": "textbox",
+            "current": {
+              "text": "*",
+              "value": "*"
+            },
+            "options": [
+              {
+                "text": "*",
+                "value": "*",
+                "selected": true
+              }
+            ],
+            "query": "*"
+          },
+          {
+            "name": "count_by",
+            "skipUrlSync": false,
+            "hide": 0,
+            "type": "query",
+            "current": {
+              "text": "cluster_name",
+              "value": "cluster_name"
+            },
+            "options": [],
+            "query": {
+              "field": "",
+              "limit": 25,
+              "query": "{ns=\"$namespace\"} container:=\"$container_in_ns\"",
+              "refId": "VictoriaLogsVariableQueryEditor-VariableQuery",
+              "type": "fieldName"
+            },
+            "datasource": {},
+            "sort": 1,
+            "refresh": 2,
+            "regex": "/^[a-zA-Z].+/",
+            "includeAll": false,
+            "multi": false,
+            "definition": "{ns=\"$namespace\"} container:=\"$container_in_ns\""
+          }
+        ]
+      }
+    }
+---
