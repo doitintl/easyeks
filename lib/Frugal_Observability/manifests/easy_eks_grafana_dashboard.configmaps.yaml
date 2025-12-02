@@ -4,25 +4,42 @@
 # * cdk deploy dev1-eks-essentials --require-approval=never && kubectl rollout restart deploy/grafana -n=observability && kubectl rollout status deploy/grafana -n=observability
 #   ^-- potentially useful for iterative testing, to allow clean log messages
 # * kubectl logs  deploy/grafana --container grafana -n=observability | grep "error msg"
-#   Example Output:
-#   logger=provisioning.dashboard type=file name=sidecarProvider t=2025-12-02T16:57:05.597586992Z level=error msg="failed to load dashboard from " file=/tmp/dashboards/kubernetes-container-logs-dashboard.json error="Dashboard title cannot be empty"
+#   Example Output / Example Errors:
+#   * logger=provisioning.dashboard type=file name=sidecarProvider t=2025-12-02T16:57:05.597586992Z level=error msg="failed to load dashboard from " file=/tmp/dashboards/kubernetes-container-logs-dashboard.json error="Dashboard title cannot be empty"
+#     ^-- probably exported dashboard as V1 Resource or V2 Resource, export using the classic model
+#   * logger=provisioning.dashboard type=file name=sidecarProvider t=2025-12-02T23:12:08.167778543Z level=error msg="failed to load dashboard from " file=/tmp/dashboards/kubernetes-container-logs-dashboard.json error="invalid character '}' looking for beginning of object key string"
+#     ^-- bad syntax from manual edit, try jsonlint.com, I had an extra comma, which can be valid json in typescript, but grafana uses a strict json parser.
+#####################################
+# TIPs for How to Manage Dashboards
+# * Best Tip:
+#   * Try to use the defaults, avoid tinkering without a good reason as this takes time to learn, debug, and get right.
+# * To edit temporarily for testing purposes:
+#   * You'd want to set the node selector to on-demand, due to lack of persistence when grafana is backed by deployment.
+#   * You'd need to export "provisioned" (read only) dashboard, and import them as a new name & UID
+# * To edit permanently:
+#   * You'd need to create or update a configmap with a GUI export of dashboard.
+#   * When exporting dashboard from GUI:
+#     * ConfigMap managed dashboards only support export Model = Classic, (which only offers type of JSON export)
+#     * A V1 Resource / V2 Resource model export won't import correclty by the configmap method
+#       (Unless you manally extract the contents of spec, usually around line 21 of export.)
+#####################################
 ---
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: grafana-dashboard-vl-kubernetes-container-logs
+  name: grafana-dashboard-kubernetes-container-logs
   namespace: observability
   labels:
     grafana_dashboard: "auto_loaded_by_grafana_sidecar_container"
-data:
+data: #v--name must be unique, or you could get cryptic error: "A dashboard with the same uid already exists"
   kubernetes-container-logs-dashboard.json: |-
     {
-      "uid": "configmap-001",
+      "uid": "configmap_kubernetes-container-logs",
       "title": "Kubernetes Container Logs (from VictoriaLogs)",
       "tags": [ "managed_by_configmap" ],
       "schemaVersion": 40,
       "graphTooltip": 0,
-      "preload": false,
+      "preload": true,
       "liveNow": false,
       "editable": true,
       "time": {
@@ -51,7 +68,7 @@ data:
       "links": [
         {
           "asDropdown": false,
-          "icon": "bolt",
+          "icon": "external link",
           "includeVars": true,
           "keepTime": false,
           "tags": [],
@@ -59,31 +76,7 @@ data:
           "title": "View In Grafana's Explore Tab",
           "tooltip": "Note: Explorer Tab may require sign in. (Explorer Tab isn't accessible to viewer role, requires editor role or higher)",
           "type": "link",
-          "url": "/explore?orgId=1&left={\"datasource\":\"$DS_VICTORIALOGS\",\"queries\":[{\"expr\":\"ns: $namespace AND container: $container_in_ns AND $query\"}]}"
-        },
-        {
-          "asDropdown": false,
-          "icon": "external link",
-          "includeVars": false,
-          "keepTime": false,
-          "tags": [],
-          "targetBlank": true,
-          "title": "Learn LogsQL",
-          "tooltip": "",
-          "type": "link",
-          "url": "https://docs.victoriametrics.com/victorialogs/logsql/"
-        },
-        {
-          "asDropdown": false,
-          "icon": "external link",
-          "includeVars": false,
-          "keepTime": false,
-          "tags": [],
-          "targetBlank": true,
-          "title": "Victoria Logs GUI URL",
-          "tooltip": "kubectl port-forward service/vl-victoria-logs-single-server -n=observability 9428:9428",
-          "type": "link",
-          "url": "http://localhost:9428/select/vmui/"
+          "url": "/explore?orgId=1&left={\"queries\":[{\"expr\":\"ns: $namespace AND container: $container_in_ns AND $query\"}]}"
         }
       ],
       "annotations": {
@@ -103,6 +96,31 @@ data:
         ]
       },
       "panels": [
+        {
+            "fieldConfig": {
+                "defaults": {},
+                "overrides": []
+            },
+            "gridPos": {
+                "h": 8,
+                "w": 24,
+                "x": 0,
+                "y": 0
+            },
+            "id": 1,
+            "options": {
+                "code": {
+                    "language": "plaintext",
+                    "showLineNumbers": false,
+                    "showMiniMap": false
+                },
+                "content": "* This is querying VictoriaLogs for `kubernetes container logs` using a LogQL query of this nature: \n  * Parameterized Optimized Query: `_stream: {container=~\"($CONTAINER)\", ns=\"$NAMESPACE\"} AND $QUERY` \n  * Optimized Query: `_stream: {container=~\"(grafana)\", ns=\"observability\"} AND *` \n  * Normal Query: `ns:* AND container:* AND *` \n* Tip: For greater flexibility try accessing Victoria Logs GUI URL directly using: \n  * kubectl port-forward service/vl-victoria-logs-single-server -n=observability 9428:9428 \n  * http://localhost:9428/select/vmui/#/?query=ns%3A+*+AND+container%3A+*+AND+*&g0.range_input=5m&g0.end_input=2025-12-02T19%3A34%3A49&g0.relative_time=last_5_minutes \n* Docs to Learn LogQL: \n  * https://docs.victoriametrics.com/victorialogs/logsql/\n",
+                "mode": "markdown"
+            },
+            "pluginVersion": "12.3.0",
+            "title": "Usage Notes, VL GUI Access Notes, & Link to Docs",
+            "type": "text"
+        },
         {
           "id": 2,
           "type": "timeseries",
@@ -163,30 +181,6 @@ data:
               "unit": "short"
             },
             "overrides": [
-              {
-                "__systemRef": "hideSeriesFrom",
-                "matcher": {
-                  "id": "byNames",
-                  "options": {
-                    "mode": "exclude",
-                    "names": [
-                      "observability_{grafana,grafana-sc-dashboard}"
-                    ],
-                    "prefix": "All except:",
-                    "readOnly": true
-                  }
-                },
-                "properties": [
-                  {
-                    "id": "custom.hideFrom",
-                    "value": {
-                      "legend": false,
-                      "tooltip": true,
-                      "viz": true
-                    }
-                  }
-                ]
-              }
             ]
           },
           "options": {
@@ -289,7 +283,7 @@ data:
           }
         },
         {
-          "id": 1,
+          "id": 4,
           "type": "logs",
           "title": "Kubernetes Container Logs in Namespace: ${namespace}, for Container(s): ${container_in_ns}",
           "description": "",
@@ -399,24 +393,24 @@ data:
             "hide": 0,
             "type": "custom",
             "current": {
-              "text": "20",
-              "value": "20"
+              "text": "10",
+              "value": "10"
             },
             "options": [
               {
                 "selected": true,
+                "text": "10",
+                "value": "10"
+              },
+              {
+                "selected": false,
+                "text": "15",
+                "value": "15"
+              },
+              {
+                "selected": false,
                 "text": "20",
                 "value": "20"
-              },
-              {
-                "selected": false,
-                "text": "30",
-                "value": "30"
-              },
-              {
-                "selected": false,
-                "text": "40",
-                "value": "40"
               },
               {
                 "selected": false,
@@ -429,7 +423,7 @@ data:
                 "value": "100"
               }
             ],
-            "query": "10, 20, 30, 40, 50, 100",
+            "query": "10, 15, 20, 50, 100",
             "multi": false,
             "includeAll": false
           },
@@ -478,5 +472,450 @@ data:
           }
         ]
       }
+    }
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-dashboard-kubernetes-event-logs
+  namespace: observability
+  labels:
+    grafana_dashboard: "auto_loaded_by_grafana_sidecar_container"
+data: #v--name must be unique, or you could get cryptic error: "A dashboard with the same uid already exists"
+  kubernetes-event-logs-dashboard.json: |-
+    {
+      "uid": "configmap_kubernetes-event-logs",
+      "title": "Kubernetes Event Logs (from VictoriaLogs)",
+      "tags": [ "managed_by_configmap" ],
+      "annotations": {
+        "list": [
+          {
+            "builtIn": 1,
+            "datasource": {
+              "type": "grafana",
+              "uid": "grafana"
+            },
+            "enable": true,
+            "hide": true,
+            "iconColor": "rgba(0, 211, 255, 1)",
+            "name": "Annotations & Alerts",
+            "type": "dashboard"
+          }
+        ]
+      },
+      "editable": true,
+      "fiscalYearStartMonth": 0,
+      "graphTooltip": 0,
+      "id": 0,
+      "links": [
+        {
+          "asDropdown": false,
+          "icon": "external link",
+          "includeVars": true,
+          "keepTime": false,
+          "tags": [],
+          "targetBlank": true,
+          "title": "View In Grafana's Explore Tab",
+          "tooltip": "Note: Explorer Tab may require sign in. (Explorer Tab isn't accessible to viewer role, requires editor role or higher)",
+          "type": "link",
+          "url": "/explore?orgId=1&left={\"queries\":[{\"expr\":\"event_ns: $event_ns AND obj_kind: $obj_kind AND $query\"}]}"
+        }
+      ],
+      "panels": [
+        {
+          "fieldConfig": {
+            "defaults": {},
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 24,
+            "x": 0,
+            "y": 0
+          },
+          "id": 1,
+          "options": {
+            "code": {
+              "language": "plaintext",
+              "showLineNumbers": false,
+              "showMiniMap": false
+            },
+            "content": "* This is querying VictoriaLogs for `kubernetes event logs` using a LogQL query of this nature: \n  * Parameterized Optimized Query: `_stream: {event_ns=~\"($EVENT_NAMESPACE)\", obj_kind=\"$OBJ_KIND\"} AND $QUERY` \n  * Optimized Query: `_stream: {event_ns=~\"none\", obj_kind=~\"Node\"} AND *`\n  * Normal Query: `event_ns:* AND obj_kind:* AND *` \n* Tip: For greater flexibility try accessing Victoria Logs GUI URL directly using: \n  * kubectl port-forward service/vl-victoria-logs-single-server -n=observability 9428:9428 \n  * http://localhost:9428/select/vmui/#/?query=event_ns%3A+*+AND+obj_kind%3A+*+AND+*&g0.range_input=3h&g0.end_input=2025-12-02T23%3A25%3A10&g0.relative_time=last_3_hours \n* Docs to Learn LogQL: \n  * https://docs.victoriametrics.com/victorialogs/logsql/\n",
+            "mode": "markdown"
+          },
+          "pluginVersion": "12.3.0",
+          "title": "Usage Notes, VL GUI Access Notes, & Link to Docs",
+          "type": "text"
+        },
+        {
+          "datasource": {
+            "type": "victoriametrics-logs-datasource",
+            "uid": "PD775F2863313E6C7"
+          },
+          "description": "",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "axisBorderShow": false,
+                "axisCenteredZero": false,
+                "axisColorMode": "text",
+                "axisLabel": "",
+                "axisPlacement": "auto",
+                "barAlignment": 0,
+                "barWidthFactor": 0.6,
+                "drawStyle": "bars",
+                "fillOpacity": 0,
+                "gradientMode": "none",
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "insertNulls": false,
+                "lineInterpolation": "linear",
+                "lineWidth": 2,
+                "pointSize": 5,
+                "scaleDistribution": {
+                  "type": "linear"
+                },
+                "showPoints": "auto",
+                "showValues": true,
+                "spanNulls": false,
+                "stacking": {
+                  "group": "A",
+                  "mode": "none"
+                },
+                "thresholdsStyle": {
+                  "mode": "off"
+                }
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": 0
+                  },
+                  {
+                    "color": "red",
+                    "value": 80
+                  }
+                ]
+              },
+              "unit": "short"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 14,
+            "x": 0,
+            "y": 8
+          },
+          "id": 2,
+          "options": {
+            "legend": {
+              "calcs": [
+                "sum"
+              ],
+              "displayMode": "list",
+              "placement": "bottom",
+              "showLegend": true
+            },
+            "tooltip": {
+              "hideZeros": false,
+              "mode": "single",
+              "sort": "none"
+            }
+          },
+          "pluginVersion": "12.3.0",
+          "targets": [
+            {
+              "datasource": {},
+              "editorMode": "code",
+              "expr": "_stream: {event_ns=~\"$event_ns\", obj_kind=~\"$obj_kind\"} AND $query | stats count()",
+              "hide": false,
+              "legendFormat": "${event_ns}_${obj_kind}",
+              "queryType": "statsRange",
+              "refId": "A"
+            }
+          ],
+          "title": "Counts of Kubernetes Event Logs in Namespace: ${event_ns}, for Objects of Kind(s): ${obj_kind}",
+          "type": "timeseries"
+        },
+        {
+          "datasource": {
+            "type": "victoriametrics-logs-datasource",
+            "uid": "PD775F2863313E6C7"
+          },
+          "description": "",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                }
+              },
+              "mappings": [],
+              "unit": "short"
+            },
+            "overrides": [
+              {
+                "matcher": {
+                  "id": "byRegexp",
+                  "options": "/^_time.*/"
+                },
+                "properties": [
+                  {
+                    "id": "custom.hideFrom",
+                    "value": {
+                      "legend": true,
+                      "tooltip": true,
+                      "viz": true
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 10,
+            "x": 14,
+            "y": 8
+          },
+          "id": 3,
+          "options": {
+            "legend": {
+              "displayMode": "list",
+              "placement": "bottom",
+              "showLegend": true
+            },
+            "pieType": "pie",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "sort": "desc",
+            "tooltip": {
+              "hideZeros": false,
+              "mode": "single",
+              "sort": "none"
+            }
+          },
+          "pluginVersion": "12.3.0",
+          "targets": [
+            {
+              "datasource": {},
+              "editorMode": "code",
+              "expr": "_stream: {event_ns=~\"$event_ns\", obj_kind=\"$obj_kind\"} AND $query | stats by (\"$count_by\") count() c | sort by (c desc) | limit 50",
+              "hide": false,
+              "legendFormat": "{{$count_by}}",
+              "queryType": "stats",
+              "refId": "A"
+            }
+          ],
+          "title": "Count by $count_by",
+          "type": "piechart"
+        },
+        {
+          "datasource": {
+            "type": "victoriametrics-logs-datasource",
+            "uid": "PD775F2863313E6C7"
+          },
+          "description": "",
+          "fieldConfig": {
+            "defaults": {},
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 23,
+            "w": 24,
+            "x": 0,
+            "y": 16
+          },
+          "id": 4,
+          "options": {
+            "dedupStrategy": "none",
+            "enableInfiniteScrolling": false,
+            "enableLogDetails": true,
+            "prettifyLogMessage": false,
+            "showCommonLabels": false,
+            "showControls": false,
+            "showLabels": false,
+            "showTime": true,
+            "sortOrder": "Descending",
+            "wrapLogMessage": false
+          },
+          "pluginVersion": "12.3.0",
+          "targets": [
+            {
+              "datasource": {},
+              "editorMode": "code",
+              "expr": "_stream: {event_ns=~\"$event_ns\", obj_kind=\"$obj_kind\"} AND $query | sort desc | limit $limit",
+              "hide": false,
+              "queryType": "range",
+              "refId": "A"
+            }
+          ],
+          "title": "Kubernetes Event Logs in Namespace: ${event_ns}, associated with objects of Kind(s): ${obj_kind}",
+          "type": "logs"
+        }
+      ],
+      "preload": true,
+      "refresh": "",
+      "schemaVersion": 42,
+      "templating": {
+        "list": [
+          {
+            "allValue": "*",
+            "current": {
+              "text": "none",
+              "value": "none"
+            },
+            "definition": "event_ns: *",
+            "description": "kubernetes namespace",
+            "includeAll": true,
+            "label": "event_namespace",
+            "name": "event_ns",
+            "options": [],
+            "query": {
+              "field": "event_ns",
+              "limit": 0,
+              "query": "event_ns: *",
+              "refId": "VictoriaLogsVariableQueryEditor-VariableQuery",
+              "type": "fieldValue"
+            },
+            "refresh": 1,
+            "regex": "",
+            "sort": 1,
+            "type": "query"
+          },
+          {
+            "allValue": "*",
+            "current": {
+              "text": [
+                "NodePool",
+                "NodeClaim"
+              ],
+              "value": [
+                "NodePool",
+                "NodeClaim"
+              ]
+            },
+            "definition": "event_ns: $event_ns",
+            "description": "kind of object associated with Kubernetes Events in the namespace: $event_ns",
+            "includeAll": true,
+            "label": "obj_kind",
+            "multi": true,
+            "name": "obj_kind",
+            "options": [],
+            "query": {
+              "field": "obj_kind",
+              "limit": 0,
+              "query": "event_ns: $event_ns",
+              "refId": "VictoriaLogsVariableQueryEditor-VariableQuery",
+              "type": "fieldValue"
+            },
+            "refresh": 2,
+            "regex": "",
+            "sort": 1,
+            "type": "query"
+          },
+          {
+            "current": {
+              "text": "10",
+              "value": "10"
+            },
+            "includeAll": false,
+            "label": "Displayed Logs Limit",
+            "name": "limit",
+            "options": [
+              {
+                "selected": true,
+                "text": "10",
+                "value": "10"
+              },
+              {
+                "selected": false,
+                "text": "15",
+                "value": "15"
+              },
+              {
+                "selected": false,
+                "text": "20",
+                "value": "20"
+              },
+              {
+                "selected": false,
+                "text": "50",
+                "value": "50"
+              },
+              {
+                "selected": false,
+                "text": "100",
+                "value": "100"
+              }
+            ],
+            "query": "10, 15, 20, 50, 100",
+            "type": "custom"
+          },
+          {
+            "current": {
+              "text": "*",
+              "value": "*"
+            },
+            "name": "query",
+            "options": [
+              {
+                "selected": true,
+                "text": "*",
+                "value": "*"
+              }
+            ],
+            "query": "*",
+            "type": "textbox"
+          },
+          {
+            "current": {
+              "text": "event_reason",
+              "value": "event_reason"
+            },
+            "definition": "{event_ns=\"$event_ns\"} obj_kind:=\"$obj_kind\"",
+            "includeAll": false,
+            "name": "count_by",
+            "options": [],
+            "query": {
+              "field": "event_reason",
+              "limit": 25,
+              "query": "{event_ns=\"$event_ns\"} obj_kind:=\"$obj_kind\"",
+              "refId": "VictoriaLogsVariableQueryEditor-VariableQuery",
+              "type": "fieldName"
+            },
+            "refresh": 2,
+            "regex": "/^[a-zA-Z].+/",
+            "sort": 1,
+            "type": "query"
+          }
+        ]
+      },
+      "time": {
+        "from": "now-3h",
+        "to": "now"
+      },
+      "timepicker": {},
+      "timezone": "browser"
     }
 ---

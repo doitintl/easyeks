@@ -35,6 +35,8 @@ stringData: #v-- placerholder values for testing
 
 const grafana_helm_values_as_yaml = `
 replicas: 1
+nodeSelector:
+  karpenter.sh/capacity-type: "on-demand" #<-- Valid values are "spot", "on-demand", and "reserved"
 resources: # (of grafana's main container)
   requests:
     cpu: 100m
