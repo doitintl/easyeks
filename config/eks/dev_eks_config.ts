@@ -63,6 +63,9 @@ export function deploy_essentials(config: Easy_EKS_Config_Data, stack: cdk.Stack
     const logs_db_input_parameters:fo.Victoria_Logs_Single_Node_Input_Parameters = {
         enabled: true,
     };
+    const metrics_db_input_parameters:fo.Victoria_Logs_Single_Node_Input_Parameters = {
+        enabled: true,
+    };
     const observability_agent_input_parameters:fo.Vector_Observability_Agent_Input_Parameters = {
         enabled: true,
     };
@@ -70,6 +73,7 @@ export function deploy_essentials(config: Easy_EKS_Config_Data, stack: cdk.Stack
         enabled: true,
     };
     config.Frugal_Observability.set_input_parameters_of_logs_db(logs_db_input_parameters);
+    config.Frugal_Observability.set_input_parameters_of_metrics_db(metrics_db_input_parameters);
     config.Frugal_Observability.set_input_parameters_of_observability_agent(observability_agent_input_parameters);
     config.Frugal_Observability.set_input_parameters_of_dashboard(dashboard_input_parameters);
     config.Frugal_Observability.deploy_configured_Frugal_Observability_Stack(config);

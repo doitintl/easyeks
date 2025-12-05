@@ -11,6 +11,7 @@ import { read_yaml_string_as_javascript_object, read_yaml_file_as_javascript_obj
 import { deploy_kubernetes_event_logs_exporter } from './deploy_kubernetes_event_logs_exporter';
 import { deploy_vector_observability_agents } from './deploy_vector_observability_agents';
 import { deploy_victoria_logs_db } from './deploy_victoria_logs_db';
+import { deploy_victoria_metrics_db } from './deploy_victoria_metrics_db';
 import { deploy_grafana_dashboard } from './deploy_grafana_dashboard';
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /*Frugal Observability Stack:
@@ -92,6 +93,9 @@ export class Frugal_Observability {
     set_input_parameters_of_logs_db(input: Victoria_Logs_Single_Node_Input_Parameters){
         this.logs_db_input_parameters = input;
     }
+    set_input_parameters_of_metrics_db(input: Victoria_Metrics_Single_Node_Input_Parameters){
+        this.metrics_db_input_parameters = input;
+    }
     set_input_parameters_of_observability_agent(input: Vector_Observability_Agent_Input_Parameters){
         this.observability_agent_input_parameters = input;
     }
@@ -107,14 +111,17 @@ export class Frugal_Observability {
         });
         this.observability_ns.node.addDependency(config.aws_load_balancer_controller_helm_chart_essentials_dependency);
         //^-- fixes a race condition
-        if(this.logs_db_input_parameters.enabled === true){ 
+        if(this.logs_db_input_parameters?.enabled === true){ //the ? can be interpreted as if defined & enabled
             deploy_victoria_logs_db(this.stack, this.cluster, config, this.observability_ns);
         }
-        if(this.observability_agent_input_parameters.enabled === true){
+        if(this.metrics_db_input_parameters?.enabled === true){ 
+            deploy_victoria_metrics_db(this.stack, this.cluster, config, this.observability_ns);
+        }
+        if(this.observability_agent_input_parameters?.enabled === true){
             deploy_kubernetes_event_logs_exporter(this.stack, this.cluster, config, this.observability_ns);
             deploy_vector_observability_agents(this.stack, this.cluster, config, this.observability_ns);
         }
-        if(this.dashboard_input_parameters.enabled === true){
+        if(this.dashboard_input_parameters?.enabled === true){
           deploy_grafana_dashboard(this.stack, this.cluster, config, this.observability_ns);
         }
     }

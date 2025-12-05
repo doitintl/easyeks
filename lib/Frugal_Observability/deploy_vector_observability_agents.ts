@@ -348,19 +348,27 @@ customConfig:
         .log_source = "vector_generated_test_logs" #(effectively renamed the KV pair, to this new name)
         # ^-- Thanks to this "log_source: vector_generated_test_logs" becomes a working query for Victoria Logs
   sinks: #<--(sink = destination)
-    prometheus_exporter:          #<-- You can test using kubectl port-forward -n=observability svc/observability-aggregator-vector 9090:9090
-      type: prometheus_exporter   #    Then browser: http://localhost:9090/metrics
-      address: "[::]:9090"  #<-- triggers listening on port 9090 (from an IPv6 IP address)
+#    prometheus_exporter:          #<-- You can test using kubectl port-forward -n=observability svc/observability-aggregator-vector 9090:9090
+#      type: prometheus_exporter   #    Then browser: http://localhost:9090/metrics
+#      address: "[::]:9090"  #<-- triggers listening on port 9090 (from an IPv6 IP address)
+#      inputs:
+#      - subset_of_metrics.kube_worker_node_metrics
+    victoria_metrics_db_sink_for_conventionalized_metrics:
+      type: prometheus_remote_write
+      endpoint: http://vm-victoria-metrics-single-server.observability.svc.cluster.local:8428/api/v1/write
       inputs:
       - subset_of_metrics.kube_worker_node_metrics
+      healthcheck:
+        enabled: false   #<-- recommended per VM's docs: https://docs.victoriametrics.com/victoriametrics/data-ingestion/vector/
+      compression: zstd
     victoria_logs_db_sink_for_conventionalized_kube_container_logs:
+      endpoints:
+      - http://vl-victoria-logs-single-server.observability.svc.cluster.local:9428/insert/elasticsearch/
       inputs: [ conventionalized_kube_container_logs ]  #<-- best to only send 1 input per vl_log_sink, so they can have diff VL-Stream-Field values
       type: elasticsearch   #<-- The Bulk API algorithm invented by elasticsearch is the most efficient option available
       api_version: v8
       compression: gzip
       mode: bulk
-      endpoints:
-      - http://vl-victoria-logs-single-server:9428/insert/elasticsearch/
       healthcheck:
         enabled: false   #<-- recommended per VL's docs: https://docs.victoriametrics.com/victorialogs/data-ingestion/vector/
       request:  #<-- based on example config of 'helm show values oci://ghcr.io/victoriametrics/helm-charts/victoria-logs-single'

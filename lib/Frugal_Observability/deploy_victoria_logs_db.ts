@@ -49,9 +49,12 @@ export function deploy_victoria_logs_db(stack: cdk.Stack, cluster: eks.ICluster,
                 },  //^-- This is required for readiness and liveness probes to work correctly in IPv6 environments.
                 "retentionPeriod": "30d",
                 "persistentVolume": {
-                    "size": "10Gi"
-                },
-                "resources": {
+                    "size": "10Gi" //<--Recommendation: Never change this value & leave 10Gi as default, when you want to size up don't do so using declarative helm values
+                },                 //   resize up using the following 2 imperative kubectl command, against pre-existing pvc object.
+                                   //   kubectl -n=observability patch pvc server-volume-vl-victoria-logs-single-server-0 --patch '{ "spec": { "resources": { "requests": { "storage": "11Gi"} } } }'
+                                   //   kubectl -n=observability rollout restart sts/vl-victoria-logs-single-server
+                                   //   (pvc resize will complete after pod restarts)
+                "resources": {     
                     "requests": {
                         "cpu": "100m",
                         "memory": "128Mi",

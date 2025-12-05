@@ -34,7 +34,6 @@ stringData: #v-- placerholder values for testing
     grafana_admin_login_kube_secret.node.addDependency(observability_namespace);
 
 const grafana_helm_values_as_yaml = `
-replicas: 1
 nodeSelector:
   karpenter.sh/capacity-type: "on-demand" #<-- Valid values are "spot", "on-demand", and "reserved"
 resources: # (of grafana's main container)
@@ -53,6 +52,7 @@ grafana.ini:
     org_name: "Main Org." #<-- default org
     org_role: "Viewer" #<-- kube forward users default to viewer access & can login for admin edit access
 plugins:
+- victoriametrics-metrics-datasource
 - victoriametrics-logs-datasource
 # Plugin Name Lookup instructions
 # Step 1: Find Plugin https://grafana.com/grafana/plugins/all-plugins/
@@ -62,11 +62,16 @@ datasources:
   datasources.yaml:
     apiVersion: 1
     datasources:
+    - name: VictoriaMetrics
+      type: victoriametrics-metrics-datasource
+      access: proxy
+      url: http://vm-victoria-metrics-single-server.observability.svc.cluster.local:8428
+      isDefault: true
     - name: VictoriaLogs
       type: victoriametrics-logs-datasource
       access: proxy
       url: http://vl-victoria-logs-single-server.observability.svc.cluster.local:9428
-      isDefault: true
+      isDefault: false
 sidecar:
   resources:
     requests:
