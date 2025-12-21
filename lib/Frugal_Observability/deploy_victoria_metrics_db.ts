@@ -26,14 +26,21 @@ server:
       memory: 2048Mi
   extraArgs:
     enableTCP6: true #<-- essential for IPv6 / dual stack cluster
-  serviceMonitor:
-    enabled: false #Can be enabled for compatibility, avoiding in favor of a better happy path
   persistentVolume:
     size: 10Gi #<--Recommendation: Never change this value & leave 10Gi as default, when you want to size up don't do so using declarative helm values
                #   resize up using the following 2 imperative kubectl commands, against pre-existing pvc object.
                #   kubectl -n=observability patch pvc server-volume-vm-victoria-metrics-single-server-0 --patch '{ "spec": { "resources": { "requests": { "storage": "11Gi"} } } }'
                #   kubectl -n=observability rollout restart sts/vm-victoria-metrics-single-server
                #   (pvc resize will complete after pod restarts)
+  scrape:
+    enabled: true
+    config:
+      global:
+        scrape_interval: 15s
+      # a default scrape config exist, it shouldn't be touched, because it's a list and helm replaces instead of merges lists
+      # it's documented here https://github.com/VictoriaMetrics/helm-charts/blob/victoria-metrics-single-0.27.0/charts/victoria-metrics-single/values.yaml#L477  
+      # The default self-monitors & monitors kube-apiserver, and a few other things.
+    extraScrapeConfigs: []
 `;
     const victoria_metrics_helm_values_as_JS_object: JSON = read_yaml_string_as_javascript_object(victoria_metrics_helm_values_as_yaml);
 
@@ -53,8 +60,9 @@ server:
         //Access Proxy Command:
         //* kubectl port-forward service/vm-victoria-metrics-single-server -n=observability 8428:8428
         //Browser Access:
-        //* http://localhost:8428/vmui/
+        //* http://localhost:8428/
         //  http://localhost:8428/vmui/#/cardinality
+        //  http://localhost:8428/api/v1/status/tsdb
         //  ^-- can be used to verifiy metrics received from vector via remote_write instead of scrape jobs
     });
     // Imperative installation order to avoid temporary errors in logs

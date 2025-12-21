@@ -62,11 +62,16 @@ datasources:
   datasources.yaml:
     apiVersion: 1
     datasources:
-    - name: VictoriaMetrics
-      type: victoriametrics-metrics-datasource
+    - name: Prometheus  #(Recommended for compatibility with pre-existing open source community developed dashboards)
+      type: prometheus
       access: proxy
       url: http://vm-victoria-metrics-single-server.observability.svc.cluster.local:8428
       isDefault: true
+#    - name: VictoriaMetrics  #(could potentially useful for custom dashboard, supports a few additional Victoria Metric specific Queries)
+#      type: victoriametrics-metrics-datasource
+#      access: proxy
+#      url: http://vm-victoria-metrics-single-server.observability.svc.cluster.local:8428
+#      isDefault: false
     - name: VictoriaLogs
       type: victoriametrics-logs-datasource
       access: proxy

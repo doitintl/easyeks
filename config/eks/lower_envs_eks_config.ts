@@ -32,7 +32,8 @@ export function apply_config(config: Easy_EKS_Config_Data, stack: cdk.Stack){ //
     }
     //Kubernetes verson and addon's that may depend on Kubernetes version / should be updated along side it should be specified here
     config.set_clusters_version_of_Kubernetes(eks.KubernetesVersion.V1_33); //version of eks cluster
-    config.set_worker_nodes_bottlerocket_release_version( Easy_EKS_Dynamic_Config.get_latest_version_of_bottlerocket_1_33_release() );
+    //config.set_worker_nodes_bottlerocket_release_version( Easy_EKS_Dynamic_Config.get_latest_version_of_bottlerocket_1_33_release() );
+    config.set_worker_nodes_bottlerocket_release_version( "1.51.0-47438798" );
     //^-- Choice: do you want latest? (every time `cdk deploy stage1-eks` is run, which could trigger extra node reboots)
     //            If so then use Easy_EKS_Dynamic_Config.get_latest_version_of_bottlerocket_1_33_release()
     //        OR: do you want to minimize node reboots as much as possible? / only when explicitly specified
@@ -40,11 +41,13 @@ export function apply_config(config: Easy_EKS_Config_Data, stack: cdk.Stack){ //
     //            Command to lookup latest version (followed by example output):
     //            aws ssm get-parameters-by-path --path "/aws/service/bottlerocket/aws-k8s-1.33" --recursive | jq -cr '.Parameters[].Name' | grep -v "latest" | awk -F '/' '{print $7}' | sort | uniq | tail -n 1 | tr -d '"|\n|\r'
     //            1.51.0-47438798
+    // Note if when trying to use latest, you get an error like "Requested release version 1.52.0-b7ac6e1a is not valid for kubernetes version 1.33."
+    // Then hard code to match the AMI release version of Node groups in EKS's Compute tab
     config.set_version_of_kubectl_used_by_lambda(new KubectlV32Layer(stack, 'kubectl')); //<--It's fine for this to stay on an old version
     //^--refers to version of kubectl & helm installed in AWS Lambda Layer responsible for kubectl & helm deployments
     //Note: As of Sept 9th, 2025 KubectlV33Layer (which currently has latest available versions of kubectl & helm)
     //      results in error 'Error: media type "application/vnd.cncf.helm.chart.provenance.v1.prov" is not allowed'
-    //It's safe to permanently use old versions of both apps.
+    //It's safe to permanently use old versions of both apps. (apps refers to kubectl & helm, which both exists in KubectlV32Layer)
     config.set_control_plane_logging_options_to_enable([
         // eks.ClusterLoggingTypes.API,
         // eks.ClusterLoggingTypes.AUDIT,
@@ -81,8 +84,9 @@ export function deploy_addons(config: Easy_EKS_Config_Data, stack: cdk.Stack, cl
     };
     const karpenter_YAMLs = (new Karpenter_YAML_Generator({
         cluster: cluster,
-        config: config,
+        config: config, 
         amiSelectorTerms_alias: `bottlerocket@${config.worker_nodes_bottlerocket_release_version}`, //Example value: 'bottlerocket@1.51.0-47438798'
+        //^-- If you need to hard code this, update it @ config.set_worker_nodes_bottlerocket_release_version (higher up in this file)
         consolidationPolicy: "WhenEmptyOrUnderutilized", //WhenUnderutilized is more agressive cost savings / slightly worse stability
         manifest_inputs: [ //Note highest weight = default, higher = preferred
             { type: "spot",      arch: "arm64", nodepools_cpu_limit: 1000, weight: 4, },

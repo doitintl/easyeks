@@ -3,6 +3,7 @@ import { Easy_EKS_Dynamic_Config } from '../../lib/Easy_EKS_Dynamic_Config';
 import * as cdk from 'aws-cdk-lib';
 import * as eks from 'aws-cdk-lib/aws-eks';
 import * as cwo from '../../lib/CW_Observability/CW_Observability';
+import { read_yaml_string_as_javascript_object, read_yaml_file_as_javascript_object, read_yaml_file_as_array_of_javascript_objects } from '../../lib/Utilities';
 //Intended Use: 
 //A baseline config file (to be applied to all EasyEKS Clusters)
 //That 95% of global users will feel comfortable using with 0 changes, but can change.
@@ -42,6 +43,43 @@ export function deploy_addons(config: Easy_EKS_Config_Data, stack: cdk.Stack, cl
     // Note the IaC will deploy default (which isn't latest)
     // but if you manually update in GUI it'll stay updated
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+const observability_crd_helm_values_as_yaml = `
+# Note: YAML HEREDOC can't be indented
+# VMdb (VictoriaMetrics database), is configured to use a subset of prometheus operator's CRDs
+# Even if you're not using the Frugal_Observability stack, it doesn't hurt to install the CRD
+crds:
+  alertmanagerconfigs:
+    enabled: false
+  alertmanagers:
+    enabled: false
+  podmonitors:
+    enabled: false
+  probes:
+    enabled: false
+  prometheusagents:
+    enabled: false
+  prometheuses:
+    enabled: false
+  prometheusrules:
+    enabled: false
+  scrapeconfigs:
+    enabled: false
+  servicemonitors: #<-- only CRD used
+    enabled: true
+  thanosrulers:
+    enabled: flase
+`;
+    const observability_crd_helm_values_as_JS_object: JSON = read_yaml_string_as_javascript_object(observability_crd_helm_values_as_yaml);
+    const observability_crd_helm_release = new eks.HelmChart(stack, 'observability_crd_helm', {
+        cluster: cluster,
+        namespace: 'kube-system',
+        repository: 'https://prometheus-community.github.io/helm-charts',
+        chart: 'prometheus-operator-crds',
+        release: 'prometheus-operator-crds',
+        version: '25.0.1', //version of helm chart, this shouldn't need to be updated.
+        values: observability_crd_helm_values_as_JS_object,
+    });
 
 }//end deploy_addons()
 
