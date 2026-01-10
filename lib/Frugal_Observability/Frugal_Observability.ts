@@ -3,16 +3,8 @@ import * as iam from 'aws-cdk-lib/aws-iam';
 import * as cdk from 'aws-cdk-lib';
 import * as eks from 'aws-cdk-lib/aws-eks';
 import { Construct } from "constructs";
-import * as route53 from 'aws-cdk-lib/aws-route53';
-import * as acm from 'aws-cdk-lib/aws-certificatemanager';
-import * as fs from 'fs'; //node.js built in file system module
-import * as yaml from 'js-yaml'; //npm install js-yaml && npm install --save-dev @types/js-yaml
-import { read_yaml_string_as_javascript_object, read_yaml_file_as_javascript_object, read_yaml_file_as_array_of_javascript_objects } from '../../lib/Utilities';
-import { deploy_kubernetes_event_logs_exporter } from './deploy_kubernetes_event_logs_exporter';
-import { deploy_vector_observability_agents } from './deploy_vector_observability_agents';
-import { deploy_victoria_logs_db } from './deploy_victoria_logs_db';
-import { deploy_victoria_metrics_db } from './deploy_victoria_metrics_db';
-import { deploy_grafana_dashboard } from './deploy_grafana_dashboard';
+import { deploy_vm_metrics_k8s_stack } from './deploy_vm_metrics_k8s_stack';
+import { deploy_vm_logs_custom_stack } from './deploy_vm_logs_custom_stack';
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /*Frugal Observability Stack:
 * Grafana (Dashboard GUI for Prometheues Metrics & can also function as a GUI for quickwit logs)
@@ -47,16 +39,10 @@ Ambivalent Notes:
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-export interface Victoria_Logs_Single_Node_Input_Parameters {
+export interface Victoria_Metrics_K8s_Stack_Input_Parameters {
     enabled: boolean;
 }
-export interface Vector_Observability_Agent_Input_Parameters {
-    enabled: boolean;
-}
-export interface Victoria_Metrics_Single_Node_Input_Parameters {
-    enabled: boolean;
-}
-export interface Grafana_Dashboard_Input_Parameters {
+export interface Victoria_Logs_Custom_Stack_Input_Parameters {
     enabled: boolean;
 }
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -77,10 +63,8 @@ export class Frugal_Observability {
         }
     };
     observability_ns: eks.KubernetesManifest;
-    observability_agent_input_parameters: Vector_Observability_Agent_Input_Parameters;
-    metrics_db_input_parameters: Victoria_Metrics_Single_Node_Input_Parameters;
-    logs_db_input_parameters: Victoria_Logs_Single_Node_Input_Parameters;
-    dashboard_input_parameters: Grafana_Dashboard_Input_Parameters;
+    victoria_metrics_k8s_stack_input_parameters: Victoria_Metrics_K8s_Stack_Input_Parameters;
+    victoria_logs_custom_stack_input_parameters: Victoria_Logs_Custom_Stack_Input_Parameters;
 
 
     //Class Constructor:
@@ -90,17 +74,11 @@ export class Frugal_Observability {
     }//end of Frugal_Observability class' constructor
 
 
-    set_input_parameters_of_logs_db(input: Victoria_Logs_Single_Node_Input_Parameters){
-        this.logs_db_input_parameters = input;
+    set_input_parameters_of_victoria_metrics_k8s_stack(input: Victoria_Metrics_K8s_Stack_Input_Parameters){
+        this.victoria_metrics_k8s_stack_input_parameters = input;
     }
-    set_input_parameters_of_metrics_db(input: Victoria_Metrics_Single_Node_Input_Parameters){
-        this.metrics_db_input_parameters = input;
-    }
-    set_input_parameters_of_observability_agent(input: Vector_Observability_Agent_Input_Parameters){
-        this.observability_agent_input_parameters = input;
-    }
-    set_input_parameters_of_dashboard(input: Grafana_Dashboard_Input_Parameters){
-        this.dashboard_input_parameters = input;
+    set_input_parameters_of_victoria_logs_custom_stack(input: Victoria_Logs_Custom_Stack_Input_Parameters){
+        this.victoria_logs_custom_stack_input_parameters = input;
     }
     deploy_configured_Frugal_Observability_Stack(config: Easy_EKS_Config_Data){
         this.observability_ns = new eks.KubernetesManifest(this.stack, "observability-kube-namespace", {
@@ -111,18 +89,11 @@ export class Frugal_Observability {
         });
         this.observability_ns.node.addDependency(config.aws_load_balancer_controller_helm_chart_essentials_dependency);
         //^-- fixes a race condition
-        if(this.logs_db_input_parameters?.enabled === true){ //the ? can be interpreted as if defined & enabled
-            deploy_victoria_logs_db(this.stack, this.cluster, config, this.observability_ns);
+        if(this.victoria_metrics_k8s_stack_input_parameters?.enabled === true){ //the ? can be interpreted as if defined & enabled
+            deploy_vm_metrics_k8s_stack(this.stack, this.cluster, config, this.observability_ns);
         }
-        if(this.metrics_db_input_parameters?.enabled === true){ 
-            deploy_victoria_metrics_db(this.stack, this.cluster, config, this.observability_ns);
-        }
-        if(this.observability_agent_input_parameters?.enabled === true){
-            deploy_kubernetes_event_logs_exporter(this.stack, this.cluster, config, this.observability_ns);
-            deploy_vector_observability_agents(this.stack, this.cluster, config, this.observability_ns);
-        }
-        if(this.dashboard_input_parameters?.enabled === true){
-          deploy_grafana_dashboard(this.stack, this.cluster, config, this.observability_ns);
+        if(this.victoria_logs_custom_stack_input_parameters?.enabled === true){ 
+            deploy_vm_logs_custom_stack(this.stack, this.cluster, config, this.observability_ns);
         }
     }
     ///////////////////////////////////////////////////////////////////////////////////////////////////////

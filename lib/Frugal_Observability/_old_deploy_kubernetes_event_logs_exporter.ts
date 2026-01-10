@@ -5,7 +5,7 @@ import * as eks from 'aws-cdk-lib/aws-eks';
 import { Construct } from "constructs";
 import * as fs from 'fs'; //node.js built in file system module
 import * as yaml from 'js-yaml'; //npm install js-yaml && npm install --save-dev @types/js-yaml
-import { read_yaml_string_as_javascript_object, read_yaml_file_as_javascript_object, read_yaml_file_as_array_of_javascript_objects } from '../../lib/Utilities';
+import { read_yaml_string_as_javascript_object, read_yaml_file_as_javascript_object, read_yaml_file_as_array_of_javascript_objects } from '../Utilities';
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     ///////////////////////////////////////////////////////////////////////////////////////////////////////

@@ -77,9 +77,20 @@ export function deploy_addons(config: Easy_EKS_Config_Data, stack: cdk.Stack, cl
     // Note: Karpenter leverages a 3rd party cdk construct so it needs do be implemented in the scope of cluster creation
     // as in against type eks.Cluster. It can't be installed on imported clusters of type eks.ICluster (I stands for interface)
     const karpenter_helm_config: Karpenter_Helm_Config = {
-        helm_chart_version: '1.6.0', //https://gallery.ecr.aws/karpenter/karpenter
-        helm_chart_values: { //https://github.com/aws/karpenter-provider-aws/blob/v1.6.0/charts/karpenter/values.yaml
+        helm_chart_version: '1.8.3', //https://gallery.ecr.aws/karpenter/karpenter
+        helm_chart_values: { //https://github.com/aws/karpenter-provider-aws/blob/v1.8.3/charts/karpenter/values.yaml
             replicas: 1,
+            controller: {
+                resources: {
+                    requests: {
+                        cpu: "22m",
+                        memory: "110Mi",
+                    },
+                    limits: {
+                        memory: "1Gi",
+                    }
+                }
+            }
         },
     };
     const karpenter_YAMLs = (new Karpenter_YAML_Generator({
@@ -132,11 +143,15 @@ export function deploy_essentials(config: Easy_EKS_Config_Data, stack: cdk.Stack
         repository: 'https://aws.github.io/eks-charts',
         namespace: "kube-system",
         release: 'aws-load-balancer-controller',
-        version: '1.13.4', //<-- helm chart version based on the following command
-        // curl https://raw.githubusercontent.com/kubernetes-sigs/aws-load-balancer-controller/refs/tags/v2.13.4/helm/aws-load-balancer-controller/Chart.yaml | grep version: | cut -d ':' -f 2
+        version: '1.17.0', //<-- helm chart version 1.17.0 maps to app version v2.17.0
+        // Commands: To look up latest helm chart version:
+        // helm repo add eks https://aws.github.io/eks-charts
+        // helm repo update eks
+        // helm search repo eks | egrep "NAME|aws-load-balancer-controller"
+        // curl https://raw.githubusercontent.com/kubernetes-sigs/aws-load-balancer-controller/refs/tags/v2.17.0/helm/aws-load-balancer-controller/Chart.yaml | grep version: | cut -d ':' -f 2
         wait: true,
         timeout: cdk.Duration.minutes(15),
-        values: { //<-- helm chart values per https://github.com/kubernetes-sigs/aws-load-balancer-controller/blob/v2.13.4/helm/aws-load-balancer-controller/values.yaml
+        values: { //<-- helm chart values per https://github.com/kubernetes-sigs/aws-load-balancer-controller/blob/v2.17.0/helm/aws-load-balancer-controller/values.yaml
             clusterName: cluster.clusterName,
             vpcId: config.vpc.vpcId,
             region: stack.region,
@@ -144,6 +159,15 @@ export function deploy_essentials(config: Easy_EKS_Config_Data, stack: cdk.Stack
             serviceAccount: {
                 name: "aws-load-balancer-controller",
                 create: false,
+            },
+            resources: {
+                requests: {
+                    cpu: "1m",
+                    memory: "27Mi"
+                },
+                limits: {
+                    memory: "128Mi"
+                }
             },
         },
     });

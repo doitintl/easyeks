@@ -60,22 +60,17 @@ export function deploy_essentials(config: Easy_EKS_Config_Data, stack: cdk.Stack
     //      * daemonset fluent-bit 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    const logs_db_input_parameters:fo.Victoria_Logs_Single_Node_Input_Parameters = {
+    const victoria_metrics_stack_input_parameters:fo.Victoria_Metrics_K8s_Stack_Input_Parameters = {
+        //https://docs.victoriametrics.com/helm/victoria-metrics-k8s-stack
+        //(vm-metrics-db-single, grafana, metrics-agents, misc other things)
         enabled: true,
     };
-    const metrics_db_input_parameters:fo.Victoria_Logs_Single_Node_Input_Parameters = {
-        enabled: true,
+    const victoria_logs_single_db_and_vector_agent_input_parameters:fo.Victoria_Logs_Custom_Stack_Input_Parameters = {
+        //(vm-logs-db-single, vector-agent(for logs), kube-event-exporter, configmap of logging dashboards)
+        enabled: false,
     };
-    const observability_agent_input_parameters:fo.Vector_Observability_Agent_Input_Parameters = {
-        enabled: true,
-    };
-    const dashboard_input_parameters:fo.Grafana_Dashboard_Input_Parameters = {
-        enabled: true,
-    };
-    config.Frugal_Observability.set_input_parameters_of_logs_db(logs_db_input_parameters);
-    config.Frugal_Observability.set_input_parameters_of_metrics_db(metrics_db_input_parameters);
-    config.Frugal_Observability.set_input_parameters_of_observability_agent(observability_agent_input_parameters);
-    config.Frugal_Observability.set_input_parameters_of_dashboard(dashboard_input_parameters);
+    config.Frugal_Observability.set_input_parameters_of_victoria_metrics_k8s_stack(victoria_metrics_stack_input_parameters);
+    config.Frugal_Observability.set_input_parameters_of_victoria_logs_custom_stack(victoria_logs_single_db_and_vector_agent_input_parameters);
     config.Frugal_Observability.deploy_configured_Frugal_Observability_Stack(config);
 
 }//end deploy_essentials()
