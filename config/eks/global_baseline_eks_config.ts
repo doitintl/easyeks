@@ -44,6 +44,45 @@ export function deploy_addons(config: Easy_EKS_Config_Data, stack: cdk.Stack, cl
     // but if you manually update in GUI it'll stay updated
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+    const default_priority_class_manifest = {
+        "apiVersion": "scheduling.k8s.io/v1",
+        "kind": "PriorityClass",
+        "metadata": {
+            "name": 'default',
+        },
+        "globalDefault": true,
+        "preemptionPolicy": "PreemptLowerPriority",
+        "value": 1000, //(high number = high priority, low number = low priority)
+        "description": "PriorityClass supplied by Easy EKS",
+    };
+    const low_priority_class_manifest = {
+        "apiVersion": "scheduling.k8s.io/v1",
+        "kind": "PriorityClass",
+        "metadata": {
+            "name": 'low',
+        },
+        "preemptionPolicy": "PreemptLowerPriority",
+        "value": 500, //(high number = high priority, low number = low priority)
+        "description": "PriorityClass supplied by Easy EKS",
+    };
+    const high_priority_class_manifest = {
+        "apiVersion": "scheduling.k8s.io/v1",
+        "kind": "PriorityClass",
+        "metadata": {
+            "name": 'high',
+        },
+        "preemptionPolicy": "PreemptLowerPriority",
+        "value": 2000, //(high number = high priority, low number = low priority)
+        "description": "PriorityClass supplied by Easy EKS",
+    };
+    const priority_classes = new eks.KubernetesManifest(stack, "kube_pod_priority_classes",
+    {
+        cluster: cluster,
+        manifest: [default_priority_class_manifest,low_priority_class_manifest,high_priority_class_manifest],
+        overwrite: true,
+        prune: true,
+    });
+
 // const observability_crd_helm_values_as_yaml = `
 // # Note: YAML HEREDOC can't be indented
 // # VMdb (VictoriaMetrics database), is configured to use a subset of prometheus operator's CRDs
