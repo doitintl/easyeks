@@ -30,7 +30,7 @@ metadata:
   name: grafana-dashboard-kubernetes-container-logs
   namespace: observability
   labels:
-    grafana_dashboard: "auto_loaded_by_grafana_sidecar_container"
+    grafana_dashboard: "1" #<-- auto_loaded_by_grafana_sidecar_container
 data: #v--name must be unique, or you could get cryptic error: "A dashboard with the same uid already exists"
   kubernetes-container-logs-dashboard.json: |-
     {
@@ -76,7 +76,7 @@ data: #v--name must be unique, or you could get cryptic error: "A dashboard with
           "title": "View In Grafana's Explore Tab",
           "tooltip": "Note: Explorer Tab may require sign in. (Explorer Tab isn't accessible to viewer role, requires editor role or higher)",
           "type": "link",
-          "url": "/explore?orgId=1&left={\"queries\":[{\"expr\":\"ns: $namespace AND container: $container_in_ns AND $query\"}]}"
+          "url": "/explore?orgId=1&left={\"datasource\":\"$ds\", \"queries\":[{\"expr\":\"ns: $namespace AND container: $container_in_ns AND $query\"}]}"
         }
       ],
       "annotations": {
@@ -89,8 +89,8 @@ data: #v--name must be unique, or you could get cryptic error: "A dashboard with
             "type": "dashboard",
             "builtIn": 1,
             "datasource": {
-              "uid": "grafana",
-              "type": "grafana"
+              "type": "VictoriaLogs",
+              "uid": "$ds"
             }
           }
         ]
@@ -102,7 +102,7 @@ data: #v--name must be unique, or you could get cryptic error: "A dashboard with
                 "overrides": []
             },
             "gridPos": {
-                "h": 8,
+                "h": 9,
                 "w": 24,
                 "x": 0,
                 "y": 0
@@ -204,7 +204,10 @@ data: #v--name must be unique, or you could get cryptic error: "A dashboard with
             {
               "refId": "A",
               "hide": false,
-              "datasource": {},
+              "datasource": {
+                "type": "VictoriaLogs",
+                "uid": "$ds"
+              },
               "editorMode": "code",
               "expr": "_stream: {container=~\"$container_in_ns\", ns=\"$namespace\"} AND $query | stats count()",
               "legendFormat": "${namespace}_${container_in_ns}",
@@ -267,7 +270,10 @@ data: #v--name must be unique, or you could get cryptic error: "A dashboard with
             {
               "refId": "A",
               "hide": false,
-              "datasource": {},
+              "datasource": {
+                "type": "VictoriaLogs",
+                "uid": "$ds"
+              },
               "editorMode": "code",
               "expr": "_stream: {container=~\"$container_in_ns\", ns=\"$namespace\"} AND $query | stats by (\"$count_by\") count() c | sort by (c desc) | limit 50",
               "legendFormat": "{{$count_by}}",
@@ -309,7 +315,10 @@ data: #v--name must be unique, or you could get cryptic error: "A dashboard with
             {
               "refId": "A",
               "hide": false,
-              "datasource": {},
+              "datasource": {
+                "type": "VictoriaLogs",
+                "uid": "$ds"
+              },
               "editorMode": "code",
               "expr": "_stream: {container=~\"$container_in_ns\", ns=\"$namespace\"} AND $query | sort desc | limit $limit",
               "queryType": "range"
@@ -345,7 +354,10 @@ data: #v--name must be unique, or you could get cryptic error: "A dashboard with
               "refId": "VictoriaLogsVariableQueryEditor-VariableQuery",
               "type": "fieldValue"
             },
-            "datasource": {},
+            "datasource": {
+              "type": "VictoriaLogs",
+              "uid": "$ds"
+            },
             "sort": 1,
             "refresh": 1,
             "regex": "",
@@ -377,7 +389,10 @@ data: #v--name must be unique, or you could get cryptic error: "A dashboard with
               "refId": "VictoriaLogsVariableQueryEditor-VariableQuery",
               "type": "fieldValue"
             },
-            "datasource": {},
+            "datasource": {
+              "type": "VictoriaLogs",
+              "uid": "$ds"
+            },
             "sort": 1,
             "refresh": 2,
             "regex": "",
@@ -462,13 +477,26 @@ data: #v--name must be unique, or you could get cryptic error: "A dashboard with
               "refId": "VictoriaLogsVariableQueryEditor-VariableQuery",
               "type": "fieldName"
             },
-            "datasource": {},
+            "datasource": {
+              "type": "VictoriaLogs",
+              "uid": "$ds"
+            },
             "sort": 1,
             "refresh": 2,
             "regex": "/^[a-zA-Z].+/",
             "includeAll": false,
             "multi": false,
             "definition": "{ns=\"$namespace\"} container:=\"$container_in_ns\""
+          },
+          {
+            "allowCustomValue": false,
+            "hide": 2,
+            "name": "ds",
+            "options": [],
+            "query": "victoriametrics-logs-datasource",
+            "refresh": 1,
+            "regex": "VictoriaLogs",
+            "type": "datasource"
           }
         ]
       }
@@ -480,20 +508,17 @@ metadata:
   name: grafana-dashboard-kubernetes-event-logs
   namespace: observability
   labels:
-    grafana_dashboard: "auto_loaded_by_grafana_sidecar_container"
+    grafana_dashboard: "1" #<-- auto_loaded_by_grafana_sidecar_container
 data: #v--name must be unique, or you could get cryptic error: "A dashboard with the same uid already exists"
   kubernetes-event-logs-dashboard.json: |-
     {
-      "uid": "configmap_kubernetes-event-logs",
-      "title": "Kubernetes Event Logs (from VictoriaLogs)",
-      "tags": [ "managed_by_configmap" ],
       "annotations": {
         "list": [
           {
             "builtIn": 1,
             "datasource": {
-              "type": "grafana",
-              "uid": "grafana"
+              "type": "VictoriaLogs",
+              "uid": "$ds"
             },
             "enable": true,
             "hide": true,
@@ -518,7 +543,7 @@ data: #v--name must be unique, or you could get cryptic error: "A dashboard with
           "title": "View In Grafana's Explore Tab",
           "tooltip": "Note: Explorer Tab may require sign in. (Explorer Tab isn't accessible to viewer role, requires editor role or higher)",
           "type": "link",
-          "url": "/explore?orgId=1&left={\"queries\":[{\"expr\":\"event_ns: $event_ns AND obj_kind: $obj_kind AND $query\"}]}"
+          "url": "/explore?orgId=1&left={\"datasource\":\"$ds\", \"queries\":[{\"expr\":\"event_ns: $event_ns AND obj_kind: $obj_kind AND $query\"}]}"
         }
       ],
       "panels": [
@@ -549,8 +574,8 @@ data: #v--name must be unique, or you could get cryptic error: "A dashboard with
         },
         {
           "datasource": {
-            "type": "victoriametrics-logs-datasource",
-            "uid": "PD775F2863313E6C7"
+            "type": "VictoriaLogs",
+            "uid": "$ds"
           },
           "description": "",
           "fieldConfig": {
@@ -635,7 +660,10 @@ data: #v--name must be unique, or you could get cryptic error: "A dashboard with
           "pluginVersion": "12.3.0",
           "targets": [
             {
-              "datasource": {},
+              "datasource": {
+                "type": "VictoriaLogs",
+                "uid": "$ds"
+              },
               "editorMode": "code",
               "expr": "_stream: {event_ns=~\"$event_ns\", obj_kind=~\"$obj_kind\"} AND $query | stats count()",
               "hide": false,
@@ -649,8 +677,8 @@ data: #v--name must be unique, or you could get cryptic error: "A dashboard with
         },
         {
           "datasource": {
-            "type": "victoriametrics-logs-datasource",
-            "uid": "PD775F2863313E6C7"
+            "type": "VictoriaLogs",
+            "uid": "$ds"
           },
           "description": "",
           "fieldConfig": {
@@ -718,7 +746,10 @@ data: #v--name must be unique, or you could get cryptic error: "A dashboard with
           "pluginVersion": "12.3.0",
           "targets": [
             {
-              "datasource": {},
+              "datasource": {
+                "type": "VictoriaLogs",
+                "uid": "$ds"
+              },
               "editorMode": "code",
               "expr": "_stream: {event_ns=~\"$event_ns\", obj_kind=\"$obj_kind\"} AND $query | stats by (\"$count_by\") count() c | sort by (c desc) | limit 50",
               "hide": false,
@@ -732,8 +763,8 @@ data: #v--name must be unique, or you could get cryptic error: "A dashboard with
         },
         {
           "datasource": {
-            "type": "victoriametrics-logs-datasource",
-            "uid": "PD775F2863313E6C7"
+            "type": "VictoriaLogs",
+            "uid": "$ds"
           },
           "description": "",
           "fieldConfig": {
@@ -762,7 +793,10 @@ data: #v--name must be unique, or you could get cryptic error: "A dashboard with
           "pluginVersion": "12.3.0",
           "targets": [
             {
-              "datasource": {},
+              "datasource": {
+                "type": "VictoriaLogs",
+                "uid": "$ds"
+              },
               "editorMode": "code",
               "expr": "_stream: {event_ns=~\"$event_ns\", obj_kind=\"$obj_kind\"} AND $query | sort desc | limit $limit",
               "hide": false,
@@ -777,6 +811,9 @@ data: #v--name must be unique, or you could get cryptic error: "A dashboard with
       "preload": true,
       "refresh": "",
       "schemaVersion": 42,
+      "tags": [
+        "managed_by_configmap"
+      ],
       "templating": {
         "list": [
           {
@@ -785,15 +822,19 @@ data: #v--name must be unique, or you could get cryptic error: "A dashboard with
               "text": "none",
               "value": "none"
             },
+            "datasource": {
+              "type": "victoriametrics-logs-datasource",
+              "uid": "${ds}"
+            },
             "definition": "event_ns: *",
             "description": "kubernetes namespace",
-            "includeAll": true,
+            "includeAll": false,
             "label": "event_namespace",
             "name": "event_ns",
             "options": [],
             "query": {
               "field": "event_ns",
-              "limit": 0,
+              "limit": 25,
               "query": "event_ns: *",
               "refId": "VictoriaLogsVariableQueryEditor-VariableQuery",
               "type": "fieldValue"
@@ -807,13 +848,17 @@ data: #v--name must be unique, or you could get cryptic error: "A dashboard with
             "allValue": "*",
             "current": {
               "text": [
-                "NodePool",
+                "Node",
                 "NodeClaim"
               ],
               "value": [
-                "NodePool",
+                "Node",
                 "NodeClaim"
               ]
+            },
+            "datasource": {
+              "type": "victoriametrics-logs-datasource",
+              "uid": "${ds}"
             },
             "definition": "event_ns: $event_ns",
             "description": "kind of object associated with Kubernetes Events in the namespace: $event_ns",
@@ -824,7 +869,7 @@ data: #v--name must be unique, or you could get cryptic error: "A dashboard with
             "options": [],
             "query": {
               "field": "obj_kind",
-              "limit": 0,
+              "limit": 25,
               "query": "event_ns: $event_ns",
               "refId": "VictoriaLogsVariableQueryEditor-VariableQuery",
               "type": "fieldValue"
@@ -893,12 +938,16 @@ data: #v--name must be unique, or you could get cryptic error: "A dashboard with
               "text": "event_reason",
               "value": "event_reason"
             },
+            "datasource": {
+              "type": "victoriametrics-logs-datasource",
+              "uid": "${ds}"
+            },
             "definition": "{event_ns=\"$event_ns\"} obj_kind:=\"$obj_kind\"",
             "includeAll": false,
             "name": "count_by",
             "options": [],
             "query": {
-              "field": "event_reason",
+              "field": "",
               "limit": 25,
               "query": "{event_ns=\"$event_ns\"} obj_kind:=\"$obj_kind\"",
               "refId": "VictoriaLogsVariableQueryEditor-VariableQuery",
@@ -908,6 +957,16 @@ data: #v--name must be unique, or you could get cryptic error: "A dashboard with
             "regex": "/^[a-zA-Z].+/",
             "sort": 1,
             "type": "query"
+          },
+          {
+            "allowCustomValue": false,
+            "hide": 2,
+            "name": "ds",
+            "options": [],
+            "query": "victoriametrics-logs-datasource",
+            "refresh": 1,
+            "regex": "VictoriaLogs",
+            "type": "datasource"
           }
         ]
       },
@@ -916,6 +975,9 @@ data: #v--name must be unique, or you could get cryptic error: "A dashboard with
         "to": "now"
       },
       "timepicker": {},
-      "timezone": "browser"
+      "timezone": "browser",
+      "title": "Kubernetes Event Logs (from VictoriaLogs)",
+      "uid": "configmap_kubernetes-event-logs",
+      "version": 1
     }
 ---

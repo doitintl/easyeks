@@ -15,7 +15,8 @@ export function deploy_vm_metrics_k8s_stack(stack: cdk.Stack, cluster: eks.IClus
 //daemonset vmks-prometheus-node-exporter -> generates node metrics in prometheus format
 //deployment vmks-kube-state-metrics -> generates kubernetes metrics in prometheus format
 //deployment vmagent-vmks-victoria-metrics-k8s-stack -> auto-configured to scrape both and send to vm-metrics-db
-//vm-metrics-db
+//stateful deployment vmsingle-vmks-victoria-metrics-k8s-stack -> stores metrics
+//grafana deployment vmks-grafana -> acts as a dashboard to show metrics stored in victoria metrics & and alternative dashboard for victoria logs
 
 const grafana_admin_login_kube_secret_as_yaml = `
 apiVersion: v1
@@ -25,8 +26,8 @@ metadata:
   namespace: observability
 type: kubernetes.io/basic-auth
 stringData: #v-- placerholder values for testing
-  username: admin    # required field for kubernetes.io/basic-auth
-  password: password # required field for kubernetes.io/basic-auth
+  username: admin    # username is a required field/label_name for secrets of type kubernetes.io/basic-auth
+  password: password # password is a required field/label_name for secrets of type kubernetes.io/basic-auth
 `;
     const grafana_admin_login_kube_secret_as_JS_object: JSON = read_yaml_string_as_javascript_object(grafana_admin_login_kube_secret_as_yaml);
     const grafana_admin_login_kube_secret = new eks.KubernetesManifest(stack, "grafana-admin-login-kube-secret", {
@@ -61,6 +62,7 @@ kube-state-metrics: # https://github.com/prometheus-community/helm-charts/blob/m
     karpenter.sh/capacity-type: "on-demand" #<-- Valid values are "spot", "on-demand", and "reserved"
 prometheus-node-exporter: # https://github.com/prometheus-community/helm-charts/blob/main/charts/prometheus-node-exporter/values.yaml
   enabled: true # <--deploys as a dependency/nested/child helm chart, such that all ^-original values-^ file's values are indented by 2
+  priorityClassName: "system-node-critical" #ensures daemonset is schedulable even on small nodes
   resources:
     requests:
       cpu: 10m
@@ -146,7 +148,7 @@ grafana:        # https://github.com/grafana/helm-charts/blob/main/charts/grafan
   resources: # (of grafana's main container)
     requests:
       cpu: 100m
-      memory: 400Mi
+      memory: 300Mi
     limits:
       memory: 1024Mi
   admin:
@@ -219,7 +221,7 @@ vmalert:
     //Browser:   localhost:3000
 
 
-} //end deploy_grafana_dashboard()
+} //end deploy_vm_metrics_k8s_stack()
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /* 
 Docs:
