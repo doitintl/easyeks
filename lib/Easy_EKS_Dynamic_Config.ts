@@ -70,8 +70,10 @@ export class Easy_EKS_Dynamic_Config {
         const latest_kube_proxy_33_cmd = `aws eks describe-addon-versions --kubernetes-version=1.33 --addon-name=kube-proxy --query='addons[].addonVersions[].addonVersion' | jq '.[0]' | tr -d '"|\n|\r'`;
         Easy_EKS_Dynamic_Config.latest_version_of_kube_proxy_1_33_eks_addon = stdout_of_cmd(latest_kube_proxy_33_cmd); //plausible value = v1.33.3-eksbuild.6
 
-        const latest_bottlerocket_33_cmd = `aws ssm get-parameters-by-path --path "/aws/service/bottlerocket/aws-k8s-1.33" --recursive | jq -cr '.Parameters[].Name' | grep -v "latest" | awk -F '/' '{print $7}' | sort | uniq | tail -n 1 | tr -d '"|\n|\r'`;
-        Easy_EKS_Dynamic_Config.latest_version_of_bottlerocket_1_33_release = stdout_of_cmd(latest_bottlerocket_33_cmd); //plausible value = 1.51.0-47438798
+        //                                                                                         IMPORTANT NOTE: v-- the ARM64 & x86_64 share the same value, so this endpoint is generically valid.
+        const latest_bottlerocket_33_cmd = `aws ssm get-parameter --name /aws/service/bottlerocket/aws-k8s-1.33/x86_64/latest/image_version --query "Parameter.Value" --output text | tr -d '\n|\r'`;
+        Easy_EKS_Dynamic_Config.latest_version_of_bottlerocket_1_33_release = stdout_of_cmd(latest_bottlerocket_33_cmd); //plausible value = 1.52.0-b7ac6e1a
+
     }//end constructor
 
     private static ensure_init(){ if(!Easy_EKS_Dynamic_Config.singleton){ Easy_EKS_Dynamic_Config.singleton = new Easy_EKS_Dynamic_Config(); } }

@@ -32,7 +32,7 @@ export function apply_config(config: Easy_EKS_Config_Data, stack: cdk.Stack){ //
     }
     //Kubernetes verson and addon's that may depend on Kubernetes version / should be updated along side it should be specified here
     config.set_clusters_version_of_Kubernetes(eks.KubernetesVersion.V1_33);
-    config.set_worker_nodes_bottlerocket_release_version( "1.51.0-47438798" ); //<-- current value is a release associated with kube 1.33
+    config.set_worker_nodes_bottlerocket_release_version( "1.52.0-b7ac6e1a" ); //<-- current value is a release associated with kube 1.33
     //^-- Choice: do you want latest? (every time `cdk deploy stage1-eks` is run, which could trigger extra node reboots)
     //            If so then use Easy_EKS_Dynamic_Config.get_latest_version_of_bottlerocket_1_33_release()
     //        OR: do you want to minimize node reboots as much as possible? / only when explicitly specified
