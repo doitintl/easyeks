@@ -337,10 +337,11 @@ customConfig:
         repository: "https://victoriametrics.github.io/helm-charts/",
         chart: "victoria-logs-single",
         release: 'vl',
-        version: "0.11.15", //version of helm chart (v0.11.15, maps to app version 1.36.1)
+        version: "0.11.24", //version of helm chart (v0.11.15, maps to app version 1.43.1)
         // helm repo add vm https://victoriametrics.github.io/helm-charts/
         // helm repo update vm
         // helm search repo vm
+        // helm show values vm/victoria-logs-single
         values: {
             "server": {
                 //v--PURPOSEFULLY not using pod level HTTPS, because it breaks kubectl port-forward
@@ -373,6 +374,7 @@ customConfig:
                                    //   kubectl -n=observability patch pvc server-volume-vl-victoria-logs-single-server-0 --patch '{ "spec": { "resources": { "requests": { "storage": "11Gi"} } } }'
                                    //   kubectl -n=observability rollout restart sts/vl-victoria-logs-single-server
                                    //   (pvc resize will complete after pod restarts)
+                                   //   (Reason for recommendation is you can scale up but you can't scale down.)
                 "resources": {     
                     "requests": {
                         "cpu": "100m",
@@ -382,6 +384,9 @@ customConfig:
                         "memory": "4Gi",
                     },
                 },
+                "serviceMonitor": {
+                    "enabled": true //<-- deploys config snippet, vm-operator uses to configure collection of metrics, used by "VictoriaLogs - single-node" Grafana Dashboard.
+                }, //^-- Note: If you run kubectl get vmservicescrape, and don't see a matching vmservicescrape spawned from the servicemonitor, then reboot victoria-metrics-operator
             },
         },//end helm values
         //Command to verify config:
@@ -397,9 +402,11 @@ customConfig:
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     //Victoria Logs Specific Dashboards:
-    const grafana_dashboard_configmaps_yaml_file = './lib/Frugal_Observability/manifests/easy_eks_grafana_dashboard.configmaps.yaml';
+    //(Note normally a service monitor needs to be associated as well, but the helm chart's values file generates that for us)
+    const grafana_dashboard_configmaps_yaml_file = './lib/Frugal_Observability/manifests/victoria_logs_grafana_dashboard.configmaps.yaml';
     const grafana_dashboard_configmaps_yamls_as_JSO_array: JSON[] = read_yaml_file_as_array_of_javascript_objects(grafana_dashboard_configmaps_yaml_file);
-    const grafana_dashboard_configmaps = new eks.KubernetesManifest(stack, "grafana-dashboards-in-configmaps", {
+    //Apply YAML Manifests
+    const grafana_dashboard_configmaps = new eks.KubernetesManifest(stack, "victoria-logs-grafana-dashboards", {
         cluster: cluster,
         manifest: grafana_dashboard_configmaps_yamls_as_JSO_array,
         overwrite: true,

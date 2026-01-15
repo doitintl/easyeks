@@ -44,6 +44,8 @@ victoria-metrics-operator:
   env:
   - name: "VM_ENABLETCP6" #<-- adds necessary IPv6 compatibility flags to all resources managed by vm operator
     value: "true"
+  extraArgs:
+    controller.prometheusCRD.resyncPeriod: 1m  #(Makes prom to vm CR conversion more reliable)
   resources:
     requests:
       cpu: 2m

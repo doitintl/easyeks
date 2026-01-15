@@ -83,42 +83,48 @@ export function deploy_addons(config: Easy_EKS_Config_Data, stack: cdk.Stack, cl
         prune: true,
     });
 
-// const observability_crd_helm_values_as_yaml = `
-// # Note: YAML HEREDOC can't be indented
-// # VMdb (VictoriaMetrics database), is configured to use a subset of prometheus operator's CRDs
-// # Even if you're not using the Frugal_Observability stack, it doesn't hurt to install the CRD
-// crds:
-//   alertmanagerconfigs:
-//     enabled: false
-//   alertmanagers:
-//     enabled: false
-//   podmonitors:
-//     enabled: false
-//   probes:
-//     enabled: false
-//   prometheusagents:
-//     enabled: false
-//   prometheuses:
-//     enabled: false
-//   prometheusrules:
-//     enabled: false
-//   scrapeconfigs:
-//     enabled: false
-//   servicemonitors: #<-- only CRD used
-//     enabled: true
-//   thanosrulers:
-//     enabled: flase
-// `;
-//     const observability_crd_helm_values_as_JS_object: JSON = read_yaml_string_as_javascript_object(observability_crd_helm_values_as_yaml);
-//     const observability_crd_helm_release = new eks.HelmChart(stack, 'observability_crd_helm', {
-//         cluster: cluster,
-//         namespace: 'kube-system',
-//         repository: 'https://prometheus-community.github.io/helm-charts',
-//         chart: 'prometheus-operator-crds',
-//         release: 'prometheus-operator-crds',
-//         version: '25.0.1', //version of helm chart, this shouldn't need to be updated.
-//         values: observability_crd_helm_values_as_JS_object,
-//     });
+const observability_crd_helm_values_as_yaml = `
+# Note: YAML HEREDOC can't be indented
+# VMdb (VictoriaMetrics database), is configured to use a subset of prometheus operator's CRs(custom resources)*
+# Technically, vm-metrics-k8s-stack, has an vm-operator that converts & synchronizes a subset of prometheus operator CRs
+# To vm-metrics-k8s-stack's vm-operator equivalent CRs. (source: https://docs.victoriametrics.com/operator/integrations/prometheus/)
+# The benefit of this approach is:
+# 1. vm-operator is compatible with both it's own CRs & prom-operator's CRs.
+# 2. Many helm charts offer to generate prom-operator CRs, so this offers smooth compatibility with kube's ecosystem.
+# Even if you're not using the Frugal_Observability stack, it doesn't hurt to install the CRDs
+crds:
+  prometheuses:
+    enabled: false
+  alertmanagers:
+    enabled: false
+  prometheusagents:
+    enabled: false
+  thanosrulers:
+    enabled: false
+  #^-- Disabling unnecessary CRDs
+  alertmanagerconfigs:
+    enabled: true #<-- vm-operator supports converting AlertmanagerConfig to VMAlertmanagerConfig
+  podmonitors:
+    enabled: true #<-- vm-operator supports converting PodMonitor to VMPodScrape
+  probes:
+    enabled: true #<-- vm-operator supports converting Probe to VMProbe
+  prometheusrules:
+    enabled: true #<-- vm-operator supports converting PrometheusRule to VMRule
+  scrapeconfigs:
+    enabled: true #<-- vm-operator supports converting ScrapeConfig to VMScrapeConfig
+  servicemonitors:
+    enabled: true #<-- vm-operator supports converting ServiceMonitor to VMServiceScrape
+`;
+    const observability_crd_helm_values_as_JS_object: JSON = read_yaml_string_as_javascript_object(observability_crd_helm_values_as_yaml);
+    const observability_crd_helm_release = new eks.HelmChart(stack, 'observability_crd_helm', {
+        cluster: cluster,
+        namespace: 'kube-system',
+        repository: 'https://prometheus-community.github.io/helm-charts',
+        chart: 'prometheus-operator-crds',
+        release: 'prometheus-operator-crds',
+        version: '25.0.1', //version of helm chart, this shouldn't need to be updated.
+        values: observability_crd_helm_values_as_JS_object,
+    });
 
 }//end deploy_addons()
 

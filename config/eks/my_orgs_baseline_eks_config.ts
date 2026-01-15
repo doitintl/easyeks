@@ -152,43 +152,6 @@ export function deploy_addons(config: Easy_EKS_Config_Data, stack: cdk.Stack, cl
     }); //end EBS CSI Driver Addon
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    /////////////////////////////////////////////////////////////////////////////////////////////////////
-    // Install cert-manager (using helm chart)
-    // Notes: 
-    // 1. Why helm is used over the EKS Addon methodology:
-    //    This is available as an EKS Addon, but the EKS addon version doesn't default to implementing
-    //    best practices mentioned in their docs:
-    //    https://cert-manager.io/docs/installation/best-practice/#best-practice-helm-chart-values
-    //    The helm install method is easier to configure according to best practices.
-    // 2. Why is this logic here in deploy_addons() and not deploy_essentials():
-    //    cert-manager is a prerequisite dependency for the Frugal Observability Stack 
-    //    This way deploy_addons logic (which runs first), ensure the cert-manager dependency is deployed
-    //    Then deploy_essentials logic (which runs later), could be configured to deploy the Frugal
-    //    Observability Stack, which for the sake of security has a hard dependency on x509 HTTPS certs
-    //    used internally within the cluster, that are managed by cert-manager.
-    // About:
-    // * cert-manager.io is a kubernetes operator that reconciles the following custom resources:
-    //   * kubectl get certificaterequests --all-namespaces
-    //   * kubectl get certificates -A 
-    //   * kubectl get challenges -A
-    //   * kubectl get orders -A 
-    //   * kubectl get issuers -A 
-    //   * kubectl get clusterissusers
-    const cert_manager_kubernetes_custom_resource_operator = cluster.addHelmChart('cert-manager-helm-chart', {
-        chart: "cert-manager", // Name of the Chart to be deployed
-        release: "cert-manager", // Name for our chart in Kubernetes (helm list -A)
-        repository: "oci://quay.io/jetstack/charts/cert-manager",  // HTTPS address of the helm chart (associated with helm repo add command)
-        namespace: "cert-manager",
-        version: "v1.19.1", //version of helm chart (helm version v1.19.1, maps to app version v1.19.1)
-        // v-- You can run this to see the latest verson of the chart
-        // helm repo add jetstack https://charts.jetstack.io
-        // helm repo update jetstack
-        // helm search repo jetstack
-        wait: false,
-        values: generate_recommended.config_for_cert_manager_helm_values(),
-    });
-    /////////////////////////////////////////////////////////////////////////////////////////////////////
-
 }//end deploy_addons()
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -244,6 +207,39 @@ export function deploy_essentials(config: Easy_EKS_Config_Data, stack: cdk.Stack
             prune: true,   
         }
     );
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // Install cert-manager (using helm chart)
+    // Notes: 
+    // 1. Why helm is used over the EKS Addon methodology:
+    //    This is available as an EKS Addon, but the EKS addon version doesn't default to implementing
+    //    best practices mentioned in their docs:
+    //    https://cert-manager.io/docs/installation/best-practice/#best-practice-helm-chart-values
+    //    The helm install method is easier to configure according to best practices.
+    // About:
+    // * cert-manager.io is a kubernetes operator that reconciles the following custom resources:
+    //   * kubectl get certificaterequests --all-namespaces
+    //   * kubectl get certificates -A 
+    //   * kubectl get challenges -A
+    //   * kubectl get orders -A 
+    //   * kubectl get issuers -A 
+    //   * kubectl get clusterissusers
+    //
+    // v-- Uncomment if you want to use it.
+    // const cert_manager_kubernetes_custom_resource_operator = cluster.addHelmChart('cert-manager-helm-chart', {
+    //     chart: "cert-manager", // Name of the Chart to be deployed
+    //     release: "cert-manager", // Name for our chart in Kubernetes (helm list -A)
+    //     repository: "https://charts.jetstack.io", // HTTPS address of the helm chart (associated with helm repo add command)
+    //     namespace: "cert-manager",
+    //     version: "v1.19.2", //version of helm chart (helm version v1.19.2, maps to app version v1.19.2)
+    //     // v-- You can run this to see the latest verson of the chart
+    //     // helm repo add jetstack https://charts.jetstack.io
+    //     // helm repo update jetstack
+    //     // helm search repo jetstack | egrep "NAME|cert-manager"
+    //     wait: false,
+    //     values: generate_recommended.config_for_cert_manager_helm_values(),
+    // });
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 }//end deploy_essentials()
