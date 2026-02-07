@@ -132,6 +132,26 @@ defaultDashboards: #<-- deploys ConfigMaps containing dashboards as JSON, that g
       enabled: true
     victoriametrics-vmalert:
       enabled: true
+defaultRules: #<-- creates vmrule objects, a few that aren't applicable to EKS have been disabled (avoids no data collected warning)
+  groups:
+    etcd:
+      create: false
+    kubeScheduler:
+      create: false
+    kubernetesSystemScheduler:
+      create: false
+    kubernetesSystemControllerManager:
+      create: false
+    kubelet:
+      create: false
+    k8sPodOwner:
+      create: false
+kubeControllerManager:
+  enabled: false
+kubeEtcd:
+  enabled: false
+kubeScheduler:
+  enabled: false
 grafana:        # https://github.com/grafana/helm-charts/blob/main/charts/grafana/values.yaml
   enabled: true # <--deploys as a dependency/nested/child helm chart, such that all ^-original values file values are indented by 2
   nodeSelector:
@@ -196,12 +216,28 @@ grafana:        # https://github.com/grafana/helm-charts/blob/main/charts/grafan
         access: proxy
         url: http://vl-victoria-logs-single-server.observability.svc.cluster.local.:9428
         isDefault: false
-##########################################################################################
-# v-- I'll turn these on later
 alertmanager:
-  enabled: false
+  enabled: true
+  spec:
+    resources:
+      requests:
+        cpu: 10m
+        memory: 50Mi
+      limits:
+        memory: 500Mi
+    nodeSelector:
+      karpenter.sh/capacity-type: "on-demand" #<-- Valid values are "spot", "on-demand", and "reserved"
 vmalert:
-  enabled: false
+  enabled: true
+  spec:
+    resources:
+      requests:
+        cpu: 10m
+        memory: 50Mi
+      limits:
+        memory: 500Mi
+    nodeSelector:
+      karpenter.sh/capacity-type: "on-demand" #<-- Valid values are "spot", "on-demand", and "reserved"
 `;
     const vmks_helm_values_as_JS_object: JSON = read_yaml_string_as_javascript_object(vmks_helm_values_as_yaml);
     const vmks_helm_release = new eks.HelmChart(stack, 'victoria-metrics-k8s-stack-helm', {
