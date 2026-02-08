@@ -85,6 +85,9 @@ vmagent:        # kubectl get vmagent -n=observability
 vmsingle:       # kubectl get vmsingle -n=observability
   enabled: true # <--creates a kube custom resource of type vmsingle (that vm-operator will convert to vmsingle deployment)
   spec:
+    retentionPeriod: "31d" #(Possible units character: h(ours), d(ays), w(eeks), m(onths), y(ears))
+    extraArgs:
+      maxLabelsPerTimeseries: "50" #(default value is 40, Karpenter.sh nodes generate a ton of labels, up to 45. This prevents an ignorable alert)
     resources:
       requests:
         cpu: 50m
@@ -94,9 +97,14 @@ vmsingle:       # kubectl get vmsingle -n=observability
     storage:
       resources:
         requests:
-          storage: 20Gi
+          storage: 20Gi #<--Recommendation: Never change this value (will error) & leave 20Gi as default, when you want to size up don't do so using declarative helm values
+                        #                   resize up using the following 2 imperative kubectl command, against pre-existing pvc object.
+                        #                   kubectl -n=observability patch pvc vmsingle-vmks-victoria-metrics-k8s-stack --patch '{ "spec": { "resources": { "requests": { "storage": "21Gi"} } } }'
+                        #                   kubectl -n=observability rollout restart deploy/vmsingle-vmks-victoria-metrics-k8s-stack
+                        #                   (pvc resize will complete after pod restarts)
+                        #                   (Reason for recommendation is you can scale up but you can't scale down. + editing value will result in errors)
     nodeSelector:
-      karpenter.sh/capacity-type: "on-demand" #<-- Valid values are "spot", "on-demand", and "reserved"
+      karpenter.sh/capacity-type: "on-demand" #<-- Valid values are "spot", "on-demand", and "reserved")
 defaultDashboards: #<-- deploys ConfigMaps containing dashboards as JSON, that grafana sidecar will auto load / auto import as IaC Managed Dashboards
   enabled: true
   dashboards: #v-- disabling 3 that don't work with EKS due to managed ctrl plane, to remove 3 empty dashboards
@@ -142,6 +150,8 @@ defaultRules: #<-- creates vmrule objects, a few that aren't applicable to EKS h
       create: false
     kubernetesSystemControllerManager:
       create: false
+    kubernetesSystemKubelet:
+      create: false #<--a slightly customized version gets created by cdk
     kubelet:
       create: false
     k8sPodOwner:
@@ -154,6 +164,10 @@ kubeScheduler:
   enabled: false
 grafana:        # https://github.com/grafana/helm-charts/blob/main/charts/grafana/values.yaml
   enabled: true # <--deploys as a dependency/nested/child helm chart, such that all ^-original values file values are indented by 2
+  ingress:
+    enabled: false
+    hosts:
+    - localhost:3000 #value's still read by templatized alertmanager even when enabled is false
   nodeSelector:
     karpenter.sh/capacity-type: "on-demand" #<-- Valid values are "spot", "on-demand", and "reserved"
   sidecar:
@@ -253,11 +267,20 @@ vmalert:
         // helm show values vm/victoria-metrics-k8s-stack
         // https://github.com/VictoriaMetrics/helm-charts/tree/master/charts
         values: vmks_helm_values_as_JS_object,
+        wait: true, //the below dependency is a Custom Resource that requires this to be fully running, before it runs.
     });
     vmks_helm_release.node.addDependency(observability_namespace); // <-- Imperative installation order to avoid temporary errors in logs
     //kubectl port-forward svc/vmks-grafana -n=observability 3000:80
     //Browser:   localhost:3000
-
+    const modified_vm_alert_yaml_file = './lib/Frugal_Observability/manifests/modified_upstream.vmalert.yaml';
+    const modified_vm_alert_as_JSO_array: JSON[] = read_yaml_file_as_array_of_javascript_objects(modified_vm_alert_yaml_file);
+    const modified_vm_alert = new eks.KubernetesManifest(stack, "modified-upstream-vm-alert", {
+        cluster: cluster,
+        manifest: modified_vm_alert_as_JSO_array,
+        overwrite: true,
+        prune: true,
+    });
+    modified_vm_alert.node.addDependency(vmks_helm_release);
 
 } //end deploy_vm_metrics_k8s_stack()
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

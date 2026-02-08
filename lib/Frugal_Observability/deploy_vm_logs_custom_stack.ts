@@ -365,16 +365,16 @@ customConfig:
                     "tls": "false", //tls: true, breaks kubectl port-forward
                     //"tlsCertFile": "/etc/ssl/certs/tls.crt",
                     //"tlsKeyFile": "/etc/ssl/certs/tls.key",
-                    "enableTCP6": `${config.ipMode === eks.IpFamily.IP_V6}`, //defaults to true, which enables application level IPv6 support.
+                    "enableTCP6": `${config.ipMode === eks.IpFamily.IP_V6}`, //evaluates to true using default config, which enables application level IPv6 support.
                 },  //^-- This is required for readiness and liveness probes to work correctly in IPv6 environments.
-                "retentionPeriod": "30d",
+                "retentionPeriod": "31d", //(Possible units character: h(ours), d(ays), w(eeks), m(onths), y(ears))
                 "persistentVolume": {
-                    "size": "10Gi" //<--Recommendation: Never change this value & leave 10Gi as default, when you want to size up don't do so using declarative helm values
+                    "size": "20Gi" //<--Recommendation: Never change this value (will error) & leave 20Gi as default, when you want to size up don't do so using declarative helm values
                 },                 //   resize up using the following 2 imperative kubectl command, against pre-existing pvc object.
-                                   //   kubectl -n=observability patch pvc server-volume-vl-victoria-logs-single-server-0 --patch '{ "spec": { "resources": { "requests": { "storage": "11Gi"} } } }'
+                                   //   kubectl -n=observability patch pvc server-volume-vl-victoria-logs-single-server-0 --patch '{ "spec": { "resources": { "requests": { "storage": "21Gi"} } } }'
                                    //   kubectl -n=observability rollout restart sts/vl-victoria-logs-single-server
                                    //   (pvc resize will complete after pod restarts)
-                                   //   (Reason for recommendation is you can scale up but you can't scale down.)
+                                   //   (Reason for recommendation is you can scale up but you can't scale down. + editing value will result in errors)
                 "resources": {     
                     "requests": {
                         "cpu": "100m",
