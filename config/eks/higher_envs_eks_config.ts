@@ -65,7 +65,14 @@ export function deploy_addons(config: Easy_EKS_Config_Data, stack: cdk.Stack, cl
         addonName: 'kube-proxy',
         addonVersion: Easy_EKS_Dynamic_Config.get_latest_version_of_kube_proxy_1_33_eks_addon(), // or 'v1.33.3-eksbuild.6'
         resolveConflicts: 'OVERWRITE',
-        configurationValues: '{}',
+        configurationValues: `{
+            "resources": {
+                "requests": {
+                    "cpu": "10m",
+                    "memory": "26Mi"
+                }
+            }
+        }`,
     });
     //NOTE! AWS LoadBalancer Controller and karpenter may occassionally need to be updated along with version of Kubernetes
 

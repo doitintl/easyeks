@@ -75,7 +75,22 @@ export function deploy_addons(config: Easy_EKS_Config_Data, stack: cdk.Stack, cl
         addonVersion: Easy_EKS_Dynamic_Config.get_latest_version_of_vpc_cni_eks_addon(), //OR 'v1.20.1-eksbuild.3'
         //serviceAccountRoleArn: <-- leave this blank, to use worker node's IAM role, which gives dualstack ipv4/ipv6 support
         resolveConflicts: 'OVERWRITE',
-        configurationValues: '{}',
+        configurationValues: `{
+            "nodeAgent": {
+                "resources": {
+                    "requests": {
+                        "cpu": "10m",
+                        "memory": "22Mi"
+                    }
+                }
+            },
+            "resources": {
+                "requests": {
+                    "cpu": "10m",
+                    "memory": "45Mi"
+                }
+            }
+        }`,
     });//end vpc-cni addon
 
     const coredns = new eks.CfnAddon(stack, 'coredns', {
@@ -102,7 +117,19 @@ export function deploy_addons(config: Easy_EKS_Config_Data, stack: cdk.Stack, cl
         addonName: 'eks-node-monitoring-agent',
         addonVersion: Easy_EKS_Dynamic_Config.get_latest_version_of_eks_node_monitoring_agent_eks_addon(), //or 'v1.4.0-eksbuild.2'
         resolveConflicts: 'OVERWRITE',
-        configurationValues: '{}',
+        configurationValues: `{
+            "monitoringAgent": {
+                "resources": {
+                    "requests": {
+                        "cpu": "1m",
+                        "memory": "75Mi"
+                    },
+                    "limits": {
+                        "memory": "150Mi"
+                    }
+                }
+            }
+        }`,
     });
 
     ///////////////////////////////////////////////////////////////////
