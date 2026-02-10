@@ -1,0 +1,11 @@
+# Referenced by:
+# global_baseline_eks_config.ts's deploy_addons() 
+########################################################################################################
+# About:
+# You can choose to use CloudWatch Metrics and Logs
+# Or you can use the Frugal_Observability Stack, which is based on self-hosted VictoriaMetrics Stack
+# for Metrics & Logs (at ~1/10th the cost of CloudWatch Metrics and Logs)
+# Even if you're not using the Frugal_Observability stack, it doesn't hurt to install the CRDs
+########################################################################################################
+annotations: {} 
+#(Basically a blank values file, so no significant config / this for the sake of a consistent pattern.)

@@ -1,0 +1,34 @@
+# Referenced by:
+# global_baseline_eks_config.ts's deploy_addons() 
+########################################################################################################
+# About:
+# VMdb (VictoriaMetrics database), is configured to use a subset of prometheus operator's CRs(custom resources)*
+# Technically, vm-metrics-k8s-stack, has a vm-operator that converts & synchronizes a subset of prometheus operator CRs
+# To vm-metrics-k8s-stack's vm-operator equivalent CRs. (source: https://docs.victoriametrics.com/operator/integrations/prometheus/)
+# The benefit of this approach is:
+# 1. vm-operator is compatible with both vm-operator's CRs & prom-operator's CRs.
+# 2. Many helm charts offer to generate prom-operator CRs, so this offers smooth compatibility with kube's ecosystem.
+# Even if you're not using the Frugal_Observability stack, it doesn't hurt to install the CRDs
+########################################################################################################
+crds:
+  prometheuses:
+    enabled: false
+  alertmanagers:
+    enabled: false
+  prometheusagents:
+    enabled: false
+  thanosrulers:
+    enabled: false
+  #^-- Disabling unnecessary CRDs
+  alertmanagerconfigs:
+    enabled: true #<-- vm-operator supports converting AlertmanagerConfig to VMAlertmanagerConfig
+  podmonitors:
+    enabled: true #<-- vm-operator supports converting PodMonitor to VMPodScrape
+  probes:
+    enabled: true #<-- vm-operator supports converting Probe to VMProbe
+  prometheusrules:
+    enabled: true #<-- vm-operator supports converting PrometheusRule to VMRule
+  scrapeconfigs:
+    enabled: true #<-- vm-operator supports converting ScrapeConfig to VMScrapeConfig
+  servicemonitors:
+    enabled: true #<-- vm-operator supports converting ServiceMonitor to VMServiceScrape

@@ -1,6 +1,6 @@
 import * as yaml from 'js-yaml'; //npm install js-yaml && npm install --save-dev @types/js-yaml
 
-export function config_for_cert_manager_helm_values () {
+export function config_for_cert_manager_helm_values() {
     type JSON = {[key: string]: any;}; //data type requested by helm values
     let recommended_config: JSON = {};
 

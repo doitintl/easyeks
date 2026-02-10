@@ -57,7 +57,7 @@ kube-state-metrics: # https://github.com/prometheus-community/helm-charts/blob/m
   resources:
     requests:
       cpu: 10m
-      memory: 20Mi
+      memory: 42Mi
     limits:
       memory: 256Mi
   nodeSelector:
@@ -91,7 +91,7 @@ vmsingle:       # kubectl get vmsingle -n=observability
     resources:
       requests:
         cpu: 50m
-        memory: 400Mi
+        memory: 800Mi
       limits:
         memory: 1600Mi
     storage:

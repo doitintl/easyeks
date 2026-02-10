@@ -1,4 +1,4 @@
-export function config_for_metrics_server_eks_addon (replicas:number) {
+export function config_for_metrics_server_eks_addon(replicas:number) {
     let recommended_config = 
         `{
             "replicas": ${replicas},

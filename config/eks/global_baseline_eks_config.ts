@@ -83,48 +83,30 @@ export function deploy_addons(config: Easy_EKS_Config_Data, stack: cdk.Stack, cl
         prune: true,
     });
 
-const observability_crd_helm_values_as_yaml = `
-# Note: YAML HEREDOC can't be indented
-# VMdb (VictoriaMetrics database), is configured to use a subset of prometheus operator's CRs(custom resources)*
-# Technically, vm-metrics-k8s-stack, has an vm-operator that converts & synchronizes a subset of prometheus operator CRs
-# To vm-metrics-k8s-stack's vm-operator equivalent CRs. (source: https://docs.victoriametrics.com/operator/integrations/prometheus/)
-# The benefit of this approach is:
-# 1. vm-operator is compatible with both it's own CRs & prom-operator's CRs.
-# 2. Many helm charts offer to generate prom-operator CRs, so this offers smooth compatibility with kube's ecosystem.
-# Even if you're not using the Frugal_Observability stack, it doesn't hurt to install the CRDs
-crds:
-  prometheuses:
-    enabled: false
-  alertmanagers:
-    enabled: false
-  prometheusagents:
-    enabled: false
-  thanosrulers:
-    enabled: false
-  #^-- Disabling unnecessary CRDs
-  alertmanagerconfigs:
-    enabled: true #<-- vm-operator supports converting AlertmanagerConfig to VMAlertmanagerConfig
-  podmonitors:
-    enabled: true #<-- vm-operator supports converting PodMonitor to VMPodScrape
-  probes:
-    enabled: true #<-- vm-operator supports converting Probe to VMProbe
-  prometheusrules:
-    enabled: true #<-- vm-operator supports converting PrometheusRule to VMRule
-  scrapeconfigs:
-    enabled: true #<-- vm-operator supports converting ScrapeConfig to VMScrapeConfig
-  servicemonitors:
-    enabled: true #<-- vm-operator supports converting ServiceMonitor to VMServiceScrape
-`;
-    const observability_crd_helm_values_as_JS_object: JSON = read_yaml_string_as_javascript_object(observability_crd_helm_values_as_yaml);
-    const observability_crd_helm_release = new eks.HelmChart(stack, 'observability_crd_helm', {
+    const prometheus_operator_crds_helm_release = new eks.HelmChart(stack, 'prometheus_operator_crds_helm', {
         cluster: cluster,
         namespace: 'kube-system',
         repository: 'https://prometheus-community.github.io/helm-charts',
         chart: 'prometheus-operator-crds',
         release: 'prometheus-operator-crds',
-        version: '25.0.1', //version of helm chart, this shouldn't need to be updated.
-        values: observability_crd_helm_values_as_JS_object,
+        version: '27.0.0', //version of helm chart, this shouldn't need to be updated (because prometheus' CRDS are 1.0 stable)
+        values: read_yaml_file_as_javascript_object(
+            './config/eks/yaml/cluster/prometheus_operator_crds.baseline.helm_values.yaml'),
     });
+    const victoriametrics_operator_crds_helm_release = new eks.HelmChart(stack, 'victoriametrics_operator_crds_helm', {
+        cluster: cluster,
+        namespace: 'kube-system',
+        repository: 'https://victoriametrics.github.io/helm-charts/',
+        chart: 'victoria-metrics-operator-crds',
+        release: 'victoria-metrics-operator-crds',
+        version: '0.7.0', //version of helm chart, associated with app version 0.67.0
+        values: read_yaml_file_as_javascript_object(
+            './config/eks/yaml/cluster/victoriametrics_operator_crds.baseline.helm_values.yaml'),
+    });
+    // VictoriaMetrics' CRDs are beta so they may need to be updated in the future 
+    // helm repo add vm https://victoriametrics.github.io/helm-charts/
+    // helm repo update
+    // helm search repo vm/victoria-metrics-operator-crds -l
 
 }//end deploy_addons()
 
@@ -147,7 +129,7 @@ export function deploy_essentials(config: Easy_EKS_Config_Data, stack: cdk.Stack
         // enhanced true  gives -> https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/Container-Insights-metrics-enhanced-EKS.html
     };
     config.CloudWatch_Observability.set_input_parameters_of_cloudwatch_metrics(cw_metrics_observability_inputs);
-    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
     /////////////////////////////////////////////////////////////////////////////////////////////////////
     const cw_logs_observability_inputs: cwo.CloudWatch_Logs_Input_Parameters = {
         application_log_conf_file_name: "default-application-log.conf",

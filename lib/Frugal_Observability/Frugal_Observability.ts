@@ -92,7 +92,7 @@ export class Frugal_Observability {
         if(this.victoria_metrics_k8s_stack_input_parameters?.enabled === true){ //the ? can be interpreted as if defined & enabled
             deploy_vm_metrics_k8s_stack(this.stack, this.cluster, config, this.observability_ns);
         }
-        if(this.victoria_logs_custom_stack_input_parameters?.enabled === true){ 
+        if(this.victoria_logs_custom_stack_input_parameters?.enabled === true){ //the ? can be interpreted as if defined & enabled
             deploy_vm_logs_custom_stack(this.stack, this.cluster, config, this.observability_ns);
         }
     }

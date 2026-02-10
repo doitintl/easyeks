@@ -1,4 +1,4 @@
-export function config_for_coreds_eks_addon (min_replicas:number) {
+export function config_for_coreds_eks_addon(min_replicas:number) {
     let recommended_config = 
         `{
             "autoScaling": {

@@ -152,7 +152,7 @@ resources:
     memory: 4Gi
   requests:
     cpu: 10m
-    memory: 32Mi
+    memory: 64Mi
 env:
 - name: KUBERNETES_SERVICE_HOST
   value: "kubernetes.default.svc"   #<--IPv6 fix documented in https://github.com/vectordotdev/vector/issues/19224
@@ -378,7 +378,7 @@ customConfig:
                 "resources": {     
                     "requests": {
                         "cpu": "100m",
-                        "memory": "128Mi",
+                        "memory": "192Mi",
                     },
                     "limits": {
                         "memory": "4Gi",
