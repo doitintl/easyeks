@@ -14,6 +14,8 @@
 # * There should be no need to change this baseline config
 # * The intent is for this to represent a relatively complete (templatized) config, and additional files
 #   can be supplied as config overrides.
+# * https://vector.dev/docs/reference/configuration/
+# * https://github.com/vectordotdev/helm-charts/blob/vector-0.49.0/charts/vector/values.yaml
 ########################################################################################################
 role: Agent     #<--deploys vector as a kubernetes daemonset & uses hostPath for ephemeral filesystem.
 logLevel: "info"

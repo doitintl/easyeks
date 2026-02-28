@@ -20,8 +20,6 @@
 #        //* kubectl port-forward service/vl-victoria-logs-single-server -n=observability 9428:9428
 #        //Browser Access:
 #        //* http://localhost:9428/select/vmui/
-# * https://vector.dev/docs/reference/configuration/
-# * https://github.com/vectordotdev/helm-charts/blob/vector-0.49.0/charts/vector/values.yaml
 # * https://docs.victoriametrics.com/helm/victoria-logs-single/
 ########################################################################################################
 server:
@@ -41,7 +39,7 @@ server:
     enableTCP6: TEMPLATIZED_VARIABLE_IPV6_ENABLED #<-- find and replace will occur (using typescript logic)
     #           ^-- default config will substitue in true, which enables application level IPv6 support
     #               If false, then pods with IPv6 IPs would fail readiness and liveness probes
-    httpListenAddr: "9428"
+    httpListenAddr: ":9428"
     tls: false #<-- setting to true will break kubectl port-forward, thus false is correct value
     # tlsCertFile: "/etc/ssl/certs/tls.crt"
     # tlsKeyFile: "/etc/ssl/certs/tls.key"
