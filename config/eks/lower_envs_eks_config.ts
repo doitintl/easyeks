@@ -8,6 +8,7 @@ import { Karpenter_Helm_Config, Karpenter_YAML_Generator, Apply_Karpenter_YAMLs_
 import { KubectlV32Layer } from '@aws-cdk/lambda-layer-kubectl-v32'; //npm install @aws-cdk/lambda-layer-kubectl-v32
 import { KubectlV33Layer } from '@aws-cdk/lambda-layer-kubectl-v33'; //npm install @aws-cdk/lambda-layer-kubectl-v33
 import { KubectlV34Layer } from '@aws-cdk/lambda-layer-kubectl-v34'; //npm install @aws-cdk/lambda-layer-kubectl-v34
+import { read_yaml_string_as_javascript_object, read_yaml_file_as_javascript_object, read_yaml_file_as_array_of_javascript_objects, read_yaml_file_as_normalized_yaml_multiline_string } from '../../lib/Utilities';
 //Intended Use: 
 //EasyEKS Admins: edit this file with config to apply to all lower environment eks cluster's in your org.
 
@@ -177,6 +178,49 @@ export function deploy_essentials(config: Easy_EKS_Config_Data, stack: cdk.Stack
     });
     config.aws_load_balancer_controller_helm_chart_essentials_dependency.node.addDependency(ALBC_Kube_SA);
     // ^-- This prevents temporary errors in logs of AWS Load Balancer Controller
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    //Note: config.Frugal_Observablity's set functions are only staging configuration for a potential deployment.
+    //      They aren't actually deploying anything (during this stage)
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // v-- Configuring Input parameters of Frugal_Observability's victoria_logs_custom_stack
+    config.Frugal_Observability.set_kubernetes_event_exporter_override_helm_values_as_JS_Object(
+        read_yaml_file_as_javascript_object(
+            './config/eks/yaml/essentials/frugal_observability/kubernetes_event_exporter.lower_envs.override_helm_values.yaml')
+    );
+    config.Frugal_Observability.set_vector_dev_agent_override_helm_values_as_JS_Object(
+        read_yaml_file_as_javascript_object(
+            './config/eks/yaml/essentials/frugal_observability/vector_dev_as_log_agent.lower_envs.override_helm_values.yaml')
+    );
+    config.Frugal_Observability.set_victoria_logs_db_single_override_helm_values_as_JS_Object(
+        read_yaml_file_as_javascript_object(
+            './config/eks/yaml/essentials/frugal_observability/victoria_logs_single_db.lower_envs.override_helm_values.yaml')
+    );
+    config.Frugal_Observability.set_kubernetes_event_exporter_helm_chart_version('3.6.3'); //<-- shouldn't need updating
+    // To see latest chart version, run this-v
+    // helm repo add bitnami https://charts.bitnami.com/bitnami && helm repo update bitnami && helm search repo bitnami | egrep "NAME|kubernetes-event-exporter"
+
+    config.Frugal_Observability.set_vector_dev_agent_helm_chart_version('0.50.0');
+    // To see latest chart version, run this-v
+    // helm repo add vector https://helm.vector.dev && helm repo update vector && helm search repo vector | egrep "NAME|vector"
+
+    config.Frugal_Observability.set_victoria_logs_db_single_helm_chart_version('0.11.28');
+    // To see latest chart version, run this-v
+    // helm repo add vm https://victoriametrics.github.io/helm-charts/ && helm repo update vm && helm search repo vm | egrep "NAME|victoria-logs-single"
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // v-- Configuring Input parameters of Frugal_Observability's victoria_metrics_kubernetes__stack
+    config.Frugal_Observability.set_victoria_metrics_kubernetes_stack_override_helm_values_as_JS_Object(
+        read_yaml_file_as_javascript_object(
+            './config/eks/yaml/essentials/frugal_observability/victoria_metrics_kubernetes_stack.lower_envs.override_helm_values.yaml')
+    );
+    config.Frugal_Observability.set_victoria_metrics_kubernetes_stack_helm_chart_version('0.72.0');
+    // To see latest chart version, run this-v
+    // helm repo add vm https://victoriametrics.github.io/helm-charts || helm repo update vm && helm search repo vm | egrep "NAME|victoria-metrics-k8s-stack"
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 }//end deploy_essentials()

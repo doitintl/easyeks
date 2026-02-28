@@ -1,0 +1,19 @@
+# Referenced by:
+# * ./config/lower_envs_eks_config.ts's deploy_essentials()
+#   which:
+#   * Does last min injection of value into variable of this templatized_partial_helm_values.yaml file
+#     (templatized variable injection occurs for cluster_name & cluster_region)
+#   * Merges 2 partial_helm_values.yaml files & stores them in a config object
+# * ./lib/Frugal_Observability/deploy_vm_logs_custom_stack.ts (uses the resulting merged values)
+########################################################################################################
+# About:
+# * The intent is for this to get merged with the templatized baseline helm values.
+# * To see all possible values, run this-v
+#   helm repo add vector https://helm.vector.dev && helm repo update vector && helm show values vector/vector
+########################################################################################################
+resources:
+  limits:
+    memory: 3Gi #Minimal change intended to make it easy to verify successful override
+  requests:
+    cpu: 10m
+    memory: 64Mi

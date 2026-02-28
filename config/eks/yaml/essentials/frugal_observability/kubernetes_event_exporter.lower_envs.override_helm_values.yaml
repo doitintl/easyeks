@@ -8,9 +8,6 @@
 # vector.dev (has the ability to be configured as combo agent for metrics, logs, and traces.)
 # For simplier maintainability EasyEKS only uses vector.dev as a logging agent.
 # vector.dev's baseline config has logic to parse the kube event logs and send them to victoria logs DB.
-#
-#     // <-- can be run to show all possible values
-#    // helm repo add bitnami https://charts.bitnami.com/bitnami && helm repo update bitnami && helm show values bitnami/kubernetes-event-exporter
 ########################################################################################################
 global:
   security:

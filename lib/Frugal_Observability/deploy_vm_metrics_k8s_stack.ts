@@ -5,7 +5,8 @@ import * as eks from 'aws-cdk-lib/aws-eks';
 import { Construct } from "constructs";
 import * as fs from 'fs'; //node.js built in file system module
 import * as yaml from 'js-yaml'; //npm install js-yaml && npm install --save-dev @types/js-yaml
-import { read_yaml_string_as_javascript_object, read_yaml_file_as_javascript_object, read_yaml_file_as_array_of_javascript_objects } from '../Utilities';
+import { read_yaml_string_as_javascript_object, read_yaml_file_as_javascript_object, read_yaml_file_as_array_of_javascript_objects, read_yaml_file_as_normalized_yaml_multiline_string } from '../Utilities';
+import { merge } from 'lodash'; //npm install lodash & npm install @types/lodash
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
@@ -18,17 +19,11 @@ export function deploy_vm_metrics_k8s_stack(stack: cdk.Stack, cluster: eks.IClus
 //stateful deployment vmsingle-vmks-victoria-metrics-k8s-stack -> stores metrics
 //grafana deployment vmks-grafana -> acts as a dashboard to show metrics stored in victoria metrics & and alternative dashboard for victoria logs
 
-const grafana_admin_login_kube_secret_as_yaml = `
-apiVersion: v1
-kind: Secret
-metadata:
-  name: grafana-admin-basic-auth
-  namespace: observability
-type: kubernetes.io/basic-auth
-stringData: #v-- placerholder values for testing
-  username: admin    # username is a required field/label_name for secrets of type kubernetes.io/basic-auth
-  password: password # password is a required field/label_name for secrets of type kubernetes.io/basic-auth
-`;
+    const grafana_admin_login_kube_secret_as_yaml = read_yaml_file_as_normalized_yaml_multiline_string(
+        './config/eks/yaml/essentials/frugal_observability/grafana_admin_login.templatized.yaml')
+        .replaceAll('TEMPLATIZED_VARIABLE_GRAFANA_ADMIN_USERNAME', config.Frugal_Observability.grafana_admin_username) //(value_to_find, replacement_value)
+        .replaceAll('TEMPLATIZED_VARIABLE_GRAFANA_ADMIN_PASSWORD', config.Frugal_Observability.grafana_admin_password) //(value_to_find, replacement_value)
+    ;// ^-- reading file as multi-line string, then doing find and replace twice
     const grafana_admin_login_kube_secret_as_JS_object: JSON = read_yaml_string_as_javascript_object(grafana_admin_login_kube_secret_as_yaml);
     const grafana_admin_login_kube_secret = new eks.KubernetesManifest(stack, "grafana-admin-login-kube-secret", {
         cluster: cluster,
@@ -38,240 +33,21 @@ stringData: #v-- placerholder values for testing
     });
     grafana_admin_login_kube_secret.node.addDependency(observability_namespace);
 
-const vmks_helm_values_as_yaml = `
-victoria-metrics-operator:
-  enabled: true
-  env:
-  - name: "VM_ENABLETCP6" #<-- adds necessary IPv6 compatibility flags to all resources managed by vm operator
-    value: "true"
-  extraArgs:
-    controller.prometheusCRD.resyncPeriod: 1m  #(Makes prom to vm CR conversion more reliable)
-  resources:
-    requests:
-      cpu: 2m
-      memory: 42Mi
-    limits:
-      memory: 1Gi
-kube-state-metrics: # https://github.com/prometheus-community/helm-charts/blob/main/charts/kube-state-metrics/values.yaml
-  enabled: true # <--deploys as a dependency/nested/child helm chart, such that all ^-original values-^ file's values are indented by 2
-  resources:
-    requests:
-      cpu: 10m
-      memory: 42Mi
-    limits:
-      memory: 256Mi
-  nodeSelector:
-    karpenter.sh/capacity-type: "on-demand" #<-- Valid values are "spot", "on-demand", and "reserved"
-prometheus-node-exporter: # https://github.com/prometheus-community/helm-charts/blob/main/charts/prometheus-node-exporter/values.yaml
-  enabled: true # <--deploys as a dependency/nested/child helm chart, such that all ^-original values-^ file's values are indented by 2
-  priorityClassName: "system-node-critical" #ensures daemonset is schedulable even on small nodes
-  resources:
-    requests:
-      cpu: 10m
-      memory: 20Mi
-    limits:
-      memory: 256Mi
-vmagent:        # kubectl get vmagent -n=observability
-  enabled: true # <--creates a kube custom resource of type vmagent (that vm-operator will convert to vmagent deployment)
-  spec:
-    resources:
-      requests:
-        cpu: 50m
-        memory: 100Mi
-      limits:
-        memory: 500Mi
-    nodeSelector:
-      karpenter.sh/capacity-type: "on-demand" #<-- Valid values are "spot", "on-demand", and "reserved"
-vmsingle:       # kubectl get vmsingle -n=observability
-  enabled: true # <--creates a kube custom resource of type vmsingle (that vm-operator will convert to vmsingle deployment)
-  spec:
-    retentionPeriod: "31d" #(Possible units character: h(ours), d(ays), w(eeks), m(onths), y(ears))
-    extraArgs:
-      maxLabelsPerTimeseries: "50" #(default value is 40, Karpenter.sh nodes generate a ton of labels, up to 45. This prevents an ignorable alert)
-    resources:
-      requests:
-        cpu: 50m
-        memory: 800Mi
-      limits:
-        memory: 1600Mi
-    storage:
-      resources:
-        requests:
-          storage: 20Gi #<--Recommendation: Never change this value (will error) & leave 20Gi as default, when you want to size up don't do so using declarative helm values
-                        #                   resize up using the following 2 imperative kubectl command, against pre-existing pvc object.
-                        #                   kubectl -n=observability patch pvc vmsingle-vmks-victoria-metrics-k8s-stack --patch '{ "spec": { "resources": { "requests": { "storage": "21Gi"} } } }'
-                        #                   kubectl -n=observability rollout restart deploy/vmsingle-vmks-victoria-metrics-k8s-stack
-                        #                   (pvc resize will complete after pod restarts)
-                        #                   (Reason for recommendation is you can scale up but you can't scale down. + editing value will result in errors)
-    nodeSelector:
-      karpenter.sh/capacity-type: "on-demand" #<-- Valid values are "spot", "on-demand", and "reserved")
-defaultDashboards: #<-- deploys ConfigMaps containing dashboards as JSON, that grafana sidecar will auto load / auto import as IaC Managed Dashboards
-  enabled: true
-  dashboards: #v-- disabling 3 that don't work with EKS due to managed ctrl plane, to remove 3 empty dashboards
-    etcd:
-      enabled: false
-    kubernetes-controller-manager:
-      enabled: false
-    kubernetes-scheduler:
-      enabled: false
-    grafana-overview:
-      enabled: false #<-- not useful
-    kubernetes-kubelet:
-      enabled: true
-    kubernetes-system-api-server:
-      enabled: true
-    kubernetes-system-coredns:
-      enabled: true
-    kubernetes-views-global:
-      enabled: true
-    kubernetes-views-namespaces:
-      enabled: true
-    kubernetes-views-nodes:
-      enabled: true
-    kubernetes-views-pods:
-      enabled: true
-    node-exporter-full:
-      enabled: true
-    victoriametrics-operator:
-      enabled: true
-    victoriametrics-single-node:
-      enabled: true
-    victoriametrics-vmagent:
-      enabled: true
-    victoriametrics-vmalert:
-      enabled: true
-defaultRules: #<-- creates vmrule objects, a few that aren't applicable to EKS have been disabled (avoids no data collected warning)
-  groups:
-    etcd:
-      create: false
-    kubeScheduler:
-      create: false
-    kubernetesSystemScheduler:
-      create: false
-    kubernetesSystemControllerManager:
-      create: false
-    kubernetesSystemKubelet:
-      create: false #<--a slightly customized version gets created by cdk
-    kubelet:
-      create: false
-    k8sPodOwner:
-      create: false
-kubeControllerManager:
-  enabled: false
-kubeEtcd:
-  enabled: false
-kubeScheduler:
-  enabled: false
-grafana:        # https://github.com/grafana/helm-charts/blob/main/charts/grafana/values.yaml
-  enabled: true # <--deploys as a dependency/nested/child helm chart, such that all ^-original values file values are indented by 2
-  ingress:
-    enabled: false
-    hosts:
-    - localhost:3000 #value's still read by templatized alertmanager even when enabled is false
-  nodeSelector:
-    karpenter.sh/capacity-type: "on-demand" #<-- Valid values are "spot", "on-demand", and "reserved"
-  sidecar:
-    dashboards:
-      enabled: true  # <-- enable sidecar that auto loads grafana dashboards as code embedded as json in configmaps
-      label: grafana_dashboard
-      labelValue: "1" # auto load dashboards stored in configmaps with kubernetes label matching this key value pair
-    resources: # (of grafana's config reloader sidecar container)
-      requests:
-        cpu: 10m
-        memory: 128Mi
-      limits:
-        memory: 512Mi
-  resources: # (of grafana's main container)
-    requests:
-      cpu: 100m
-      memory: 300Mi
-    limits:
-      memory: 1024Mi
-  admin:
-    existingSecret: "grafana-admin-basic-auth"
-    userKey: "username" #(reads value of specified key existing in a kubernetes secret)
-    passwordKey: "password" #(reads value of specified key existing in a kubernetes secret)
-  grafana.ini:
-    auth.anonymous:
-      enabled: true 
-      org_name: "Main Org." #<-- default org
-      org_role: "Viewer" #<-- kube forward users default to viewer access & can login for admin edit access
-    unified_alerting: #<-- Grafana has a built in alert manager, disabling to avoid confusion & enforce IaC based alerts
-      enabled: false  #<-- Use vmalert instead
-    plugins: #Plugin names based on URL paths on this page https://grafana.com/grafana/plugins/all-plugins/
-      disable_plugins: "grafana-lokiexplore-app,grafana-exploretraces-app,grafana-pyroscope-app" #<-- Disabled to remove distractions, reenable if needed
-      # grafana-lokiexplore-app = Drilldown/Logs (option in the GUI)
-      # grafana-exploretraces-app = Drilldown/Traces (option in the GUI)
-      # grafana-pyroscope-app = Drilldown/Profiles (option in the GUI)
-  plugins:
-  - victoriametrics-logs-datasource
-  # - victoriametrics-metrics-datasource #<--intentionally commented out, in favor if built in prometheus data source
-  # Plugin Name Lookup instructions
-  # Step 1: Find Plugin https://grafana.com/grafana/plugins/all-plugins/
-  # Step 2: https://grafana.com/grafana/plugins/victoriametrics-logs-datasource/?tab=installation
-  # Step 3: Find plugin name from url path or on the pabe
-  datasources:
-    datasources.yaml:
-      apiVersion: 1
-      datasources:
-      # - name: VictoriaMetrics  #(could potentially useful for custom dashboard, supports a few additional Victoria Metric specific Queries)
-      #   type: victoriametrics-metrics-datasource
-      #   access: proxy
-      #   url: http://vmsingle-vmks-victoria-metrics-k8s-stack.observability.svc.cluster.local:8428
-      #   isDefault: false
-      # For better compatibility with pre-existing dashboards, victoria metrics backend is loaded as type Prometheus
-      - name: VictoriaMetrics #(Recommended for compatibility with pre-existing open source community developed dashboards)
-        type: prometheus
-        access: proxy
-        url: http://vmsingle-vmks-victoria-metrics-k8s-stack.observability.svc.cluster.local.:8428
-        isDefault: false
-      - name: VictoriaLogs
-        type: victoriametrics-logs-datasource
-        access: proxy
-        url: http://vl-victoria-logs-single-server.observability.svc.cluster.local.:9428
-        isDefault: false
-alertmanager:
-  enabled: true
-  spec:
-    resources:
-      requests:
-        cpu: 10m
-        memory: 50Mi
-      limits:
-        memory: 500Mi
-    nodeSelector:
-      karpenter.sh/capacity-type: "on-demand" #<-- Valid values are "spot", "on-demand", and "reserved"
-vmalert:
-  enabled: true
-  spec:
-    resources:
-      requests:
-        cpu: 10m
-        memory: 50Mi
-      limits:
-        memory: 500Mi
-    nodeSelector:
-      karpenter.sh/capacity-type: "on-demand" #<-- Valid values are "spot", "on-demand", and "reserved"
-`;
-    const vmks_helm_values_as_JS_object: JSON = read_yaml_string_as_javascript_object(vmks_helm_values_as_yaml);
+    const merged_victoria_metrics_kubernetes_stack_helm_values = merge(
+        config.Frugal_Observability.victoria_metrics_kubernetes_stack_baseline_helm_values,
+        config.Frugal_Observability.victoria_metrics_kubernetes_stack_override_helm_values); //2nd parameter overrides 1st when merging
     const vmks_helm_release = new eks.HelmChart(stack, 'victoria-metrics-k8s-stack-helm', {
         cluster: cluster,
         namespace: 'observability',
         repository: 'https://victoriametrics.github.io/helm-charts',
         chart: 'victoria-metrics-k8s-stack',
         release: 'vmks',
-        version: '0.67.0', //version of helm chart
-        // helm repo add vm https://victoriametrics.github.io/helm-charts
-        // helm repo update vm
-        // helm search repo vm | egrep "NAME|victoria-metrics-k8s-stack"
-        // helm show values vm/victoria-metrics-k8s-stack
-        // https://github.com/VictoriaMetrics/helm-charts/tree/master/charts
-        values: vmks_helm_values_as_JS_object,
-        wait: true, //the below dependency is a Custom Resource that requires this to be fully running, before it runs.
+        version: config.Frugal_Observability.victoria_metrics_kubernetes_stack_helm_chart_version,
+        values: merged_victoria_metrics_kubernetes_stack_helm_values,
+        wait: true, //the below dependency is a Custom Resource that requires CRDs to be good, before it runs.
     });
     vmks_helm_release.node.addDependency(observability_namespace); // <-- Imperative installation order to avoid temporary errors in logs
-    //kubectl port-forward svc/vmks-grafana -n=observability 3000:80
-    //Browser:   localhost:3000
+
     const modified_vm_alert_yaml_file = './lib/Frugal_Observability/manifests/modified_upstream.vmalert.yaml';
     const modified_vm_alert_as_JSO_array: JSON[] = read_yaml_file_as_array_of_javascript_objects(modified_vm_alert_yaml_file);
     const modified_vm_alert = new eks.KubernetesManifest(stack, "modified-upstream-vm-alert", {
@@ -284,16 +60,3 @@ vmalert:
 
 } //end deploy_vm_metrics_k8s_stack()
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-/* 
-Docs:
-* https://docs.victoriametrics.com/helm/victoria-metrics-k8s-stack/
-
-Commands to verify config:
-* helm get values vmks -n=observability
-
-Access Proxy Command:
-* kubectl port-forward service/grafana -n=observability 3000:80
-
-Browser Access:
-* http://localhost:3000
-*///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

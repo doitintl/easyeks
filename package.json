@@ -26,11 +26,14 @@
     "@aws-cdk/lambda-layer-kubectl-v32": "^2.1.0",
     "@aws-cdk/lambda-layer-kubectl-v33": "^2.0.0",
     "@aws-cdk/lambda-layer-kubectl-v34": "^2.0.0",
-    "aws-cdk-lib": "^2.214.0",
+    "@types/lodash": "^4.17.24",
+    "aws-cdk-lib": "^2.239.0",
+    "cdk": "^2.1107.0",
     "cdk-eks-karpenter": "^1.0.18",
     "cdk-fck-nat": "^1.6.16",
     "constructs": "^10.4.2",
     "js-yaml": "^4.1.0",
+    "lodash": "^4.17.23",
     "shelljs": "^0.10.0",
     "sync-request-curl": "^3.1.0"
   }

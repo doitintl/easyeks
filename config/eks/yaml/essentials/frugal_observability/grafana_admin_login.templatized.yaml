@@ -1,0 +1,28 @@
+########################################################################################################
+# Referenced by:
+# * A file & method like: ./config/dev_eks_config.ts's deploy_essentials()
+#   which:
+#   * will load a typescript variable into a config.Frugal_Observability javascript object
+#   * library logic will use that config to find and replace the TEMPLATIZED_VARIABLE's with configured values
+########################################################################################################
+# About:
+# * A file & method like: ./config/dev_eks_config.ts's deploy_essentials()
+#   may call:
+#   config.Frugal_Observability.deploy_configured_victoria_metrics_k8s_stack(config);
+#   If that's not commented out / actually deploys, then you can login to grafana using the configured values
+#     //kubectl port-forward svc/vmks-grafana -n=observability 3000:80
+
+# Browser Access:
+# * http://localhost:3000
+########################################################################################################
+apiVersion: v1
+kind: Secret
+metadata:
+  name: grafana-admin-basic-auth
+  namespace: observability
+type: kubernetes.io/basic-auth
+stringData:
+  username: "TEMPLATIZED_VARIABLE_GRAFANA_ADMIN_USERNAME" #<-- find and replace will occur (using typescript logic)
+  password: "TEMPLATIZED_VARIABLE_GRAFANA_ADMIN_PASSWORD" #<-- find and replace will occur (using typescript logic)
+# username is a required field/label_name for secrets of type kubernetes.io/basic-auth
+# password is a required field/label_name for secrets of type kubernetes.io/basic-auth

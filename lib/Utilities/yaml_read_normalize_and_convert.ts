@@ -23,7 +23,16 @@ export function read_yaml_string_as_javascript_object(multi_line_yaml_string: st
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//Example of plausible input value: './lib/Frugal_Observability/manifests/certs/self-signed-root-ca-issuer.ClusterIssuer.yaml'
+//Example of plausible input value: './config/eks/yaml/essentials/frugal_observabliity/vector_dev_as_log_agent.baseline.templatized_helm_values.yaml'
+export function read_yaml_file_as_normalized_yaml_multiline_string(file_path_relative_to_root_of_repo:string){
+    return normalize_yaml( fs.readFileSync(file_path_relative_to_root_of_repo, 'utf8') );
+}
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//Example of plausible input value: './config/eks/yaml/cluster/prometheus_operator_crds.baseline.helm_values.yaml'
 export function read_yaml_file_as_javascript_object(file_path_relative_to_root_of_repo:string){
     let javascript_object_to_return: JSON;
     const normalized_yaml_object = normalize_yaml( fs.readFileSync(file_path_relative_to_root_of_repo, 'utf8') );
@@ -41,7 +50,7 @@ export function read_yaml_file_as_javascript_object(file_path_relative_to_root_o
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//Example of plausible input value: './lib/Frugal_Observability/manifests/rbac/kube_rbac_objects.yaml'
+//Example of plausible input value: './lib/Frugal_Observability/manifests/victoria_logs_grafana_dashboard.configmaps.yaml'
 export function read_yaml_file_as_array_of_javascript_objects(file_path_relative_to_root_of_repo:string){
     let array_of_javascript_objects_to_return: JSON[] = [];
     const contents_of_yaml_file = fs.readFileSync(file_path_relative_to_root_of_repo, 'utf8');

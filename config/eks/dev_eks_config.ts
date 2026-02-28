@@ -59,19 +59,14 @@ export function deploy_essentials(config: Easy_EKS_Config_Data, stack: cdk.Stack
     //    * Deploys in namespace amazon-cloudwatch
     //      * daemonset fluent-bit 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    const victoria_metrics_k8s_stack_input_parameters:fo.Victoria_Metrics_K8s_Stack_Input_Parameters = {
-        //https://docs.victoriametrics.com/helm/victoria-metrics-k8s-stack
-        //(vm-metrics-db-single, grafana, metrics-agents, misc other things)
-        enabled: true,
-    };
-    const victoria_logs_custom_stack_input_parameters:fo.Victoria_Logs_Custom_Stack_Input_Parameters = {
-        //(vm-logs-db-single, vector-agent(for logs), kube-event-exporter, configmap of logging dashboards)
-        enabled: true,
-    };
-    config.Frugal_Observability.set_input_parameters_of_victoria_metrics_k8s_stack(victoria_metrics_k8s_stack_input_parameters);
-    config.Frugal_Observability.set_input_parameters_of_victoria_logs_custom_stack(victoria_logs_custom_stack_input_parameters);
-    config.Frugal_Observability.deploy_configured_Frugal_Observability_Stack(config);
+    config.Frugal_Observability.set_grafana_admin_username('admin'); //<-- demo value, TO DO: secrets manager lookup
+    config.Frugal_Observability.set_grafana_admin_password('password'); //<-- demo value, TO DO: secrets manager lookup
+    config.Frugal_Observability.deploy_configured_victoria_logs_custom_stack(config);
+    config.Frugal_Observability.deploy_configured_victoria_metrics_k8s_stack(config);
+    //^-- Note: the baseline config of Frugal_Observability logs & metrics is 40GB EBS volume that's ~$97.34/month
+    //    Frugal_Observability offers predictable pricing & tends to be cheaper
+    //    CloudWatch is pay as you go, but can be 10x more expensive
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
 
 }//end deploy_essentials()
 

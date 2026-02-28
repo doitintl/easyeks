@@ -1,0 +1,24 @@
+# Referenced by:
+# * ./config/baseline_envs_eks_config.ts's deploy_essentials()
+#   which:
+#   * Does last min injection of value into variable of this templatized_partial_helm_values.yaml file
+#     (templatized variable injection occurs for enableTCP6 (true or false)
+#   * stores it into a config object
+# * ./lib/Frugal_Observability/deploy_vm_logs_custom_stack.ts
+#   which:
+#   * merges the baseline & override helm values
+#   * used the merged helm values to deploy
+########################################################################################################
+# About:
+# * This configures victoria logs single db (which is used to store kube event logs & pod logs)
+# * There should be no need to change this baseline config
+# * The intent is for this to represent a relatively complete (templatized) config, and additional files
+#   can be supplied as config overrides.
+########################################################################################################
+server:
+  resources:
+    requests:
+      cpu: "100m"
+      memory: "192Mi"
+    limits:
+      memory: "4Gi"
