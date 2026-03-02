@@ -12,6 +12,7 @@ import { read_yaml_string_as_javascript_object, read_yaml_file_as_javascript_obj
 export function apply_config(config: Easy_EKS_Config_Data, stack: cdk.Stack){ //config: is of type Easy_EKS_Config_Data    
     config.add_tag("IaC Tooling used for Provisioning and Management of this EKS Cluster", "cdk: a CLI tool that stands for AWS Cloud Development Kit.");
     config.add_tag("Upstream Methodology Docs", "https://github.com/doitintl/easyeks");
+    config.add_tag("Forked from Easy EKS Release Tag", "v0.7.0-pre-alpha");
     //^-- NOTE: AWS tag restrictions vary by service, but generally only letters, numbers, spaces, and the following characters are allowed: + - = . _ : / @
     //    Tags are validated by the validateTag() function in lib/Utilities.ts before deployment
     //    More details:

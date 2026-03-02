@@ -23,7 +23,11 @@ export class Easy_EKS_Dynamic_Config {
     private static latest_version_of_kube_proxy_1_31_eks_addon: string;
     private static latest_version_of_kube_proxy_1_32_eks_addon: string;
     private static latest_version_of_kube_proxy_1_33_eks_addon: string;
+    private static latest_version_of_kube_proxy_1_34_eks_addon: string;
+    private static latest_version_of_kube_proxy_1_35_eks_addon: string;
     private static latest_version_of_bottlerocket_1_33_release: string;
+    private static latest_version_of_bottlerocket_1_34_release: string;
+    private static latest_version_of_bottlerocket_1_35_release: string;
     private static arn_of_aws_iam_identity_running_cdk_deploy: string; 
     //^-- Purpose: Get's added to list of eks cluster admin users able to run 'aws eks update-kubeconfig --region ca-central-1 --name dev1-eks'
 
@@ -40,25 +44,25 @@ export class Easy_EKS_Dynamic_Config {
         const cmd2 = `curl https://raw.githubusercontent.com/deliveryhero/helm-charts/refs/heads/master/stable/node-local-dns/Chart.yaml | grep version: | cut -d ':' -f 2 | tr -d '"| |\n|\r'`;
         Easy_EKS_Dynamic_Config.latest_version_of_node_local_dns_cache_helm_chart = stdout_of_cmd(cmd2); //plausible value = 2.1.10
 
-        const cmd3 = `aws eks describe-addon-versions --kubernetes-version=1.33 --addon-name=vpc-cni --query='addons[].addonVersions[].addonVersion' | jq '.[0]' | tr -d '"|\n|\r'`;
+        const cmd3 = `aws eks describe-addon-versions --kubernetes-version=1.35 --addon-name=vpc-cni --query='addons[].addonVersions[].addonVersion' | jq '.[0]' | tr -d '"|\n|\r'`;
         Easy_EKS_Dynamic_Config.latest_version_of_vpc_cni_eks_addon = stdout_of_cmd(cmd3); //plausible value = v1.20.1-eksbuild.3
 
-        const cmd4 = `aws eks describe-addon-versions --kubernetes-version=1.33 --addon-name=coredns --query='addons[].addonVersions[].addonVersion' | jq '.[0]' | tr -d '"|\n|\r'`;
+        const cmd4 = `aws eks describe-addon-versions --kubernetes-version=1.35 --addon-name=coredns --query='addons[].addonVersions[].addonVersion' | jq '.[0]' | tr -d '"|\n|\r'`;
         Easy_EKS_Dynamic_Config.latest_version_of_coredns_eks_addon = stdout_of_cmd(cmd4); //plausible value = v1.12.3-eksbuild.1
 
-        const cmd5 = `aws eks describe-addon-versions --kubernetes-version=1.33 --addon-name=metrics-server --query='addons[].addonVersions[].addonVersion' | jq '.[0]' | tr -d '"|\n|\r'`;
+        const cmd5 = `aws eks describe-addon-versions --kubernetes-version=1.35 --addon-name=metrics-server --query='addons[].addonVersions[].addonVersion' | jq '.[0]' | tr -d '"|\n|\r'`;
         Easy_EKS_Dynamic_Config.latest_version_of_metrics_server_eks_addon = stdout_of_cmd(cmd5); //plausible value = v0.8.0-eksbuild.2
 
-        const cmd6 = `aws eks describe-addon-versions --kubernetes-version=1.33 --addon-name=eks-node-monitoring-agent --query='addons[].addonVersions[].addonVersion' | jq '.[0]' | tr -d '"|\n|\r'`;
+        const cmd6 = `aws eks describe-addon-versions --kubernetes-version=1.35 --addon-name=eks-node-monitoring-agent --query='addons[].addonVersions[].addonVersion' | jq '.[0]' | tr -d '"|\n|\r'`;
         Easy_EKS_Dynamic_Config.latest_version_of_eks_node_monitoring_agent_eks_addon = stdout_of_cmd(cmd6); //plausible value = v1.4.0-eksbuild.2
 
-        const cmd7 = `aws eks describe-addon-versions --kubernetes-version=1.33 --addon-name=aws-ebs-csi-driver --query='addons[].addonVersions[].addonVersion' | jq '.[0]' | tr -d '"|\n|\r'`;
+        const cmd7 = `aws eks describe-addon-versions --kubernetes-version=1.35 --addon-name=aws-ebs-csi-driver --query='addons[].addonVersions[].addonVersion' | jq '.[0]' | tr -d '"|\n|\r'`;
         Easy_EKS_Dynamic_Config.latest_version_of_ebs_csi_eks_addon = stdout_of_cmd(cmd7); //plausible value = v1.48.0-eksbuild.2
 
-        const cmd8 = `aws eks describe-addon-versions --kubernetes-version=1.33 --addon-name=amazon-cloudwatch-observability --query='addons[].addonVersions[].addonVersion' | jq '.[0]' | tr -d '"|\n|\r'`;
+        const cmd8 = `aws eks describe-addon-versions --kubernetes-version=1.35 --addon-name=amazon-cloudwatch-observability --query='addons[].addonVersions[].addonVersion' | jq '.[0]' | tr -d '"|\n|\r'`;
         Easy_EKS_Dynamic_Config.latest_version_of_amazon_cloudwatch_observability_eks_addon = stdout_of_cmd(cmd8); //plausible value = v4.4.0-eksbuild.1
 
-        const cmd9 = `aws eks describe-addon-versions --kubernetes-version=1.33 --addon-name=snapshot-controller --query='addons[].addonVersions[].addonVersion' | jq '.[0]' | tr -d '"|\n|\r'`;
+        const cmd9 = `aws eks describe-addon-versions --kubernetes-version=1.35 --addon-name=snapshot-controller --query='addons[].addonVersions[].addonVersion' | jq '.[0]' | tr -d '"|\n|\r'`;
         Easy_EKS_Dynamic_Config.latest_version_of_snapshot_controller_eks_addon = stdout_of_cmd(cmd9); //plausible value = v8.3.0-eksbuild.1
 
         const latest_kube_proxy_31_cmd = `aws eks describe-addon-versions --kubernetes-version=1.31 --addon-name=kube-proxy --query='addons[].addonVersions[].addonVersion' | jq '.[0]' | tr -d '"|\n|\r'`;
@@ -70,9 +74,19 @@ export class Easy_EKS_Dynamic_Config {
         const latest_kube_proxy_33_cmd = `aws eks describe-addon-versions --kubernetes-version=1.33 --addon-name=kube-proxy --query='addons[].addonVersions[].addonVersion' | jq '.[0]' | tr -d '"|\n|\r'`;
         Easy_EKS_Dynamic_Config.latest_version_of_kube_proxy_1_33_eks_addon = stdout_of_cmd(latest_kube_proxy_33_cmd); //plausible value = v1.33.3-eksbuild.6
 
+        const latest_kube_proxy_34_cmd = `aws eks describe-addon-versions --kubernetes-version=1.34 --addon-name=kube-proxy --query='addons[].addonVersions[].addonVersion' | jq '.[0]' | tr -d '"|\n|\r'`;
+        Easy_EKS_Dynamic_Config.latest_version_of_kube_proxy_1_34_eks_addon = stdout_of_cmd(latest_kube_proxy_34_cmd); //plausible value = v1.34.3-eksbuild.5
+
+        const latest_kube_proxy_35_cmd = `aws eks describe-addon-versions --kubernetes-version=1.35 --addon-name=kube-proxy --query='addons[].addonVersions[].addonVersion' | jq '.[0]' | tr -d '"|\n|\r'`;
+        Easy_EKS_Dynamic_Config.latest_version_of_kube_proxy_1_35_eks_addon = stdout_of_cmd(latest_kube_proxy_35_cmd); //plausible value = v1.35.0-eksbuild.2
+
         //                                                                                         IMPORTANT NOTE: v-- the ARM64 & x86_64 share the same value, so this endpoint is generically valid.
         const latest_bottlerocket_33_cmd = `aws ssm get-parameter --name /aws/service/bottlerocket/aws-k8s-1.33/x86_64/latest/image_version --query "Parameter.Value" --output text | tr -d '\n|\r'`;
-        Easy_EKS_Dynamic_Config.latest_version_of_bottlerocket_1_33_release = stdout_of_cmd(latest_bottlerocket_33_cmd); //plausible value = 1.52.0-b7ac6e1a
+        Easy_EKS_Dynamic_Config.latest_version_of_bottlerocket_1_33_release = stdout_of_cmd(latest_bottlerocket_33_cmd); //plausible value = 1.55.0-d93bb1b1
+        const latest_bottlerocket_34_cmd = `aws ssm get-parameter --name /aws/service/bottlerocket/aws-k8s-1.34/x86_64/latest/image_version --query "Parameter.Value" --output text | tr -d '\n|\r'`;
+        Easy_EKS_Dynamic_Config.latest_version_of_bottlerocket_1_34_release = stdout_of_cmd(latest_bottlerocket_34_cmd); //plausible value = 1.55.0-d93bb1b1
+        const latest_bottlerocket_35_cmd = `aws ssm get-parameter --name /aws/service/bottlerocket/aws-k8s-1.35/x86_64/latest/image_version --query "Parameter.Value" --output text | tr -d '\n|\r'`;
+        Easy_EKS_Dynamic_Config.latest_version_of_bottlerocket_1_35_release = stdout_of_cmd(latest_bottlerocket_35_cmd); //plausible value = 1.55.0-d93bb1b1
 
     }//end constructor
 
@@ -125,9 +139,25 @@ export class Easy_EKS_Dynamic_Config {
         this.ensure_init();
         return this.latest_version_of_kube_proxy_1_33_eks_addon;
     }
+    public static get_latest_version_of_kube_proxy_1_34_eks_addon(): string{
+        this.ensure_init();
+        return this.latest_version_of_kube_proxy_1_34_eks_addon;
+    }
+    public static get_latest_version_of_kube_proxy_1_35_eks_addon(): string{
+        this.ensure_init();
+        return this.latest_version_of_kube_proxy_1_35_eks_addon;
+    }
     public static get_latest_version_of_bottlerocket_1_33_release(): string{
         this.ensure_init();
         return this.latest_version_of_bottlerocket_1_33_release;
+    }
+    public static get_latest_version_of_bottlerocket_1_34_release(): string{
+        this.ensure_init();
+        return this.latest_version_of_bottlerocket_1_34_release;
+    }
+    public static get_latest_version_of_bottlerocket_1_35_release(): string{
+        this.ensure_init();
+        return this.latest_version_of_bottlerocket_1_35_release;
     }
 
 } //end class Easy_EKS_Dynamic_Config

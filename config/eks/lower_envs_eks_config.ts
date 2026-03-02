@@ -8,6 +8,7 @@ import { Karpenter_Helm_Config, Karpenter_YAML_Generator, Apply_Karpenter_YAMLs_
 import { KubectlV32Layer } from '@aws-cdk/lambda-layer-kubectl-v32'; //npm install @aws-cdk/lambda-layer-kubectl-v32
 import { KubectlV33Layer } from '@aws-cdk/lambda-layer-kubectl-v33'; //npm install @aws-cdk/lambda-layer-kubectl-v33
 import { KubectlV34Layer } from '@aws-cdk/lambda-layer-kubectl-v34'; //npm install @aws-cdk/lambda-layer-kubectl-v34
+import { KubectlV35Layer } from '@aws-cdk/lambda-layer-kubectl-v35'; //npm install @aws-cdk/lambda-layer-kubectl-v35
 import { read_yaml_string_as_javascript_object, read_yaml_file_as_javascript_object, read_yaml_file_as_array_of_javascript_objects, read_yaml_file_as_normalized_yaml_multiline_string } from '../../lib/Utilities';
 //Intended Use: 
 //EasyEKS Admins: edit this file with config to apply to all lower environment eks cluster's in your org.
@@ -32,20 +33,21 @@ export function apply_config(config: Easy_EKS_Config_Data, stack: cdk.Stack){ //
         */
     }
     //Kubernetes verson and addon's that may depend on Kubernetes version / should be updated along side it should be specified here
-    config.set_clusters_version_of_Kubernetes(eks.KubernetesVersion.V1_33); //version of eks cluster
-    config.set_worker_nodes_bottlerocket_release_version( Easy_EKS_Dynamic_Config.get_latest_version_of_bottlerocket_1_33_release() );
+    config.set_clusters_version_of_Kubernetes(eks.KubernetesVersion.V1_34); //version of eks cluster
+    config.set_worker_nodes_bottlerocket_release_version( Easy_EKS_Dynamic_Config.get_latest_version_of_bottlerocket_1_34_release() );
     //^-- Choice: do you want latest? (every time `cdk deploy stage1-eks` is run, which could trigger extra node reboots)
     //            If so then use Easy_EKS_Dynamic_Config.get_latest_version_of_bottlerocket_1_33_release()
     //        OR: do you want to minimize node reboots as much as possible? / only when explicitly specified
     //            if so then use manual updates triggered by changing config of specific version.
     //            Command to lookup latest version (followed by example output):
-    //            aws ssm get-parameter --name /aws/service/bottlerocket/aws-k8s-1.33/x86_64/latest/image_version --query "Parameter.Value" --output text | tr -d '\n|\r'
-    //            1.52.0-b7ac6e1a
-    config.set_version_of_kubectl_used_by_lambda(new KubectlV32Layer(stack, 'kubectl')); //<--It's fine for this to stay on an old version
+    //            aws ssm get-parameter --name /aws/service/bottlerocket/aws-k8s-1.35/x86_64/latest/image_version --query "Parameter.Value" --output text | tr -d '\n|\r'
+    //            1.55.0-d93bb1b1
+    config.set_version_of_kubectl_used_by_lambda(new KubectlV34Layer(stack, 'kubectl-helm-lambda-executor')); //<--It's fine for this to stay on an old version
     //^--refers to version of kubectl & helm installed in AWS Lambda Layer responsible for kubectl & helm deployments
-    //Note: As of Sept 9th, 2025 KubectlV33Layer (which currently has latest available versions of kubectl & helm)
-    //      results in error 'Error: media type "application/vnd.cncf.helm.chart.provenance.v1.prov" is not allowed'
-    //It's safe to permanently use old versions of both apps. (apps refers to kubectl & helm, which both exists in KubectlV32Layer)
+    //Note: If there's ever a problem with latest available versions of kubectl & helm
+    //      Example: Sept 9th, 2025 KubectlV33Layer, resulted in an error 
+    //      'Error: media type "application/vnd.cncf.helm.chart.provenance.v1.prov" is not allowed'
+    //If latest doesn't work it's safe to permanently use old versions of both apps / older version of kubectl layer (apps refers to kubectl & helm, which both exists in KubectlV32Layer)
     config.set_control_plane_logging_options_to_enable([
         // eks.ClusterLoggingTypes.API,
         // eks.ClusterLoggingTypes.AUDIT,
@@ -64,7 +66,7 @@ export function deploy_addons(config: Easy_EKS_Config_Data, stack: cdk.Stack, cl
     const kube_proxy = new eks.CfnAddon(stack, 'kube-proxy', {
         clusterName: cluster.clusterName,
         addonName: 'kube-proxy',
-        addonVersion: Easy_EKS_Dynamic_Config.get_latest_version_of_kube_proxy_1_33_eks_addon(), // or 'v1.33.3-eksbuild.6'
+        addonVersion: Easy_EKS_Dynamic_Config.get_latest_version_of_kube_proxy_1_34_eks_addon(), // no reason not to use latest for this
         resolveConflicts: 'OVERWRITE',
         configurationValues: `{
             "resources": {
