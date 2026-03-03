@@ -28,7 +28,7 @@
     "@aws-cdk/lambda-layer-kubectl-v34": "^2.0.0",
     "@aws-cdk/lambda-layer-kubectl-v35": "^2.0.0",
     "@types/lodash": "^4.17.24",
-    "aws-cdk-lib": "^2.240.0",
+    "aws-cdk-lib": "^2.241.0",
     "cdk": "^2.1107.0",
     "cdk-eks-karpenter": "^1.0.18",
     "cdk-fck-nat": "^1.6.16",
