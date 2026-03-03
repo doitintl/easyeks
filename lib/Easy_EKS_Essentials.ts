@@ -17,8 +17,6 @@ import * as prod_eks_config from '../config/eks/prod_eks_config';
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //Utility Imports:
 import console = require('console'); //can help debug feedback loop, allows `console.log("hi");` to work, when `cdk list` is run.
-import * as shell from 'shelljs'; //npm install shelljs && npm i --save-dev @types/shelljs
-import request from 'sync-request-curl'; //npm install sync-request-curl (cdk requires sync functions, async not allowed)
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //Local Library Imports:
 import { Easy_EKS_Config_Data } from './Easy_EKS_Config_Data';

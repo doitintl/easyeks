@@ -3,7 +3,6 @@ import { Easy_EKS_Dynamic_Config } from '../../lib/Easy_EKS_Dynamic_Config';
 import * as cdk from 'aws-cdk-lib';
 import * as eks from 'aws-cdk-lib/aws-eks'
 import * as iam from 'aws-cdk-lib/aws-iam';
-import request from 'sync-request-curl'; //npm install sync-request-curl (cdk requires sync functions, async not allowed)
 //Intended Use: 
 //EasyEKS Admins: edit this file with config to apply to all Test / QA (Quality Assurance) / Int (CICD Integration Testing) cluster's in your org.
 

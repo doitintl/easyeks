@@ -3,7 +3,9 @@ import { Easy_EKS_Dynamic_Config } from '../../lib/Easy_EKS_Dynamic_Config';
 import * as cdk from 'aws-cdk-lib';
 import * as eks from 'aws-cdk-lib/aws-eks';
 import * as iam from 'aws-cdk-lib/aws-iam';
-import request from 'sync-request-curl'; //npm install sync-request-curl (cdk requires sync functions, async not allowed)
+//import request from 'sync-request-curl'; //npm install sync-request-curl (cdk requires sync functions, async not allowed)
+import * as curl from 'sync-request-curl'; //When updated from v3->v4 to fix vulnerabilities, had to changed import logic to
+const request = curl.default || curl;      //workaround an edge case import bug / avoid mismatch between CommonJS & ES Module import
 import { Karpenter_Helm_Config, Karpenter_YAML_Generator, Apply_Karpenter_YAMLs_with_fixes } from '../../lib/Karpenter_Manifests';
 import { KubectlV32Layer } from '@aws-cdk/lambda-layer-kubectl-v32'; //npm install @aws-cdk/lambda-layer-kubectl-v32
 import { KubectlV33Layer } from '@aws-cdk/lambda-layer-kubectl-v33'; //npm install @aws-cdk/lambda-layer-kubectl-v33
@@ -126,9 +128,9 @@ export function deploy_essentials(config: Easy_EKS_Config_Data, stack: cdk.Stack
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     //Install AWS Load Balancer Controller via Helm Chart
-    const ALBC_Version = 'v2.15.0'; //latest as of Nov 18th, 2025 per https://github.com/kubernetes-sigs/aws-load-balancer-controller/releases
+    const ALBC_Version = 'v3.1.0'; //latest as of March 3rd, 2026 per https://github.com/kubernetes-sigs/aws-load-balancer-controller/releases
     const ALBC_IAM_Policy_Url = `https://raw.githubusercontent.com/kubernetes-sigs/aws-load-balancer-controller/refs/tags/${ALBC_Version}/docs/install/iam_policy.json`
-    const ALBC_IAM_Policy_JSON = JSON.parse(request("GET", ALBC_IAM_Policy_Url).body.toString());
+    const ALBC_IAM_Policy_JSON:JSON = request('GET', ALBC_IAM_Policy_Url).getJSON();
     const ALBC_IAM_Policy = new iam.Policy(stack, 'AWS_LB_Controller_IAM_policy_for_EKS', {
         document: iam.PolicyDocument.fromJson( ALBC_IAM_Policy_JSON ),
     });
@@ -150,15 +152,12 @@ export function deploy_essentials(config: Easy_EKS_Config_Data, stack: cdk.Stack
         repository: 'https://aws.github.io/eks-charts',
         namespace: "kube-system",
         release: 'aws-load-balancer-controller',
-        version: '1.17.0', //<-- helm chart version 1.17.0 maps to app version v2.17.0
-        // Commands: To look up latest helm chart version:
-        // helm repo add eks https://aws.github.io/eks-charts
-        // helm repo update eks
-        // helm search repo eks | egrep "NAME|aws-load-balancer-controller"
-        // curl https://raw.githubusercontent.com/kubernetes-sigs/aws-load-balancer-controller/refs/tags/v2.17.0/helm/aws-load-balancer-controller/Chart.yaml | grep version: | cut -d ':' -f 2
+        version: '3.1.0', //<-- helm chart version based on the following command
+        // Commands to look up latest helm chart version:
+        // helm repo add eks https://aws.github.io/eks-charts && helm repo update eks && helm search repo eks | egrep "NAME|aws-load-balancer-controller"
         wait: true,
         timeout: cdk.Duration.minutes(15),
-        values: { //<-- helm chart values per https://github.com/kubernetes-sigs/aws-load-balancer-controller/blob/v2.17.0/helm/aws-load-balancer-controller/values.yaml
+        values: { //<-- helm chart values per https://github.com/kubernetes-sigs/aws-load-balancer-controller/blob/main/helm/aws-load-balancer-controller/values.yaml
             clusterName: cluster.clusterName,
             vpcId: config.vpc.vpcId,
             region: stack.region,
