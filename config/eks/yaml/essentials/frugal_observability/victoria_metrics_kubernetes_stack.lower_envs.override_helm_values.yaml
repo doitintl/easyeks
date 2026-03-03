@@ -1,0 +1,121 @@
+###########################################################################################################################
+# About:
+# * These overrides are for 1 big umbrella helm chart (a helm chart that deploys other helm charts)
+# * All of the below actually represent a single values file, the comment lines are just added for easier human readability
+###########################################################################################################################
+victoria-metrics-operator:
+  resources:
+    requests:
+      cpu: 2m
+      memory: 42Mi
+    limits:
+      memory: 1Gi
+################################################
+kube-state-metrics:
+  resources:
+    requests:
+      cpu: 10m
+      memory: 42Mi
+    limits:
+      memory: 256Mi
+  nodeSelector:
+    karpenter.sh/capacity-type: "on-demand" #<-- Valid values are "spot", "on-demand", and "reserved"
+################################################
+prometheus-node-exporter:
+  resources:
+    requests:
+      cpu: 10m
+      memory: 20Mi
+    limits:
+      memory: 256Mi
+################################################
+vmagent:
+  spec:
+    resources:
+      requests:
+        cpu: 50m
+        memory: 100Mi
+      limits:
+        memory: 500Mi
+    nodeSelector:
+      karpenter.sh/capacity-type: "on-demand" #<-- Valid values are "spot", "on-demand", and "reserved"
+################################################
+vmsingle:
+  spec:
+    retentionPeriod: "31d" #(Possible units character: h(ours), d(ays), w(eeks), m(onths), y(ears))
+    resources:
+      requests:
+        cpu: 50m
+        memory: 800Mi
+      limits:
+        memory: 1600Mi
+    nodeSelector:
+      karpenter.sh/capacity-type: "on-demand" #<-- Valid values are "spot", "on-demand", and "reserved")
+################################################
+grafana:
+  nodeSelector:
+    karpenter.sh/capacity-type: "on-demand" #<-- Valid values are "spot", "on-demand", and "reserved"
+  sidecar:
+    resources: # (of grafana's config reloader sidecar container)
+      requests:
+        cpu: 10m
+        memory: 128Mi
+      limits:
+        memory: 512Mi
+  resources: # (of grafana's main container)
+    requests:
+      cpu: 100m
+      memory: 300Mi
+    limits:
+      memory: 1024Mi
+  plugins:
+  - victoriametrics-logs-datasource
+  # - victoriametrics-metrics-datasource #<--intentionally commented out, in favor if built in prometheus data source
+  # Plugin Name Lookup instructions
+  # Step 1: Find Plugin https://grafana.com/grafana/plugins/all-plugins/
+  # Step 2: https://grafana.com/grafana/plugins/victoriametrics-logs-datasource/?tab=installation
+  # Step 3: Find plugin name from url path or on the pabe
+  datasources:
+    datasources.yaml:
+      datasources:
+      # - name: VictoriaMetrics  #(could potentially useful for custom dashboard, supports a few additional Victoria Metric specific Queries)
+      #   type: victoriametrics-metrics-datasource
+      #   access: proxy
+      #   url: http://vmsingle-vmks-victoria-metrics-k8s-stack.observability.svc.cluster.local:8428
+      #   isDefault: false
+      # For better compatibility with pre-existing dashboards, victoria metrics backend is loaded as type Prometheus
+      - name: VictoriaMetrics #(Recommended for compatibility with pre-existing open source community developed dashboards)
+        type: prometheus
+        access: proxy
+        url: http://vmsingle-vmks-victoria-metrics-k8s-stack.observability.svc.cluster.local.:8428
+        isDefault: false
+      - name: VictoriaLogs
+        type: victoriametrics-logs-datasource
+        access: proxy
+        url: http://vl-victoria-logs-single-server.observability.svc.cluster.local.:9428
+        isDefault: false
+################################################
+alertmanager:
+  enabled: true
+  spec:
+    resources:
+      requests:
+        cpu: 10m
+        memory: 50Mi
+      limits:
+        memory: 500Mi
+    nodeSelector:
+      karpenter.sh/capacity-type: "on-demand" #<-- Valid values are "spot", "on-demand", and "reserved"
+################################################
+vmalert:
+  enabled: true
+  spec:
+    resources:
+      requests:
+        cpu: 10m
+        memory: 50Mi
+      limits:
+        memory: 500Mi
+    nodeSelector:
+      karpenter.sh/capacity-type: "on-demand" #<-- Valid values are "spot", "on-demand", and "reserved"
+################################################

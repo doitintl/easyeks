@@ -441,7 +441,8 @@ export class CloudWatch_Metrics_and_Logs_Observability {
             host_log_conf = fs.readFileSync(`./lib/CW_Observability/${this.cloudwatch_logs_input_parameters.host_log_conf_file_name}`, 'utf8');
             parsers_conf = fs.readFileSync(`./lib/CW_Observability/${this.cloudwatch_logs_input_parameters.parsers_conf_file_name}`, 'utf8');
         } catch (error) {
-            console.error(`Error reading Cloudwatch's fluent-bit config file:`, error);
+            console.error(`Error reading Cloudwatch's fluent-bit config file, from ./lib/CW_Observability/ folder`, error);
+            throw "User fixable error detected, see notes above.";
         }
         const fluent_bit_config_configmap_manifest = {
             "apiVersion": "v1",

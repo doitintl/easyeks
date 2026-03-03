@@ -1,0 +1,38 @@
+# Referenced by:
+# global_baseline_eks_config.ts's deploy_essentials() 
+########################################################################################################
+# About:
+# There should be no need to change this baseline config
+# It listens for Kubernetes Events (those found in kubectl describe object) and sends them to its own
+# pod level standard out.
+# vector.dev (has the ability to be configured as combo agent for metrics, logs, and traces.)
+# For simplier maintainability EasyEKS only uses vector.dev as a logging agent.
+# vector.dev's baseline config has logic to parse the kube event logs and send them to victoria logs DB.
+########################################################################################################
+global:
+  security:
+    allowInsecureImages: true #Read as allow non-bitnami images
+image:
+  registry: ghcr.io
+  repository: resmoio/kubernetes-event-exporter
+  tag: latest
+resources:
+  requests:
+    cpu: 25m
+    memory: 128Mi
+  limits:
+    memory: 512Mi
+config:
+  logLevel: error
+  logFormat: json
+  kubeQPS: 200      #queries per second should be 1/5th of burst
+  kubeBurst: 1000   #recommended to match expected max events per minute
+  maxEventAgeSeconds: 60 
+  route:
+    routes:
+    - match:
+      - receiver: "vector_dev_logging_agent"
+  receivers:
+  - name: "vector_dev_logging_agent"
+    stdout:
+      deDot: false

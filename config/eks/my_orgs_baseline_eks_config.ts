@@ -1,11 +1,9 @@
 import { Easy_EKS_Config_Data } from '../../lib/Easy_EKS_Config_Data';
 import { Easy_EKS_Dynamic_Config } from '../../lib/Easy_EKS_Dynamic_Config';
-import { KubernetesVersion } from 'aws-cdk-lib/aws-eks';
+import * as generate_recommended from '../../lib/Opinionated_Config_Generator';
 import * as cdk from 'aws-cdk-lib';
 import * as eks from 'aws-cdk-lib/aws-eks';
 import * as iam from 'aws-cdk-lib/aws-iam';
-import * as kms from 'aws-cdk-lib/aws-kms';
-import request from 'sync-request-curl'; //npm install sync-request-curl (cdk requires sync functions, async not allowed)
 //Intended Use:
 //A baseline config file (to be applied to all EasyEKS Clusters in your organization)
 //EasyEKS Admins would be expected to edit this file with defaults specific to their org. (that rarely change and are low risk to add)
@@ -77,7 +75,22 @@ export function deploy_addons(config: Easy_EKS_Config_Data, stack: cdk.Stack, cl
         addonVersion: Easy_EKS_Dynamic_Config.get_latest_version_of_vpc_cni_eks_addon(), //OR 'v1.20.1-eksbuild.3'
         //serviceAccountRoleArn: <-- leave this blank, to use worker node's IAM role, which gives dualstack ipv4/ipv6 support
         resolveConflicts: 'OVERWRITE',
-        configurationValues: '{}',
+        configurationValues: `{
+            "nodeAgent": {
+                "resources": {
+                    "requests": {
+                        "cpu": "10m",
+                        "memory": "22Mi"
+                    }
+                }
+            },
+            "resources": {
+                "requests": {
+                    "cpu": "10m",
+                    "memory": "45Mi"
+                }
+            }
+        }`,
     });//end vpc-cni addon
 
     const coredns = new eks.CfnAddon(stack, 'coredns', {
@@ -88,58 +101,7 @@ export function deploy_addons(config: Easy_EKS_Config_Data, stack: cdk.Stack, cl
         //v-- Below represents an optimized CoreDNS deployment, based on
         //    https://aws.amazon.com/blogs/containers/amazon-eks-add-ons-advanced-configuration/
         //    aws eks describe-addon-configuration --addon-name coredns --addon-version v1.11.4-eksbuild.2 --query configurationSchema --output text | jq .
-        configurationValues: `{
-            "autoScaling": {
-              "enabled": true,
-              "minReplicas": 2,
-              "maxReplicas": 1000
-            },
-            "affinity": {
-              "nodeAffinity": {
-                "requiredDuringSchedulingIgnoredDuringExecution": {
-                  "nodeSelectorTerms": [
-                    {
-                      "matchExpressions": [
-                        {
-                          "key": "kubernetes.io/os",
-                          "operator": "In",
-                          "values": [
-                            "linux"
-                          ]
-                        },
-                        {
-                          "key": "kubernetes.io/arch",
-                          "operator": "In",
-                          "values": [
-                            "amd64",
-                            "arm64"
-                          ]
-                        }
-                      ]
-                    }
-                  ]
-                }
-              },
-              "podAntiAffinity": {
-                "requiredDuringSchedulingIgnoredDuringExecution": [
-                  {
-                    "labelSelector": {
-                      "matchExpressions": [
-                        {
-                          "key": "k8s-app",
-                          "operator": "In",
-                          "values": [
-                            "kube-dns"
-                          ]
-                        }
-                      ]
-                    },
-                    "topologyKey": "kubernetes.io/hostname"
-                  }
-                ]
-              }
-            }
-        }`, //end CoreDNS configurationValues override
+        configurationValues: generate_recommended.config_for_coreds_eks_addon(2), //<-- 2 min replicas
     });//end CoreDNS AddOn
 
     const metrics_server = new eks.CfnAddon(stack, 'metrics-server', { //allows `kubectl top nodes` to work & valid for all versions of kubernetes
@@ -147,54 +109,7 @@ export function deploy_addons(config: Easy_EKS_Config_Data, stack: cdk.Stack, cl
         addonName: 'metrics-server',
         addonVersion: Easy_EKS_Dynamic_Config.get_latest_version_of_metrics_server_eks_addon(), //OR 'v0.8.0-eksbuild.2'
         resolveConflicts: 'OVERWRITE',
-        configurationValues: `{
-            "replicas": 2,
-            "affinity": {
-              "nodeAffinity": {
-                "requiredDuringSchedulingIgnoredDuringExecution": {
-                  "nodeSelectorTerms": [
-                    {
-                      "matchExpressions": [
-                        {
-                          "key": "kubernetes.io/os",
-                          "operator": "In",
-                          "values": [
-                            "linux"
-                          ]
-                        },
-                        {
-                          "key": "kubernetes.io/arch",
-                          "operator": "In",
-                          "values": [
-                            "amd64",
-                            "arm64"
-                          ]
-                        }
-                      ]
-                    }
-                  ]
-                }
-              },
-              "podAntiAffinity": {
-                "requiredDuringSchedulingIgnoredDuringExecution": [
-                  {
-                    "labelSelector": {
-                      "matchExpressions": [
-                        {
-                          "key": "app.kubernetes.io/name",
-                          "operator": "In",
-                          "values": [
-                            "metrics-server"
-                          ]
-                        }
-                      ]
-                    },
-                    "topologyKey": "kubernetes.io/hostname"
-                  }
-                ]
-              }
-            }
-        }`, //end metrics-server configurationValues override
+        configurationValues: generate_recommended.config_for_metrics_server_eks_addon(2), //<--2 min replicas
     });//end metrics-server addon
 
     const eks_node_monitoring_agent = new eks.CfnAddon(stack, 'eks-node-monitoring-agent', {
@@ -202,7 +117,19 @@ export function deploy_addons(config: Easy_EKS_Config_Data, stack: cdk.Stack, cl
         addonName: 'eks-node-monitoring-agent',
         addonVersion: Easy_EKS_Dynamic_Config.get_latest_version_of_eks_node_monitoring_agent_eks_addon(), //or 'v1.4.0-eksbuild.2'
         resolveConflicts: 'OVERWRITE',
-        configurationValues: '{}',
+        configurationValues: `{
+            "monitoringAgent": {
+                "resources": {
+                    "requests": {
+                        "cpu": "1m",
+                        "memory": "75Mi"
+                    },
+                    "limits": {
+                        "memory": "150Mi"
+                    }
+                }
+            }
+        }`,
     });
 
     ///////////////////////////////////////////////////////////////////
@@ -248,11 +175,7 @@ export function deploy_addons(config: Easy_EKS_Config_Data, stack: cdk.Stack, cl
                 roleArn: ebs_csi_addon_iam_role.roleArn,
             }
         ], // (v-- replicaCount: 1, makes logs easier to read/debug, and doesn't hurt stability.)
-        configurationValues: `{
-            controller: {
-                "replicaCount": 1,
-            },
-        }`, //end aws-ebs-csi-driver configurationValues override
+        configurationValues: `{ controller: { "replicaCount": 1, }, }`,
     }); //end EBS CSI Driver Addon
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -266,17 +189,17 @@ export function deploy_essentials(config: Easy_EKS_Config_Data, stack: cdk.Stack
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     //Install Node Local DNS Cache
-    const nodeLocalDNSCache = cluster.addHelmChart('NodeLocalDNSCache', {
+    const node_Local_DNS_Cache = cluster.addHelmChart('NodeLocalDNSCache', {
         chart: "node-local-dns", // Name of the Chart to be deployed
         release: "node-local-dns-cache", // Name for our chart in Kubernetes (helm list -A)
         repository: "oci://ghcr.io/deliveryhero/helm-charts/node-local-dns",  // HTTPS address of the helm chart (associated with helm repo add command)
         namespace: "kube-system",
-        version: Easy_EKS_Dynamic_Config.get_latest_version_of_node_local_dns_cache_helm_chart(), //OR "2.1.10"
+        version: Easy_EKS_Dynamic_Config.get_latest_version_of_node_local_dns_cache_helm_chart(), //OR "2.3.0"
         wait: false,
         values: { //<-- helm chart values per https://github.com/deliveryhero/helm-charts/blob/master/stable/node-local-dns/values.yaml
-          config: {
-            bindIp: true, //BottleRocket specific fix
-          },
+            config: {
+                bindIp: true, //BottleRocket specific fix
+            },
         },
     });
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -311,6 +234,39 @@ export function deploy_essentials(config: Easy_EKS_Config_Data, stack: cdk.Stack
             prune: true,   
         }
     );
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // Install cert-manager (using helm chart)
+    // Notes: 
+    // 1. Why helm is used over the EKS Addon methodology:
+    //    This is available as an EKS Addon, but the EKS addon version doesn't default to implementing
+    //    best practices mentioned in their docs:
+    //    https://cert-manager.io/docs/installation/best-practice/#best-practice-helm-chart-values
+    //    The helm install method is easier to configure according to best practices.
+    // About:
+    // * cert-manager.io is a kubernetes operator that reconciles the following custom resources:
+    //   * kubectl get certificaterequests --all-namespaces
+    //   * kubectl get certificates -A 
+    //   * kubectl get challenges -A
+    //   * kubectl get orders -A 
+    //   * kubectl get issuers -A 
+    //   * kubectl get clusterissusers
+    //
+    // v-- Uncomment if you want to use it.
+    // const cert_manager_kubernetes_custom_resource_operator = cluster.addHelmChart('cert-manager-helm-chart', {
+    //     chart: "cert-manager", // Name of the Chart to be deployed
+    //     release: "cert-manager", // Name for our chart in Kubernetes (helm list -A)
+    //     repository: "https://charts.jetstack.io", // HTTPS address of the helm chart (associated with helm repo add command)
+    //     namespace: "cert-manager",
+    //     version: "v1.19.2", //version of helm chart (helm version v1.19.2, maps to app version v1.19.2)
+    //     // v-- You can run this to see the latest verson of the chart
+    //     // helm repo add jetstack https://charts.jetstack.io
+    //     // helm repo update jetstack
+    //     // helm search repo jetstack | egrep "NAME|cert-manager"
+    //     wait: false,
+    //     values: generate_recommended.config_for_cert_manager_helm_values(),
+    // });
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 }//end deploy_essentials()

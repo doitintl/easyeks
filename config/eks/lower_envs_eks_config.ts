@@ -5,9 +5,11 @@ import * as eks from 'aws-cdk-lib/aws-eks';
 import * as iam from 'aws-cdk-lib/aws-iam';
 import request from 'sync-request-curl'; //npm install sync-request-curl (cdk requires sync functions, async not allowed)
 import { Karpenter_Helm_Config, Karpenter_YAML_Generator, Apply_Karpenter_YAMLs_with_fixes } from '../../lib/Karpenter_Manifests';
-import { KubectlV31Layer } from '@aws-cdk/lambda-layer-kubectl-v31'; //npm install @aws-cdk/lambda-layer-kubectl-v31
 import { KubectlV32Layer } from '@aws-cdk/lambda-layer-kubectl-v32'; //npm install @aws-cdk/lambda-layer-kubectl-v32
 import { KubectlV33Layer } from '@aws-cdk/lambda-layer-kubectl-v33'; //npm install @aws-cdk/lambda-layer-kubectl-v33
+import { KubectlV34Layer } from '@aws-cdk/lambda-layer-kubectl-v34'; //npm install @aws-cdk/lambda-layer-kubectl-v34
+import { KubectlV35Layer } from '@aws-cdk/lambda-layer-kubectl-v35'; //npm install @aws-cdk/lambda-layer-kubectl-v35
+import { read_yaml_string_as_javascript_object, read_yaml_file_as_javascript_object, read_yaml_file_as_array_of_javascript_objects, read_yaml_file_as_normalized_yaml_multiline_string } from '../../lib/Utilities';
 //Intended Use: 
 //EasyEKS Admins: edit this file with config to apply to all lower environment eks cluster's in your org.
 
@@ -31,12 +33,21 @@ export function apply_config(config: Easy_EKS_Config_Data, stack: cdk.Stack){ //
         */
     }
     //Kubernetes verson and addon's that may depend on Kubernetes version / should be updated along side it should be specified here
-    config.set_clusters_version_of_Kubernetes(eks.KubernetesVersion.V1_33); //version of eks cluster
-    config.set_version_of_kubectl_used_by_lambda(new KubectlV32Layer(stack, 'kubectl')); //<--It's fine for this to stay on an old version
+    config.set_clusters_version_of_Kubernetes(eks.KubernetesVersion.V1_34); //version of eks cluster
+    config.set_worker_nodes_bottlerocket_release_version( Easy_EKS_Dynamic_Config.get_latest_version_of_bottlerocket_1_34_release() );
+    //^-- Choice: do you want latest? (every time `cdk deploy stage1-eks` is run, which could trigger extra node reboots)
+    //            If so then use Easy_EKS_Dynamic_Config.get_latest_version_of_bottlerocket_1_33_release()
+    //        OR: do you want to minimize node reboots as much as possible? / only when explicitly specified
+    //            if so then use manual updates triggered by changing config of specific version.
+    //            Command to lookup latest version (followed by example output):
+    //            aws ssm get-parameter --name /aws/service/bottlerocket/aws-k8s-1.35/x86_64/latest/image_version --query "Parameter.Value" --output text | tr -d '\n|\r'
+    //            1.55.0-d93bb1b1
+    config.set_version_of_kubectl_used_by_lambda(new KubectlV34Layer(stack, 'kubectl-helm-lambda-executor')); //<--It's fine for this to stay on an old version
     //^--refers to version of kubectl & helm installed in AWS Lambda Layer responsible for kubectl & helm deployments
-    //Note: As of Sept 9th, 2025 KubectlV33Layer (which currently has latest available versions of kubectl & helm)
-    //      results in error 'Error: media type "application/vnd.cncf.helm.chart.provenance.v1.prov" is not allowed'
-    //It's safe to permanently use old versions of both apps.
+    //Note: If there's ever a problem with latest available versions of kubectl & helm
+    //      Example: Sept 9th, 2025 KubectlV33Layer, resulted in an error 
+    //      'Error: media type "application/vnd.cncf.helm.chart.provenance.v1.prov" is not allowed'
+    //If latest doesn't work it's safe to permanently use old versions of both apps / older version of kubectl layer (apps refers to kubectl & helm, which both exists in KubectlV32Layer)
     config.set_control_plane_logging_options_to_enable([
         // eks.ClusterLoggingTypes.API,
         // eks.ClusterLoggingTypes.AUDIT,
@@ -44,7 +55,6 @@ export function apply_config(config: Easy_EKS_Config_Data, stack: cdk.Stack){ //
         // eks.ClusterLoggingTypes.CONTROLLER_MANAGER,
         // eks.ClusterLoggingTypes.SCHEDULER,
     ]);
-
 }//end apply_config()
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -56,9 +66,16 @@ export function deploy_addons(config: Easy_EKS_Config_Data, stack: cdk.Stack, cl
     const kube_proxy = new eks.CfnAddon(stack, 'kube-proxy', {
         clusterName: cluster.clusterName,
         addonName: 'kube-proxy',
-        addonVersion: Easy_EKS_Dynamic_Config.get_latest_version_of_kube_proxy_1_33_eks_addon(), // or 'v1.33.3-eksbuild.6'
+        addonVersion: Easy_EKS_Dynamic_Config.get_latest_version_of_kube_proxy_1_34_eks_addon(), // no reason not to use latest for this
         resolveConflicts: 'OVERWRITE',
-        configurationValues: '{}',
+        configurationValues: `{
+            "resources": {
+                "requests": {
+                    "cpu": "10m",
+                    "memory": "26Mi"
+                }
+            }
+        }`,
     });
     //NOTE! AWS LoadBalancer Controller and karpenter may occassionally need to be updated along with version of Kubernetes
 
@@ -67,16 +84,27 @@ export function deploy_addons(config: Easy_EKS_Config_Data, stack: cdk.Stack, cl
     // Note: Karpenter leverages a 3rd party cdk construct so it needs do be implemented in the scope of cluster creation
     // as in against type eks.Cluster. It can't be installed on imported clusters of type eks.ICluster (I stands for interface)
     const karpenter_helm_config: Karpenter_Helm_Config = {
-        helm_chart_version: '1.6.0', //https://gallery.ecr.aws/karpenter/karpenter
-        helm_chart_values: { //https://github.com/aws/karpenter-provider-aws/blob/v1.6.0/charts/karpenter/values.yaml
+        helm_chart_version: '1.8.3', //https://gallery.ecr.aws/karpenter/karpenter
+        helm_chart_values: { //https://github.com/aws/karpenter-provider-aws/blob/v1.8.3/charts/karpenter/values.yaml
             replicas: 1,
+            controller: {
+                resources: {
+                    requests: {
+                        cpu: "22m",
+                        memory: "164Mi",
+                    },
+                    limits: {
+                        memory: "1Gi",
+                    }
+                }
+            }
         },
     };
     const karpenter_YAMLs = (new Karpenter_YAML_Generator({
         cluster: cluster,
-        config: config,
-        amiSelectorTerms_alias: "bottlerocket@1.46.0-431fe75a",
-        //aws ssm get-parameters-by-path --path "/aws/service/bottlerocket/aws-k8s-1.33" --recursive | jq -cr '.Parameters[].Name' | grep -v "latest" | awk -F '/' '{print $7}' | sort | uniq
+        config: config, 
+        amiSelectorTerms_alias: `bottlerocket@${config.worker_nodes_bottlerocket_release_version}`, //Example value: 'bottlerocket@1.51.0-47438798'
+        //^-- If you need to hard code this, update it @ config.set_worker_nodes_bottlerocket_release_version (higher up in this file)
         consolidationPolicy: "WhenEmptyOrUnderutilized", //WhenUnderutilized is more agressive cost savings / slightly worse stability
         manifest_inputs: [ //Note highest weight = default, higher = preferred
             { type: "spot",      arch: "arm64", nodepools_cpu_limit: 1000, weight: 4, },
@@ -98,7 +126,7 @@ export function deploy_essentials(config: Easy_EKS_Config_Data, stack: cdk.Stack
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     //Install AWS Load Balancer Controller via Helm Chart
-    const ALBC_Version = 'v2.13.4'; //latest as of Sept 9th, 2025 per https://github.com/kubernetes-sigs/aws-load-balancer-controller/releases
+    const ALBC_Version = 'v2.15.0'; //latest as of Nov 18th, 2025 per https://github.com/kubernetes-sigs/aws-load-balancer-controller/releases
     const ALBC_IAM_Policy_Url = `https://raw.githubusercontent.com/kubernetes-sigs/aws-load-balancer-controller/refs/tags/${ALBC_Version}/docs/install/iam_policy.json`
     const ALBC_IAM_Policy_JSON = JSON.parse(request("GET", ALBC_IAM_Policy_Url).body.toString());
     const ALBC_IAM_Policy = new iam.Policy(stack, 'AWS_LB_Controller_IAM_policy_for_EKS', {
@@ -116,16 +144,21 @@ export function deploy_essentials(config: Easy_EKS_Config_Data, stack: cdk.Stack
         //4. The eks-pod-identity-agent addon (dependency)
     });
     ALBC_Kube_SA.role.attachInlinePolicy(ALBC_IAM_Policy);
-    const awsLoadBalancerController = cluster.addHelmChart('AWSLoadBalancerController', {
+    //v--stored in config as it needs to be used as a dependency for other things, to fix a race condition
+    config.aws_load_balancer_controller_helm_chart_essentials_dependency = cluster.addHelmChart('AWSLoadBalancerController', {
         chart: 'aws-load-balancer-controller',
         repository: 'https://aws.github.io/eks-charts',
         namespace: "kube-system",
         release: 'aws-load-balancer-controller',
-        version: '1.13.4', //<-- helm chart version based on the following command
-        // curl https://raw.githubusercontent.com/kubernetes-sigs/aws-load-balancer-controller/refs/tags/v2.13.4/helm/aws-load-balancer-controller/Chart.yaml | grep version: | cut -d ':' -f 2
+        version: '1.17.0', //<-- helm chart version 1.17.0 maps to app version v2.17.0
+        // Commands: To look up latest helm chart version:
+        // helm repo add eks https://aws.github.io/eks-charts
+        // helm repo update eks
+        // helm search repo eks | egrep "NAME|aws-load-balancer-controller"
+        // curl https://raw.githubusercontent.com/kubernetes-sigs/aws-load-balancer-controller/refs/tags/v2.17.0/helm/aws-load-balancer-controller/Chart.yaml | grep version: | cut -d ':' -f 2
         wait: true,
         timeout: cdk.Duration.minutes(15),
-        values: { //<-- helm chart values per https://github.com/kubernetes-sigs/aws-load-balancer-controller/blob/v2.13.4/helm/aws-load-balancer-controller/values.yaml
+        values: { //<-- helm chart values per https://github.com/kubernetes-sigs/aws-load-balancer-controller/blob/v2.17.0/helm/aws-load-balancer-controller/values.yaml
             clusterName: cluster.clusterName,
             vpcId: config.vpc.vpcId,
             region: stack.region,
@@ -134,10 +167,62 @@ export function deploy_essentials(config: Easy_EKS_Config_Data, stack: cdk.Stack
                 name: "aws-load-balancer-controller",
                 create: false,
             },
+            resources: {
+                requests: {
+                    cpu: "1m",
+                    memory: "27Mi"
+                },
+                limits: {
+                    memory: "128Mi"
+                }
+            },
         },
     });
-    // The following should help prevent temporary errors in logs of ALBC
-    awsLoadBalancerController.node.addDependency(ALBC_Kube_SA);
+    config.aws_load_balancer_controller_helm_chart_essentials_dependency.node.addDependency(ALBC_Kube_SA);
+    // ^-- This prevents temporary errors in logs of AWS Load Balancer Controller
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    //Note: config.Frugal_Observablity's set functions are only staging configuration for a potential deployment.
+    //      They aren't actually deploying anything (during this stage)
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // v-- Configuring Input parameters of Frugal_Observability's victoria_logs_custom_stack
+    config.Frugal_Observability.set_kubernetes_event_exporter_override_helm_values_as_JS_Object(
+        read_yaml_file_as_javascript_object(
+            './config/eks/yaml/essentials/frugal_observability/kubernetes_event_exporter.lower_envs.override_helm_values.yaml')
+    );
+    config.Frugal_Observability.set_vector_dev_agent_override_helm_values_as_JS_Object(
+        read_yaml_file_as_javascript_object(
+            './config/eks/yaml/essentials/frugal_observability/vector_dev_as_log_agent.lower_envs.override_helm_values.yaml')
+    );
+    config.Frugal_Observability.set_victoria_logs_db_single_override_helm_values_as_JS_Object(
+        read_yaml_file_as_javascript_object(
+            './config/eks/yaml/essentials/frugal_observability/victoria_logs_single_db.lower_envs.override_helm_values.yaml')
+    );
+    config.Frugal_Observability.set_kubernetes_event_exporter_helm_chart_version('3.6.3'); //<-- shouldn't need updating
+    // To see latest chart version, run this-v
+    // helm repo add bitnami https://charts.bitnami.com/bitnami && helm repo update bitnami && helm search repo bitnami | egrep "NAME|kubernetes-event-exporter"
+
+    config.Frugal_Observability.set_vector_dev_agent_helm_chart_version('0.50.0');
+    // To see latest chart version, run this-v
+    // helm repo add vector https://helm.vector.dev && helm repo update vector && helm search repo vector | egrep "NAME|vector"
+
+    config.Frugal_Observability.set_victoria_logs_db_single_helm_chart_version('0.11.28');
+    // To see latest chart version, run this-v
+    // helm repo add vm https://victoriametrics.github.io/helm-charts/ && helm repo update vm && helm search repo vm | egrep "NAME|victoria-logs-single"
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // v-- Configuring Input parameters of Frugal_Observability's victoria_metrics_kubernetes__stack
+    config.Frugal_Observability.set_victoria_metrics_kubernetes_stack_override_helm_values_as_JS_Object(
+        read_yaml_file_as_javascript_object(
+            './config/eks/yaml/essentials/frugal_observability/victoria_metrics_kubernetes_stack.lower_envs.override_helm_values.yaml')
+    );
+    config.Frugal_Observability.set_victoria_metrics_kubernetes_stack_helm_chart_version('0.72.0');
+    // To see latest chart version, run this-v
+    // helm repo add vm https://victoriametrics.github.io/helm-charts || helm repo update vm && helm search repo vm | egrep "NAME|victoria-metrics-k8s-stack"
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 }//end deploy_essentials()

@@ -84,8 +84,8 @@ export class Easy_EKS_Essentials{ //purposefully don't extend stack, to implemen
     }
     //v-- these depend on config being initialized (must be called after the above, Easy_EKS.ts's global_baseline was tweaked to make this less of an issue.)
     stage_deployment_of_global_baseline_eks_essentials(config: Easy_EKS_Config_Data){ 
-        config.initialize_GPQV_Observability(this.stack, this.cluster); //object initializes as empty, so init is fine even if not used.
-        config.initialize_CW_Observability(this.stack, this.cluster); //object initializes as empty, so init is fine even if not used.
+        config.initialize_Frugal_Observability(this.stack, this.cluster); //object initializes as empty, so init is fine even if not used.
+        config.initialize_CloudWatch_Observability(this.stack, this.cluster); //object initializes as empty, so init is fine even if not used.
         global_baseline_eks_config.deploy_essentials(config, this.stack, this.cluster); 
     }
     stage_deployment_of_my_orgs_baseline_eks_essentials(config: Easy_EKS_Config_Data){ my_orgs_baseline_eks_config.deploy_essentials(config, this.stack, this.cluster); }

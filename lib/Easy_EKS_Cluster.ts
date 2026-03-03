@@ -103,6 +103,9 @@ export class Easy_EKS_Cluster{ //purposefully don't extend stack, to implement b
             maxSize: 50,
             nodeRole: config.workerNodeRole,
             launchTemplateSpec: baseline_LT_Spec, //<-- necessary to add tags to EC2 instances
+            enableNodeAutoRepair: true,
+            forceUpdate: true, //<-- force update if blocked by misconfigured PDB(pod disruption budget)
+            releaseVersion: config.worker_nodes_bottlerocket_release_version, //<-- allows karpenter nodes & baseline nodes to be on same version
         };
         ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 

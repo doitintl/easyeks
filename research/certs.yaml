@@ -1,0 +1,121 @@
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: self-signed-root-ca-issuer
+  namespace: cert-manager 
+spec:
+  selfSigned: {}
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: root-ca-for-frugal-observability-stack
+  namespace: observability
+spec:
+  secretName: "root-ca-for-frugal-observability-stack" #(this Certificate object generates this kube secret)
+  commonName: "root-ca-for-frugal-observability-stack" #recommended to only be assigned to CA's
+  isCA: true
+  usages: #https://cert-manager.io/docs/reference/api-docs/#cert-manager.io/v1.KeyUsage 
+  - digital signature
+  - key encipherment
+  - cert sign
+  - crl sign
+  - signing
+  duration: "350400h" #<-- 24h * 365d/yr * 40 yr
+  renewBeforePercentage: 95
+  subject:
+    organizations:
+    - cert-manager
+  privateKey:
+    rotationPolicy: Never #Never: disables auto rotation, meaning less can go wrong.
+    algorithm: ECDSA      #^--Reasonable as this is only used on inner-cluster network
+    size: 384
+  issuerRef:
+    name: self-signed-root-ca-issuer
+    kind: ClusterIssuer
+    group: cert-manager.io
+---
+apiVersion: cert-manager.io/v1
+kind: Issuer
+metadata:
+  name: frugal-observability-certificate-issuer
+  namespace: observability
+spec:
+  ca:
+    secretName: root-ca-for-frugal-observability-stack #uses secret made by earlier Certificate object
+#^-- Those 3 bootstrapped the ability to make certs in the observability namespace
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: observability-aggregator-vector
+  namespace: observability
+spec:
+  secretName: "https-cert-for-observability-aggregator-vector" #(this Certificate object generates this kube secret)
+  isCA: false
+  usages:
+  - key encipherment
+  - server auth
+  - signing
+  duration: "306600h" #<-- 24h * 365d/yr * 35 yr
+  renewBeforePercentage: 95
+  subject:
+    organizations:
+    - cert-manager
+  dnsNames: #v-- inner cluster dns names + localhost for debugging from kubectl exec & kubectl port-forward
+  - localhost
+  - observability-aggregator-vector
+  - observability-aggregator-vector.observability
+  - observability-aggregator-vector.observability.svc
+  - observability-aggregator-vector.observability.svc.cluster
+  - observability-aggregator-vector.observability.svc.cluster.local
+  - observability-aggregator-vector-headless
+  - observability-aggregator-vector-headless.observability
+  - observability-aggregator-vector-headless.observability.svc
+  - observability-aggregator-vector-headless.observability.svc.cluster
+  - observability-aggregator-vector-headless.observability.svc.cluster.local
+  privateKey:
+    rotationPolicy: Never #Never: disables auto rotation, meaning less can go wrong.
+    algorithm: ECDSA      #^--Reasonable as this is only used on inner-cluster network
+    size: 384
+  issuerRef:
+    name: frugal-observability-certificate-issuer
+    kind: Issuer
+    group: cert-manager.io
+---
+#v-- Purposefully not implementing pod level HTTPS as VictoriaLogs' proxy breaks kubectl port-forward
+# apiVersion: cert-manager.io/v1
+# kind: Certificate
+# metadata:
+#   name: vl-victoria-logs-single-server
+#   namespace: observability
+# spec:
+#   secretName: "https-cert-for-vl-victoria-logs-single-server" #(this Certificate object generates this kube secret)
+#   isCA: false
+#   usages:
+#   - key encipherment
+#   - server auth
+#   - signing
+#   duration: "306600h" #<-- 24h * 365d/yr * 35 yr
+#   renewBeforePercentage: 95
+#   subject:
+#     organizations:
+#     - cert-manager
+#   dnsNames: #v-- inner cluster dns names + localhost for debugging from kubectl exec & kubectl port-forward
+#   - localhost
+#   - vl-victoria-logs-single-server
+#   - vl-victoria-logs-single-server.observability
+#   - vl-victoria-logs-single-server.observability.svc
+#   - vl-victoria-logs-single-server.observability.svc.cluster
+#   - vl-victoria-logs-single-server.observability.svc.cluster.local
+#   privateKey:
+#     rotationPolicy: Never #Never: disables auto rotation, meaning less can go wrong.
+#     algorithm: ECDSA      #^--Reasonable as this is only used on inner-cluster network
+#     size: 384
+#   issuerRef:
+#     name: frugal-observability-certificate-issuer
+#     kind: Issuer
+#     group: cert-manager.io
+# ---
+
+

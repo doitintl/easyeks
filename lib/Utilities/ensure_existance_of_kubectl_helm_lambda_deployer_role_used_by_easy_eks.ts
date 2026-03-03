@@ -1,31 +1,5 @@
-//Utility Imports:
 import * as shell from 'shelljs'; //npm install shelljs && npm i --save-dev @types/shelljs
 
-class InvalidInputError extends Error {
-    constructor(message: string) {
-        super(message);
-        this.name = "InvalidInputError";
-    }
-}
-
-export function validateTag(key: string, value: string){
-    const allowedChars = "^([\\p{L}\\p{Z}\\p{N}_.:/=+\\-@]*)$"; // https://docs.aws.amazon.com/AmazonECS/latest/APIReference/API_Tag.html; also using cfn-lint as a baseline
-    // The set of allowed characters varies by service, from basically any character to a strict set of English alphanumeric characters and a few symbols
-    const allowedCharsText = "The string can only contain Unicode letters, digits, whitespace, and the characters _.:/=+\-@";
-    const allowedRegex = new RegExp(allowedChars, "mu");
-
-    if (!allowedRegex.test(key)){
-        throw new InvalidInputError(`Invalid tag key: "${key}". ${allowedCharsText}`)
-    } else if (key.toLowerCase().startsWith("aws:")) {
-        throw new InvalidInputError(`Invalid tag key "${key}". Tag keys cannot start with "aws:".`)
-    } else if (!allowedRegex.test(value)){
-        throw new InvalidInputError(`Invalid tag value: "${value}". ${allowedCharsText}`)
-    } else {
-        return true
-    }
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 export function ensure_existance_of_kubectl_helm_lambda_deployer_role_used_by_easy_eks(){
     const check_cmd = `aws iam get-role --role-name=kubectl-helm-lambda-deployer-role-used-by-easy-eks`
     const check_cmd_return_code = shell.exec(check_cmd, {silent:true}).code;
@@ -135,4 +109,3 @@ export function ensure_existance_of_kubectl_helm_lambda_deployer_role_used_by_ea
         /////////////////////////////////////////////////////////////////////////////////////
     }//end if (role does not exist) then make it
 }//end ensure_existance_of_kubectl_helm_lambda_deployer_role_used_by_easy_eks()
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

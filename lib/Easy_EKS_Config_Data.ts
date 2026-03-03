@@ -12,8 +12,8 @@ import * as shell from 'shelljs'; //npm install shelljs && npm i --save-dev @typ
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //Local Library Imports:
 import { validateTag } from './Utilities';
-import * as gqpv from './GPQV_Observability';
-import * as cw from './CW_Observability/CW_Observability';
+import * as fo from './Frugal_Observability/Frugal_Observability';
+import * as cwo from './CW_Observability/CW_Observability';
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 export class Easy_EKS_Config_Data { //This object just holds config data
@@ -38,11 +38,13 @@ export class Easy_EKS_Config_Data { //This object just holds config data
     baselineNodesNumber: number;
     baselineNodesType: eks.CapacityType; //enum eks.CapacityType.SPOT or eks.CapacityType.ON_DEMAND
     workerNodeRole: iam.Role; //used by baselineMNG & Karpenter
+    worker_nodes_bottlerocket_release_version: string;
     preexisting_cluster_detected: boolean; //true when cluster is detected to be pre-existing
     sg_id_of_cluster_nodes: string; //(cdk doesn't normally supply this, added for convenience)
     control_plane_logging_options_to_enable?: eks.ClusterLoggingTypes[]; //? is necessary as undefined is used to represent none
-    GPQV: gqpv.Grafana_Prometheus_Quickwit_Vector; //holds a mix of config, state, and functions specific to GPQV Observability Stack
-    CW: cw.CloudWatch_Metrics_and_Logs_Observability; //holds a mix of config, state, and functions specific to CW Observability Stack
+    aws_load_balancer_controller_helm_chart_essentials_dependency: cdk.aws_eks.HelmChart; //needed to implement order of operations, to fix race condition
+    Frugal_Observability: fo.Frugal_Observability; //holds a mix of config, state, and functions specific to Frugal Observability Stack
+    CloudWatch_Observability: cwo.CloudWatch_Metrics_and_Logs_Observability; //holds a mix of config, state, and functions specific to CW Observability Stack
 
 
 
@@ -108,6 +110,9 @@ export class Easy_EKS_Config_Data { //This object just holds config data
         this.vpc = pre_existing_vpc as ec2.Vpc;
     }
     set_clusters_version_of_Kubernetes(version: KubernetesVersion){ this.kubernetesVersion = version; }
+    set_worker_nodes_bottlerocket_release_version(worker_nodes_bottlerocket_release_version: string){
+        this.worker_nodes_bottlerocket_release_version = worker_nodes_bottlerocket_release_version;
+    }
     set_version_of_kubectl_used_by_lambda(version: cdk.aws_lambda.ILayerVersion ){ this.kubectlLayer = version; }
     add_tag(key: string, value: string){
         try {
@@ -163,17 +168,17 @@ export class Easy_EKS_Config_Data { //This object just holds config data
     // set_KMS_Key(stack: cdk.Stack){
     //     this.kmsKey = kms.Key.fromLookup(stack, 'pre-existing-kms-key', { aliasName: this.kmsKeyAlias });
     // }
-    initialize_GPQV_Observability(stack: cdk.Stack, cluster: eks.ICluster){
-        if(!this.GPQV){ //if uninitialized, then initialize
-            this.GPQV = new gqpv.Grafana_Prometheus_Quickwit_Vector(stack, cluster);
+    initialize_Frugal_Observability(stack: cdk.Stack, cluster: eks.ICluster){
+        if(!this.Frugal_Observability){ //if uninitialized, then initialize
+            this.Frugal_Observability = new fo.Frugal_Observability(stack, cluster);
             //The purpose of this logic is to avoid issues, in the event that redundant calls are made.
             //Easy_EKS_Essentials.ts has a method stage_deployment_of_global_baseline_eks_essentials
             //Which is expected to initialize this so users don't have to.
         }
     }
-    initialize_CW_Observability(stack: cdk.Stack, cluster: eks.ICluster){
-        if(!this.CW){ //if uninitialized, then initialize
-            this.CW = new cw.CloudWatch_Metrics_and_Logs_Observability(stack, cluster);
+    initialize_CloudWatch_Observability(stack: cdk.Stack, cluster: eks.ICluster){
+        if(!this.CloudWatch_Observability){ //if uninitialized, then initialize
+            this.CloudWatch_Observability = new cwo.CloudWatch_Metrics_and_Logs_Observability(stack, cluster);
             //The purpose of this logic is to avoid issues, in the event that redundant calls are made.
             //Easy_EKS_Essentials.ts has a method stage_deployment_of_global_baseline_eks_essentials
             //Which is expected to initialize this so users don't have to.
