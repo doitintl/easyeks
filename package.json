@@ -31,7 +31,7 @@
     "cdk-fck-nat": "^1.6.22",
     "constructs": "^10.4.2",
     "js-yaml": "^4.1.0",
-    "lodash": "^4.17.23",
+    "lodash": "^4.18.1",
     "shelljs": "^0.10.0",
     "sync-request-curl": "^4.0.0"
   }
