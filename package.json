@@ -11,25 +11,24 @@
     "cdk": "cdk"
   },
   "devDependencies": {
-    "@swc/core": "^1.13.19",
-    "@types/jest": "^29.5.14",
+    "@swc/core": "^1.15.24",
+    "@types/node": "^24.10.1",
     "@types/js-yaml": "^4.0.9",
-    "@types/node": "^22.7.9",
+    "@types/lodash": "^4.17.24",
     "@types/shelljs": "^0.8.16",
-    "aws-cdk": "^2.241.0",
+    "aws-cdk": "^2.248.0",
     "ts-node": "^10.9.2",
-    "typescript": "~5.8.2"
+    "typescript": "~5.9.3"
   },
   "dependencies": {
     "@aws-cdk/lambda-layer-kubectl-v32": "^2.1.0",
     "@aws-cdk/lambda-layer-kubectl-v33": "^2.0.0",
     "@aws-cdk/lambda-layer-kubectl-v34": "^2.0.0",
     "@aws-cdk/lambda-layer-kubectl-v35": "^2.0.0",
-    "@types/lodash": "^4.17.24",
-    "aws-cdk-lib": "^2.241.0",
-    "cdk-eks-karpenter": "^1.0.18",
+    "aws-cdk-lib": "^2.248.0",
+    "cdk-eks-karpenter": "^1.0.22",
     "cdk-fck-nat": "^1.6.22",
-    "constructs": "^10.4.2",
+    "constructs": "^10.6.0",
     "js-yaml": "^4.1.0",
     "lodash": "^4.17.23",
     "shelljs": "^0.10.0",

@@ -35,8 +35,8 @@ export function apply_config(config: Easy_EKS_Config_Data, stack: cdk.Stack){ //
         */
     }
     //Kubernetes verson and addon's that may depend on Kubernetes version / should be updated along side it should be specified here
-    config.set_clusters_version_of_Kubernetes(eks.KubernetesVersion.V1_34);
-    config.set_worker_nodes_bottlerocket_release_version( "1.55.0-d93bb1b1" ); //<-- current value is a release associated with kube 1.33
+    config.set_clusters_version_of_Kubernetes(eks.KubernetesVersion.V1_35);
+    config.set_worker_nodes_bottlerocket_release_version( "1.55.0-d93bb1b1" );
     //^-- Choice: do you want latest? (every time `cdk deploy stage1-eks` is run, which could trigger extra node reboots)
     //            If so then use Easy_EKS_Dynamic_Config.get_latest_version_of_bottlerocket_1_33_release()
     //        OR: do you want to minimize node reboots as much as possible? / only when explicitly specified
@@ -44,13 +44,17 @@ export function apply_config(config: Easy_EKS_Config_Data, stack: cdk.Stack){ //
     //            Command to lookup latest version (followed by example output):
     //            aws ssm get-parameter --name /aws/service/bottlerocket/aws-k8s-1.35/x86_64/latest/image_version --query "Parameter.Value" --output text | tr -d '\n|\r'
     //            1.55.0-d93bb1b1
-    config.set_version_of_kubectl_used_by_lambda(new KubectlV34Layer(stack, 'kubectl-helm-lambda-executor')); //<--It's fine for this to stay on an old version
-    //^--refers to version of kubectl & helm installed in AWS Lambda Layer responsible for kubectl & helm deployments
-    //Note: If there's ever a problem with latest available versions of kubectl & helm
-    //      Example: Sept 9th, 2025 KubectlV33Layer, resulted in an error 
-    //      'Error: media type "application/vnd.cncf.helm.chart.provenance.v1.prov" is not allowed'
-    //If latest doesn't work it's safe to permanently use old versions of both apps / older version of kubectl layer (apps refers to kubectl & helm, which both exists in KubectlV32Layer)
-    //It's safe to permanently use old versions of both apps.
+    config.set_version_of_kubectl_used_by_lambda(new KubectlV35Layer(stack, 'kubectl-helm-lambda-executor')); //<--Don't rename this Cloud Formation stack component id (to avoid errors)
+    //^--KubectlV##Layer: refers to version of kubectl & helm installed in AWS Lambda Layer responsible for executing kubectl & helm deployment commands
+    //Useful Notes: 
+    //* It's common for the latest version of KubectlV##Layer to have temporary problems/buggy releases
+    //  Examples of odd errors from using latest layer (these errors would eventually go away with bug fixes):
+    //  * 'Error: media type "application/vnd.cncf.helm.chart.provenance.v1.prov" is not allowed'
+    //  * failed: ToolkitError: failed to deploy: UPDATE_ROLLBACK_COMPLETE
+    //* If latest doesn't work it's safe to permanently use old versions of KubectlV##Layer (even really old versions)
+    //  all it's basically doing is using a slightly older version of kubeclt & helm, so no significant difference.
+    //* A good rule of thumb for balancing updates & stability is to use kubectlV##Layer 1 version below the version of kubernetes
+    //* Before updating KubectlV##Layer to be the same as the version of kubernetes it's a good idea to test the change against a temporary environment.
     config.set_control_plane_logging_options_to_enable([
         // eks.ClusterLoggingTypes.API,
         // eks.ClusterLoggingTypes.AUDIT,
@@ -69,7 +73,7 @@ export function deploy_addons(config: Easy_EKS_Config_Data, stack: cdk.Stack, cl
     const kube_proxy = new eks.CfnAddon(stack, 'kube-proxy', {
         clusterName: cluster.clusterName,
         addonName: 'kube-proxy',
-        addonVersion: Easy_EKS_Dynamic_Config.get_latest_version_of_kube_proxy_1_34_eks_addon(), // no reason not to use latest for this
+        addonVersion: Easy_EKS_Dynamic_Config.get_latest_version_of_kube_proxy_1_35_eks_addon(), // no reason not to use latest for this
         resolveConflicts: 'OVERWRITE',
         configurationValues: `{
             "resources": {
@@ -87,7 +91,7 @@ export function deploy_addons(config: Easy_EKS_Config_Data, stack: cdk.Stack, cl
     // Note: Karpenter leverages a 3rd party cdk construct so it needs do be implemented in the scope of cluster creation
     // as in against type eks.Cluster. It can't be installed on imported clusters of type eks.ICluster (I stands for interface)
     const karpenter_helm_config: Karpenter_Helm_Config = {
-        helm_chart_version: '1.8.3', //https://gallery.ecr.aws/karpenter/karpenter
+        helm_chart_version: '1.9.0', //https://gallery.ecr.aws/karpenter/karpenter
         helm_chart_values: { //https://github.com/aws/karpenter-provider-aws/blob/v1.8.3/charts/karpenter/values.yaml
             replicas: 2,
             controller: {
@@ -106,7 +110,7 @@ export function deploy_addons(config: Easy_EKS_Config_Data, stack: cdk.Stack, cl
     const karpenter_YAMLs = (new Karpenter_YAML_Generator({
         cluster: cluster,
         config: config,
-        amiSelectorTerms_alias: `bottlerocket@${config.worker_nodes_bottlerocket_release_version}`, //Example value: 'bottlerocket@1.51.0-47438798'
+        amiSelectorTerms_alias: `bottlerocket@${config.worker_nodes_bottlerocket_release_version}`,
         consolidationPolicy: "WhenEmpty", //"WhenEmpty" is slightly higher cost and stability
         manifest_inputs: [ //Note highest weight = default, higher = preferred
             { type: "on-demand", arch: "arm64", nodepools_cpu_limit: 1000, weight: 4, },
@@ -179,6 +183,49 @@ export function deploy_essentials(config: Easy_EKS_Config_Data, stack: cdk.Stack
     });
     config.aws_load_balancer_controller_helm_chart_essentials_dependency.node.addDependency(ALBC_Kube_SA);
     // ^-- This prevents temporary errors in logs of AWS Load Balancer Controller
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    //Note: config.Frugal_Observablity's set functions are only staging configuration for a potential deployment.
+    //      They aren't actually deploying anything (during this stage)
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // v-- Configuring Input parameters of Frugal_Observability's victoria_logs_custom_stack
+    config.Frugal_Observability.set_kubernetes_event_exporter_override_helm_values_as_JS_Object(
+        read_yaml_file_as_javascript_object(
+            './config/eks/yaml/essentials/frugal_observability/kubernetes_event_exporter.lower_envs.override_helm_values.yaml')
+    );
+    config.Frugal_Observability.set_vector_dev_agent_override_helm_values_as_JS_Object(
+        read_yaml_file_as_javascript_object(
+            './config/eks/yaml/essentials/frugal_observability/vector_dev_as_log_agent.lower_envs.override_helm_values.yaml')
+    );
+    config.Frugal_Observability.set_victoria_logs_db_single_override_helm_values_as_JS_Object(
+        read_yaml_file_as_javascript_object(
+            './config/eks/yaml/essentials/frugal_observability/victoria_logs_single_db.lower_envs.override_helm_values.yaml')
+    );
+    config.Frugal_Observability.set_kubernetes_event_exporter_helm_chart_version('3.6.3'); //<-- shouldn't need updating
+    // To see latest chart version, run this-v
+    // helm repo add bitnami https://charts.bitnami.com/bitnami && helm repo update bitnami && helm search repo bitnami | egrep "NAME|kubernetes-event-exporter"
+
+    config.Frugal_Observability.set_vector_dev_agent_helm_chart_version('0.50.0');
+    // To see latest chart version, run this-v
+    // helm repo add vector https://helm.vector.dev && helm repo update vector && helm search repo vector | egrep "NAME|vector"
+
+    config.Frugal_Observability.set_victoria_logs_db_single_helm_chart_version('0.11.28');
+    // To see latest chart version, run this-v
+    // helm repo add vm https://victoriametrics.github.io/helm-charts/ && helm repo update vm && helm search repo vm | egrep "NAME|victoria-logs-single"
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // v-- Configuring Input parameters of Frugal_Observability's victoria_metrics_kubernetes__stack
+    config.Frugal_Observability.set_victoria_metrics_kubernetes_stack_override_helm_values_as_JS_Object(
+        read_yaml_file_as_javascript_object(
+            './config/eks/yaml/essentials/frugal_observability/victoria_metrics_kubernetes_stack.lower_envs.override_helm_values.yaml')
+    );
+    config.Frugal_Observability.set_victoria_metrics_kubernetes_stack_helm_chart_version('0.72.0');
+    // To see latest chart version, run this-v
+    // helm repo add vm https://victoriametrics.github.io/helm-charts || helm repo update vm && helm search repo vm | egrep "NAME|victoria-metrics-k8s-stack"
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 }//end deploy_essentials()
