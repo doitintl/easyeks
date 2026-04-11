@@ -71,14 +71,18 @@ export class Frugal_Observability {
     observability_ns: eks.KubernetesManifest; //no setter needed, gets initialized at the last minute using the above manifest & below method.
     ensure_observability_namespace_exists(config: Easy_EKS_Config_Data){
         if (this.observability_ns === undefined) { //<--ensures the namespace is only initialized once.
-            this.observability_ns = new eks.KubernetesManifest(this.stack, "observability-kube-namespace", {
+            this.observability_ns = new eks.KubernetesManifest(this.stack, 'observability-kube-namespace', {
                 cluster: this.cluster,
                 manifest: [this.observability_ns_manifest],
                 overwrite: true,
                 prune: true,
             });
             this.observability_ns.node.addDependency(config.aws_load_balancer_controller_helm_chart_essentials_dependency);
-            //^-- fixes a race condition            
+            //^-- fixes a race condition, to make cdk deploy more reliable
+            //v-- The following 2 lines help prevent cdk destroy issue
+            const observability_ns_cloudformation_resource = (this.stack.node.tryFindChild('observability-kube-namespace')?.node.defaultChild as cdk.CfnResource);
+            if(observability_ns_cloudformation_resource){ observability_ns_cloudformation_resource.applyRemovalPolicy(cdk.RemovalPolicy.RETAIN); }
+
         }
     }
     /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

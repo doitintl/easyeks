@@ -78,3 +78,7 @@ cdk deploy dev1-eks
 TO DO:
 * add a more detailed note or image about how to populate ~/.kube/config
 * Basics of karpenter and tear down
+* document discovery: if pods are crashing / not all in Running status, then cdk deploy will fail 
+  consistently / get in a stuck state. And to fix it manually rolling back cloudformation alone isn't enough.
+  both cloudformation needs to be rolled back & all pods need to be in running state, before a cdk deploy
+  to get back in a working state will work.

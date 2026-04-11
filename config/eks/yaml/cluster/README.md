@@ -1,10 +1,10 @@
 These yaml files:
 * Get applied/deployed during the cluster stage  
   as in: `cdk deploy dev1-eks-cluster`
-* They are referenced / deployed by typescript files
+  * The intent is for the clsuter stage to deploy the dependencies (like CRDs) of the next stage.  
+    (The next stage would be the essentials stage).
+* Are referenced & deployed by the deploy_addons() method of a typescript file named:
+  * global_baseline_eks_config.ts
 
-Notes:
-* By convention/tendency, each yaml should contain a comment regarding
-  the file it's referenced by.
-* The intent is for the cluster stage to deploy the dependencies of
-  the next stage, which would be the essentials stage.
+Awareness of Naming Convention:
+* '*.global_baseline.*' is in their filename, that's a hint that they get called by global_baseline_eks_config.ts

@@ -92,7 +92,7 @@ export function deploy_addons(config: Easy_EKS_Config_Data, stack: cdk.Stack, cl
         release: 'prometheus-operator-crds',
         version: '27.0.0', //version of helm chart, this shouldn't need to be updated (because prometheus' CRDs are v1.0 stable)
         values: read_yaml_file_as_javascript_object(
-            './config/eks/yaml/cluster/prometheus_operator_crds.baseline.helm_values.yaml'),
+            './config/eks/yaml/cluster/prometheus_operator_crds.global_baseline.helm_values.yaml'),
     });
     const victoriametrics_operator_crds_helm_release = new eks.HelmChart(stack, 'victoriametrics_operator_crds_helm', {
         cluster: cluster,
@@ -102,7 +102,7 @@ export function deploy_addons(config: Easy_EKS_Config_Data, stack: cdk.Stack, cl
         release: 'victoria-metrics-operator-crds',
         version: '0.8.0', //<-- version of helm chart, associated with app version 0.68.0
         values: read_yaml_file_as_javascript_object(
-            './config/eks/yaml/cluster/victoriametrics_operator_crds.baseline.helm_values.yaml'),
+            './config/eks/yaml/cluster/victoriametrics_operator_crds.global_baseline.helm_values.yaml'),
     });
     // VictoriaMetrics' CRDs are beta so they may need to be updated in the future, use below command to look up latest
     // helm repo add vm https://victoriametrics.github.io/helm-charts/ || helm repo update vm && helm search repo vm/victoria-metrics-operator-crds -l

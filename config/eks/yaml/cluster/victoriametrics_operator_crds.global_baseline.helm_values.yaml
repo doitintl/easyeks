@@ -1,6 +1,3 @@
-# Referenced by:
-# global_baseline_eks_config.ts's deploy_addons() 
-########################################################################################################
 # About:
 # You can choose to use CloudWatch Metrics and Logs
 # Or you can use the Frugal_Observability Stack, which is based on self-hosted VictoriaMetrics Stack

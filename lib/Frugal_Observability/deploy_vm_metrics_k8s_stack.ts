@@ -43,8 +43,7 @@ export function deploy_vm_metrics_k8s_stack(stack: cdk.Stack, cluster: eks.IClus
         chart: 'victoria-metrics-k8s-stack',
         release: 'vmks',
         version: config.Frugal_Observability.victoria_metrics_kubernetes_stack_helm_chart_version,
-        values: merged_victoria_metrics_kubernetes_stack_helm_values,
-        wait: true, //the below dependency is a Custom Resource that requires CRDs to be good, before it runs.
+        values: merged_victoria_metrics_kubernetes_stack_helm_values
     });
     vmks_helm_release.node.addDependency(observability_namespace); // <-- Imperative installation order to avoid temporary errors in logs
 
